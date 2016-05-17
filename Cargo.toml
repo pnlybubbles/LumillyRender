@@ -1,0 +1,9 @@
+[package]
+name = "path-trace"
+version = "0.1.0"
+authors = ["pnlybubbles <pnlybubbles@gmail.com>"]
+
+[dependencies]
+rand = "*"
+threadpool = "*"
+num_cpus = "*"
