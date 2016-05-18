@@ -96,4 +96,6 @@ sftp-config.json
 # More information here http://doc.crates.io/guide.html#cargotoml-vs-cargolock
 Cargo.lock
 
+## User Settings
 
+image.ppm

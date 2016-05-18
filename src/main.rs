@@ -29,6 +29,14 @@ struct Ray {
   d: Vector
 }
 
+#[derive(Debug, Copy, Clone, Default)]
+struct Intersection {
+  cross: bool,
+  position: Vector,
+  t: f64,
+  normal: Vector,
+}
+
 #[derive(Debug, Clone, Default)]
 struct Sphere {
   radius: f64,
@@ -38,32 +46,29 @@ struct Sphere {
 }
 
 trait Shape {
-  fn intersect(self, r: Ray) -> f64;
+  fn intersect(self, r: Ray) -> Intersection;
 }
 
 impl Shape for Sphere {
-  fn intersect(self, r: Ray) -> f64 {
-    // Solve t^2*d.d + 2*t*(o-p).d + (o-p).(o-p)-R^2 = 0
-    let eps = 1e-4;
-    let op = &self.position - &r.o;
-    let b = op.dot(&r.d);
-    let mut det = b * b - op.dot(&op) + self.radius * self.radius;
+  fn intersect(self, r: Ray) -> Intersection {
+    let mut i: Intersection = Default::default();
+    let co = &r.o - &self.position;
+    let cod = co.dot(&r.d);
+    let det = cod * cod - co.dot(&co) + self.radius * self.radius;
 
     if det < 0.0 {
-      return 0.0;
-    } else {
-      det = det.sqrt();
+      i.cross = false;
+      return i;
     }
-
-    if (b - det) > eps {
-      return b-det;
+    let t = -cod - det.sqrt();
+    if t < 0.0 {
+      i.cross = false;
+      return i;
     }
-
-    if (b + det) > eps {
-      return b+det;
-    }
-
-    return 0.0;
+    i.cross = true;
+    i.position = &r.o + &r.d.smul(t);
+    i.normal = (&i.position - &self.position).norm();
+    return i;
   }
 }
 
@@ -104,7 +109,7 @@ impl VectorOps for Vector {
   }
 
   fn norm(self) -> Vector {
-    let normalize = 1.0 / (self.x * self.x + self.y * self.y + self.z * self.z).sqrt() ;
+    let normalize = 1.0 / (self.x * self.x + self.y * self.y + self.z * self.z).sqrt();
     self.smul( normalize )
   }
 
@@ -131,9 +136,30 @@ fn to_int(x: f64) -> i64 {
   return (clamp(x) * 255.0) as i64
 }
 
-fn get_light(ray: Ray, depth: usize) -> Vector{
-  return ray.d;
+fn get_light(r: Ray, depth: usize) -> Vector{
+  let i = get_intersect(r);
+  if i.cross {
+    return Vector{x: 1.0, y: 1.0, z: 1.0};
+  } else {
+    return Vector{x: 0.0, y: 0.0, z: 0.0};
+  }
 }
+
+fn get_intersect(r: Ray) -> Intersection {
+  let mut intersect: Intersection = Default::default();
+  intersect.cross = false;
+  for (_, sphere) in SPHERES.iter().enumerate() {
+    let i = sphere.clone().intersect(r.clone());
+    if i.cross && (!intersect.cross || intersect.t > i.t) {
+      intersect = i;
+    }
+  }
+  return intersect;
+}
+
+static SPHERES: [Sphere; 1] = [
+  Sphere{radius: 1.0 as f64, position: Vector{x: 0.0 as f64, y: 0.0 as f64, z: 0.0 as f64}, emission: Vector{x: 0.0, y: 0.0, z: 0.0 }, color: Vector{x: 0.75,y: 0.25,z: 0.25}},
+];
 
 const MAX_DEPTH: usize = 3;
 const WIDTH: usize = 256;
