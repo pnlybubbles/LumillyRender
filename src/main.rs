@@ -3,6 +3,7 @@
 extern crate rand;
 extern crate threadpool;
 extern crate num_cpus;
+extern crate time;
 
 use std::io::prelude::*;
 use std::fs::File;
@@ -21,55 +22,6 @@ struct Vector {
   x: f64,
   y: f64,
   z: f64
-}
-
-#[derive(Debug, Copy, Clone, Default)]
-struct Ray {
-  o: Vector,
-  d: Vector
-}
-
-#[derive(Debug, Copy, Clone, Default)]
-struct Intersection {
-  cross: bool,
-  position: Vector,
-  t: f64,
-  normal: Vector,
-}
-
-#[derive(Debug, Clone, Default)]
-struct Sphere {
-  radius: f64,
-  position: Vector,
-  emission: Vector,
-  color: Vector,
-}
-
-trait Shape {
-  fn intersect(self, r: Ray) -> Intersection;
-}
-
-impl Shape for Sphere {
-  fn intersect(self, r: Ray) -> Intersection {
-    let mut i: Intersection = Default::default();
-    let co = &r.o - &self.position;
-    let cod = co.dot(&r.d);
-    let det = cod * cod - co.dot(&co) + self.radius * self.radius;
-
-    if det < 0.0 {
-      i.cross = false;
-      return i;
-    }
-    let t = -cod - det.sqrt();
-    if t < 0.0 {
-      i.cross = false;
-      return i;
-    }
-    i.cross = true;
-    i.position = &r.o + &r.d.smul(t);
-    i.normal = (&i.position - &self.position).norm();
-    return i;
-  }
 }
 
 impl<'a> Add for &'a Vector {
@@ -122,6 +74,99 @@ impl VectorOps for Vector {
   }
 }
 
+#[derive(Debug, Copy, Clone, Default)]
+struct Ray {
+  o: Vector,
+  d: Vector
+}
+
+#[derive(Debug, Copy, Clone, Default)]
+struct Material {
+  color: Vector,
+  diffuse: f64,
+  reflection: f64,
+  refraction: f64,
+  emmisive: f64,
+}
+
+#[derive(Debug, Copy, Clone, Default)]
+struct Intersection {
+  cross: bool,
+  position: Vector,
+  t: f64,
+  normal: Vector,
+  material: Material,
+}
+
+trait Shape {
+  fn intersect(self, r: Ray) -> Intersection;
+}
+
+#[derive(Debug, Copy, Clone, Default)]
+struct Sphere {
+  radius: f64,
+  position: Vector,
+  material: Material,
+}
+
+impl Shape for Sphere {
+  fn intersect(self, r: Ray) -> Intersection {
+    let mut i: Intersection = Default::default();
+    let co = &r.o - &self.position;
+    let cod = co.dot(&r.d);
+    let det = cod * cod - co.dot(&co) + self.radius * self.radius;
+
+    if det < 0.0 {
+      i.cross = false;
+      return i;
+    }
+    let t = -cod - det.sqrt();
+    if t < 0.0 {
+      i.cross = false;
+      return i;
+    }
+    i.cross = true;
+    i.position = &r.o + &r.d.smul(t);
+    i.normal = (&i.position - &self.position).norm();
+    i.material = self.material;
+    return i;
+  }
+}
+
+// #[derive(Debug, Clone, Default)]
+// struct Triangle {
+//   normal: Vector,
+//   position0: Vector,
+//   position1: Vector,
+//   position2: Vector,
+//   emission: Vector,
+//   color: Vector,
+// }
+
+// impl Shape for Triangle {
+//   fn intersect(self, r: Ray) -> Intersection {
+//     let mut i: Intersection = Default::default();
+//     let co = &r.o - &self.position;
+//     let cod = co.dot(&r.d);
+//     let det = cod * cod - co.dot(&co) + self.radius * self.radius;
+
+//     if det < 0.0 {
+//       i.cross = false;
+//       return i;
+//     }
+//     let t = -cod - det.sqrt();
+//     if t < 0.0 {
+//       i.cross = false;
+//       return i;
+//     }
+//     i.cross = true;
+//     i.position = &r.o + &r.d.smul(t);
+//     i.normal = (&i.position - &self.position).norm();
+//     i.obj = self;
+//     return i;
+//   }
+// }
+
 fn clamp(x: f64) -> f64 {
   if x < 0.0 {
     return 0.0;
@@ -157,14 +202,16 @@ fn get_intersect(r: Ray) -> Intersection {
   return intersect;
 }
 
-static SPHERES: [Sphere; 1] = [
-  Sphere{radius: 1.0 as f64, position: Vector{x: 0.0 as f64, y: 0.0 as f64, z: 0.0 as f64}, emission: Vector{x: 0.0, y: 0.0, z: 0.0 }, color: Vector{x: 0.75,y: 0.25,z: 0.25}},
+const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.75,y: 0.25,z: 0.25}};
+
+const SPHERES: [Sphere; 1] = [
+  Sphere{radius: 1.0, position: Vector{x: 0.0, y: 0.0, z: 0.0}, material: WHITE_MATERIAL},
 ];
 
 const MAX_DEPTH: usize = 3;
 const WIDTH: usize = 256;
 const HEIGHT: usize = 256;
-static PI: f64 = 3.14159265358979323846264338327950288_f64;
+const PI: f64 = 3.14159265358979323846264338327950288_f64;
 
 fn main() {
   let pool = ThreadPool::new(num_cpus::get());
@@ -190,8 +237,11 @@ fn main() {
     }
   }
 
+  let start_time = time::now();
+  println!("start: {}", start_time.strftime("%+").unwrap());
+
   for p in 0..WIDTH * HEIGHT - 1 {
-    print!("\rRaytracing... ({:.0}%)", (p as f64) / ((WIDTH*HEIGHT) as f64) * 100.0);
+    print!("\rRaytracing... ({}/{} : {:.0}%)", p, WIDTH * HEIGHT, (p as f64) / ((WIDTH * HEIGHT) as f64) * 100.0);
     let (i, j, color) = rx.recv().unwrap();
     output[i][j] = color;
   }
@@ -204,4 +254,8 @@ fn main() {
       f.write_all( format!("{} {} {} ", to_int(output[HEIGHT - i - 1][j].x), to_int(output[HEIGHT - i - 1][j].y), to_int(output[HEIGHT - i - 1][j].z)).as_bytes() ).ok();
     }
   }
+
+  let end_time = time::now();
+  println!("end: {}", end_time.strftime("%+").unwrap());
+  println!("elapse: {}s", (end_time - start_time).num_milliseconds() as f64 / 1000.0);
 }

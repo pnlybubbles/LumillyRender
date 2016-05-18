@@ -7,3 +7,4 @@ authors = ["pnlybubbles <pnlybubbles@gmail.com>"]
 rand = "*"
 threadpool = "*"
 num_cpus = "*"
+time = "0.1"
