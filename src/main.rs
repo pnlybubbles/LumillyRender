@@ -126,6 +126,7 @@ impl Shape for Sphere {
       return i;
     }
     i.cross = true;
+    i.t = t;
     i.position = &r.o + &r.d.smul(t);
     i.normal = (&i.position - &self.position).norm();
     i.material = self.material;
@@ -133,39 +134,66 @@ impl Shape for Sphere {
   }
 }
 
-// #[derive(Debug, Clone, Default)]
-// struct Triangle {
-//   normal: Vector,
-//   position0: Vector,
-//   position1: Vector,
-//   position2: Vector,
-//   emission: Vector,
-//   color: Vector,
-// }
+#[derive(Debug, Copy, Clone, Default)]
+struct Triangle {
+  position0: Vector,
+  position1: Vector,
+  position2: Vector,
+  normal: Vector,
+  material: Material,
+}
 
-// impl Shape for Triangle {
-//   fn intersect(self, r: Ray) -> Intersection {
-//     let mut i: Intersection = Default::default();
-//     let co = &r.o - &self.position;
-//     let cod = co.dot(&r.d);
-//     let det = cod * cod - co.dot(&co) + self.radius * self.radius;
+impl Shape for Triangle {
+  fn intersect(self, r: Ray) -> Intersection {
+    let mut i: Intersection = Default::default();
+    let dn = r.d.dot(&self.normal);
+    if dn == 0.0 {
+      i.cross = false;
+      return i;
+    }
+    let t = (&self.position0 - &r.o).dot(&self.normal);
+    if t < 0.0 {
+      i.cross = false;
+      return i;
+    }
+    let p = &r.o + &r.d.smul(t);
+    let c0 = (&self.position1 - &self.position0).cross(&p - &self.position0);
+    if c0.dot(&self.normal) < 0.0 {
+      i.cross = false;
+      return i;
+    }
+    let c1 = (&self.position2 - &self.position1).cross(&p - &self.position1);
+    if c1.dot(&self.normal) < 0.0 {
+      i.cross = false;
+      return i;
+    }
+    let c2 = (&self.position0 - &self.position2).cross(&p - &self.position2);
+    if c2.dot(&self.normal) < 0.0 {
+      i.cross = false;
+      return i;
+    }
+    i.cross = true;
+    i.t = t;
+    i.position = p;
+    i.normal = self.normal;
+    return i;
+  }
+}
 
-//     if det < 0.0 {
-//       i.cross = false;
-//       return i;
-//     }
-//     let t = -cod - det.sqrt();
-//     if t < 0.0 {
-//       i.cross = false;
-//       return i;
-//     }
-//     i.cross = true;
-//     i.position = &r.o + &r.d.smul(t);
-//     i.normal = (&i.position - &self.position).norm();
-//     i.obj = self;
-//     return i;
-//   }
-// }
+#[derive(Debug, Copy, Clone)]
+enum Mesh {
+  Sphere(Sphere),
+  Triangle(Triangle),
+}
+
+impl Mesh {
+  fn intersect(&self, r: Ray) -> Intersection {
+    match *self {
+      Mesh::Sphere(i) => i.intersect(r),
+      Mesh::Triangle(i) => i.intersect(r),
+    }
+  }
+}
 
 fn clamp(x: f64) -> f64 {
   if x < 0.0 {
@@ -193,8 +221,8 @@ fn get_light(r: Ray, depth: usize) -> Vector{
 fn get_intersect(r: Ray) -> Intersection {
   let mut intersect: Intersection = Default::default();
   intersect.cross = false;
-  for (_, sphere) in SPHERES.iter().enumerate() {
-    let i = sphere.clone().intersect(r.clone());
+  for (_, obj) in OBJECTS.iter().enumerate() {
+    let i = obj.intersect(r.clone());
     if i.cross && (!intersect.cross || intersect.t > i.t) {
       intersect = i;
     }
@@ -204,8 +232,9 @@ fn get_intersect(r: Ray) -> Intersection {
 
 const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.75,y: 0.25,z: 0.25}};
 
-const SPHERES: [Sphere; 1] = [
-  Sphere{radius: 1.0, position: Vector{x: 0.0, y: 0.0, z: 0.0}, material: WHITE_MATERIAL},
+const OBJECTS: [Mesh; 1] = [
+  Mesh::Sphere(Sphere{radius: 1.0, position: Vector{x: 0.0, y: 0.0, z: 0.0}, material: WHITE_MATERIAL}),
+  // Mesh::Triangle(Triangle{position0: Vector{x: 1.0, y: 1.0, z: 0.0}, position1: Vector{x: -1.0, y: 1.0, z: 0.0}, position2: Vector{x: 0.0, y: 0.0, z: 0.0}, normal: Vector{x: 0.0, y: 0.0, z: 1.0}, material: WHITE_MATERIAL}),
 ];
 
 const MAX_DEPTH: usize = 3;
