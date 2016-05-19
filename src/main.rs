@@ -151,7 +151,7 @@ impl Shape for Triangle {
       i.cross = false;
       return i;
     }
-    let t = (&self.position0 - &r.o).dot(&self.normal);
+    let t = (&self.position0 - &r.o).dot(&self.normal) / dn;
     if t < 0.0 {
       i.cross = false;
       return i;
@@ -174,8 +174,9 @@ impl Shape for Triangle {
     }
     i.cross = true;
     i.t = t;
-    i.position = p;
     i.normal = self.normal;
+    i.position = p;
+    i.material = self.material;
     return i;
   }
 }
@@ -210,11 +211,71 @@ fn to_int(x: f64) -> i64 {
 }
 
 fn get_light(r: Ray, depth: usize) -> Vector{
-  let i = get_intersect(r);
-  if i.cross {
-    return Vector{x: 1.0, y: 1.0, z: 1.0};
-  } else {
+  if depth >= MAX_DEPTH {
     return Vector{x: 0.0, y: 0.0, z: 0.0};
+  }
+  let i = get_intersect(r);
+  if !i.cross {
+    return BG_COLOR;
+  }
+  let mut cd = i.material.diffuse;
+  let mut cr = i.material.reflection;
+  let mut cn = i.material.refraction;
+  let mut ce = i.material.emmisive;
+  let roulette = (cd + cr + cn + ce) * rand::random::<f64>();
+  let mut t = 3; // emmisive
+  if roulette < cd {
+    // diffuse
+    t = 0;
+  } else if roulette < cd + cr {
+    // reflection
+    t = 1;
+  } else if roulette < cd + cr + cn {
+    // refraction
+    t = 2;
+  }
+
+  // diffuse
+  let mut diffuse_color = Vector{x: 0.0, y: 0.0, z: 0.0};
+  if t == 0 {
+    let theta = PI * rand::random::<f64>();
+    let phi = 2.0 * PI * rand::random::<f64>();
+    let mut d = Vector{x: theta.sin() * phi.cos(), y: theta.sin() * phi.sin(), z: theta.cos()};
+    let mut dn = d.dot(&i.normal);
+    if dn < 0.0 {
+      dn = -dn;
+      d = d.smul(-1.0);
+    }
+    let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
+    diffuse_color = &get_light(new_ray, depth + 1) * &i.material.color.smul(dn);
+  }
+
+  // reflection
+  let mut reflection_color = Vector{x: 0.0, y: 0.0, z: 0.0};
+  if t == 1 {
+  }
+
+  // refraction
+  let mut refraction_color = Vector{x: 0.0, y: 0.0, z: 0.0};
+  if t == 2 {
+  }
+
+  // emmisive
+  let mut emmisive_color = Vector{x: 0.0, y: 0.0, z: 0.0};
+  if t == 3 {
+    emmisive_color = i.material.color;
+  }
+
+  return if t == 0 {
+    diffuse_color.smul(cd + cr + cn)
+  } else if t == 1 {
+    reflection_color.smul(cd + cr + cn)
+  } else if t == 2 {
+    refraction_color.smul(cd + cr + cn)
+  } else if t == 3 {
+    emmisive_color.smul(ce)
+  } else {
+    Vector{x: 0.0, y: 0.0, z: 0.0}
   }
 }
 
@@ -230,23 +291,43 @@ fn get_intersect(r: Ray) -> Intersection {
   return intersect;
 }
 
-const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.75,y: 0.25,z: 0.25}};
+const YELLOW_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 0.4}};
+const BLUE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.4, y: 0.4, z: 1.0}};
+const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
+const EMMISIVE_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 0.0, emmisive: 1.0, color: Vector{x: 1.0 * 500.0, y: 1.0 * 500.0, z: 1.0 * 500.0}};
 
-const OBJECTS: [Mesh; 1] = [
-  Mesh::Sphere(Sphere{radius: 1.0, position: Vector{x: 0.0, y: 0.0, z: 0.0}, material: WHITE_MATERIAL}),
+const OBJECTS: [Mesh; 16] = [
+  // Mesh::Sphere(Sphere{radius: 1.0, position: Vector{x: 0.0, y: 0.0, z: 0.0}, material: WHITE_MATERIAL}),
   // Mesh::Triangle(Triangle{position0: Vector{x: 1.0, y: 1.0, z: 0.0}, position1: Vector{x: -1.0, y: 1.0, z: 0.0}, position2: Vector{x: 0.0, y: 0.0, z: 0.0}, normal: Vector{x: 0.0, y: 0.0, z: 1.0}, material: WHITE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: 5.0, z: 0.0}, position1: Vector{x: -5.0, y: -5.0, z: 0.0}, position2: Vector{x: -5.0, y: 5.0, z: -10.0}, normal: Vector{x: 1.0, y: 0.0, z: 0.0}, material: YELLOW_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: -5.0, z: 0.0}, position1: Vector{x: -5.0, y: -5.0, z: -10.0}, position2: Vector{x: -5.0, y: 5.0, z: -10.0}, normal: Vector{x: 1.0, y: 0.0, z: 0.0}, material: YELLOW_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: 5.0, y: -5.0, z: 0.0}, position1: Vector{x: 5.0, y: 5.0, z: 0.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: -1.0, y: 0.0, z: 0.0}, material: BLUE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: 5.0, y: -5.0, z: -10.0}, position1: Vector{x: 5.0, y: -5.0, z: 0.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: -1.0, y: 0.0, z: 0.0}, material: BLUE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: 5.0, z: -10.0}, position1: Vector{x: -5.0, y: -5.0, z: -10.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: 0.0, y: 0.0, z: 1.0}, material: WHITE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: -5.0, z: -10.0}, position1: Vector{x: 5.0, y: -5.0, z: -10.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: 0.0, y: 0.0, z: 1.0}, material: WHITE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: 5.0, z: 0.0}, position1: Vector{x: -5.0, y: -5.0, z: 0.0}, position2: Vector{x: 5.0, y: 5.0, z: 0.0}, normal: Vector{x: 0.0, y: 0.0, z: -1.0}, material: WHITE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: -5.0, z: 0.0}, position1: Vector{x: 5.0, y: -5.0, z: 0.0}, position2: Vector{x: 5.0, y: 5.0, z: 0.0}, normal: Vector{x: 0.0, y: 0.0, z: -1.0}, material: WHITE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: -5.0, z: -10.0}, position1: Vector{x: -5.0, y: -5.0, z: 0.0}, position2: Vector{x: 5.0, y: -5.0, z: -10.0}, normal: Vector{x: 0.0, y: 1.0, z: 0.0}, material: WHITE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: -5.0, z: 0.0}, position1: Vector{x: 5.0, y: -5.0, z: 0.0}, position2: Vector{x: 5.0, y: -5.0, z: -10.0}, normal: Vector{x: 0.0, y: 1.0, z: 0.0}, material: WHITE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: 5.0, z: 0.0}, position1: Vector{x: -5.0, y: 5.0, z: -10.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: WHITE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: 5.0, y: 5.0, z: 0.0}, position1: Vector{x: -5.0, y: 5.0, z: 0.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: WHITE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: -1.0, y: 4.99, z: -4.0}, position1: Vector{x: -1.0, y: 4.99, z: -5.0}, position2: Vector{x: 1.0, y: 4.99, z: -5.0}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: EMMISIVE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: 1.0, y: 4.99, z: -4.0}, position1: Vector{x: -1.0, y: 4.99, z: -4.0}, position2: Vector{x: 1.0, y: 4.99, z: -5.0}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: EMMISIVE_MATERIAL}),
+  Mesh::Sphere(Sphere{position: Vector{x: -2.0, y: -3.5, z: -6.0}, radius: 1.5, material: WHITE_MATERIAL}),
+  Mesh::Sphere(Sphere{position: Vector{x: 2.0, y: -3.5, z: -3.0}, radius: 1.5, material: WHITE_MATERIAL}),
 ];
 
 const MAX_DEPTH: usize = 3;
 const WIDTH: usize = 256;
 const HEIGHT: usize = 256;
 const PI: f64 = 3.14159265358979323846264338327950288_f64;
+const BG_COLOR: Vector = Vector{x: 0.0, y: 0.0, z: 0.0};
 
 fn main() {
   let pool = ThreadPool::new(num_cpus::get());
   let (tx, rx):  (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 1;
+  let samples: usize = 5000;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
@@ -257,8 +338,8 @@ fn main() {
         let mut r: Vector = Default::default();
         for _ in 0..samples {
           let mut ray: Ray = Default::default();
-          ray.o = Vector{x: 0.0, y: 0.0, z: 5.9};
-          ray.d = Vector{x: ((j as f64) * 2.0 - (WIDTH as f64)) / min_rsl, y: ((i as f64) * 2.0 - (HEIGHT as f64)) / min_rsl, z: -1.0}.norm();
+          ray.o = Vector{x: 0.0, y: 0.0, z: 15.0};
+          ray.d = Vector{x: ((j as f64) * 2.0 - (WIDTH as f64)) / min_rsl, y: ((i as f64) * 2.0 - (HEIGHT as f64)) / min_rsl, z: -3.0}.norm();
           r = &r + &get_light(ray, 0).smul(1.0 / samples as f64);
         }
         tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
@@ -270,7 +351,7 @@ fn main() {
   println!("start: {}", start_time.strftime("%+").unwrap());
 
   for p in 0..WIDTH * HEIGHT - 1 {
-    print!("\rRaytracing... ({}/{} : {:.0}%)", p, WIDTH * HEIGHT, (p as f64) / ((WIDTH * HEIGHT) as f64) * 100.0);
+    print!("\rRaytracing... ({:.0}/{:.0} : {:.0}%)", p, WIDTH * HEIGHT, (p as f64) / ((WIDTH * HEIGHT) as f64) * 100.0);
     let (i, j, color) = rx.recv().unwrap();
     output[i][j] = color;
   }
