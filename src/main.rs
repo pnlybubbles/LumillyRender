@@ -238,14 +238,24 @@ fn get_light(r: Ray, depth: usize) -> Vector{
   // diffuse
   let mut diffuse_color = Vector{x: 0.0, y: 0.0, z: 0.0};
   if t == 0 {
-    let theta = PI * rand::random::<f64>();
-    let phi = 2.0 * PI * rand::random::<f64>();
-    let mut d = Vector{x: theta.sin() * phi.cos(), y: theta.sin() * phi.sin(), z: theta.cos()};
-    let mut dn = d.dot(&i.normal);
-    if dn < 0.0 {
-      dn = -dn;
-      d = d.smul(-1.0);
-    }
+    // let theta = PI * rand::random::<f64>();
+    // let phi = 2.0 * PI * rand::random::<f64>();
+    // let mut d = Vector{x: theta.sin() * phi.cos(), y: theta.sin() * phi.sin(), z: theta.cos()};
+    // let mut dn = d.dot(&i.normal);
+    // if dn < 0.0 {
+    //   dn = -dn;
+    //   d = d.smul(-1.0);
+    // }
+    let r1: f64 = 2.0 * PI* rand::random::<f64>();
+    let r2: f64 = rand::random::<f64>();
+    let r2s: f64 = r2.sqrt();
+
+    let w = i.normal;
+    let u = if w.x.abs() > 0.1 { Vector{x: 0.0, y: 1.0, z: 0.0} } else { Vector{x: 1.0, y: 0.0, z: 0.0 } }.cross(w).norm();
+    let v = w.cross(u);
+
+    let d = (&(&u.smul(r1.cos() * r2s) + &v.smul(r1.sin() * r2s)) + &w.smul((1.0 - r2).sqrt())).norm();
+    let dn = d.dot(&i.normal);
     let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
     diffuse_color = &get_light(new_ray, depth + 1) * &i.material.color.smul(dn);
   }
@@ -253,6 +263,10 @@ fn get_light(r: Ray, depth: usize) -> Vector{
   // reflection
   let mut reflection_color = Vector{x: 0.0, y: 0.0, z: 0.0};
   if t == 1 {
+    let d = &r.d - &i.normal.smul(2 * i.normal.dot(&r.d));
+    let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
+    let color = get_light(new_ray, depth);
+    reflection_color = color;
   }
 
   // refraction
@@ -294,7 +308,7 @@ fn get_intersect(r: Ray) -> Intersection {
 const YELLOW_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 0.4}};
 const BLUE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.4, y: 0.4, z: 1.0}};
 const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
-const EMMISIVE_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 0.0, emmisive: 1.0, color: Vector{x: 1.0 * 500.0, y: 1.0 * 500.0, z: 1.0 * 500.0}};
+const EMMISIVE_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 0.0, emmisive: 1.0, color: Vector{x: 1.0 * 100.0, y: 1.0 * 100.0, z: 1.0 * 100.0}};
 
 const OBJECTS: [Mesh; 16] = [
   // Mesh::Sphere(Sphere{radius: 1.0, position: Vector{x: 0.0, y: 0.0, z: 0.0}, material: WHITE_MATERIAL}),
@@ -325,9 +339,9 @@ const BG_COLOR: Vector = Vector{x: 0.0, y: 0.0, z: 0.0};
 
 fn main() {
   let pool = ThreadPool::new(num_cpus::get());
-  let (tx, rx):  (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
+  let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 5000;
+  let samples: usize = 10000;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 

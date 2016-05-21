@@ -98,4 +98,5 @@ Cargo.lock
 
 ## User Settings
 
-image.*
+*.png
+*.ppm
