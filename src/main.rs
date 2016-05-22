@@ -11,7 +11,6 @@ use std::ops::{Add, Sub, Mul};
 // use std::num::Float;
 use std::default::Default;
 // use std::rand::random;
-use rand::Rng;
 use threadpool::ThreadPool;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::{Sender, Receiver};
@@ -218,26 +217,26 @@ fn get_light(r: Ray, depth: usize) -> Vector{
   if !i.cross {
     return BG_COLOR;
   }
-  let mut cd = i.material.diffuse;
-  let mut cr = i.material.reflection;
+  let cd = i.material.diffuse;
+  let cr = i.material.reflection;
   let mut cn = i.material.refraction;
-  let mut ce = i.material.emmisive;
+  let ce = i.material.emmisive;
   let roulette = (cd + cr + cn + ce) * rand::random::<f64>();
-  let mut t = 3; // emmisive
+  let mut tp = 3; // emmisive
   if roulette < cd {
     // diffuse
-    t = 0;
+    tp = 0;
   } else if roulette < cd + cr {
     // reflection
-    t = 1;
+    tp = 1;
   } else if roulette < cd + cr + cn {
     // refraction
-    t = 2;
+    tp = 2;
   }
 
   // diffuse
   let mut diffuse_color = Vector{x: 0.0, y: 0.0, z: 0.0};
-  if t == 0 {
+  if tp == 0 {
     // let theta = PI * rand::random::<f64>();
     // let phi = 2.0 * PI * rand::random::<f64>();
     // let mut d = Vector{x: theta.sin() * phi.cos(), y: theta.sin() * phi.sin(), z: theta.cos()};
@@ -262,31 +261,57 @@ fn get_light(r: Ray, depth: usize) -> Vector{
 
   // reflection
   let mut reflection_color = Vector{x: 0.0, y: 0.0, z: 0.0};
-  if t == 1 {
+  if tp == 1 {
     let d = &r.d - &i.normal.smul(2.0 * r.d.dot(&i.normal));
     let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
-    let color = get_light(new_ray, depth);
-    reflection_color = color;
+    reflection_color = get_light(new_ray, depth);
   }
 
   // refraction
   let mut refraction_color = Vector{x: 0.0, y: 0.0, z: 0.0};
-  if t == 2 {
+  if tp == 2 {
+    let mut d = Vector{x: 0.0, y: 0.0, z: 0.0};
+    let mut o = Vector{x: 0.0, y: 0.0, z: 0.0};
+    let dn = r.d.dot(&i.normal);
+    let eta = 1.5;
+    if dn < 0.0{
+      // incidence
+      let det = 1.0 - (1.0 + dn) * (1.0 + dn) / (eta * eta);
+      if det < 0.0 {
+        cn = 0.0;
+      } else {
+        d = &i.normal.smul(-dn / eta - det.sqrt()) + &r.d.smul(1.0 / eta);
+        o = &i.position - &i.normal.smul(0.01)
+      }
+    } else {
+      // outgoing
+      let det = 1.0 - (1.0 - dn) * (1.0 - dn) * (eta * eta);
+      if det < 0.0 {
+        cn = 0.0;
+      } else {
+        d = &i.normal.smul(-(dn * eta - det.sqrt())) + &r.d.smul(eta);
+        o = &i.position + &i.normal.smul(0.01)
+      }
+    }
+    if cn != 0.0 {
+      let new_ray = Ray{d: d.norm(), o: o};
+      refraction_color = get_light(new_ray, depth);
+    }
   }
 
   // emmisive
   let mut emmisive_color = Vector{x: 0.0, y: 0.0, z: 0.0};
-  if t == 3 {
+  if tp == 3 {
     emmisive_color = i.material.color;
   }
 
-  return if t == 0 {
+  return if tp == 0 {
     diffuse_color.smul(cd + cr + cn)
-  } else if t == 1 {
+  } else if tp == 1 {
     reflection_color.smul(cd + cr + cn)
-  } else if t == 2 {
+  } else if tp == 2 {
     refraction_color.smul(cd + cr + cn)
-  } else if t == 3 {
+  } else if tp == 3 {
     emmisive_color.smul(ce)
   } else {
     Vector{x: 0.0, y: 0.0, z: 0.0}
@@ -308,8 +333,9 @@ fn get_intersect(r: Ray) -> Intersection {
 const YELLOW_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 0.4}};
 const BLUE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.4, y: 0.4, z: 1.0}};
 const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
-const REFLECTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 1.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
-const EMMISIVE_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 0.0, emmisive: 1.0, color: Vector{x: 1.0 * 100.0, y: 1.0 * 100.0, z: 1.0 * 100.0}};
+const REFLECTION_MATERIAL: Material = Material{diffuse: 0.1, reflection: 0.9, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
+const REFRACTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.2, refraction: 0.8, emmisive: 0.0, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
+const EMMISIVE_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 0.0, emmisive: 1.0, color: Vector{x: 20.0, y: 20.0, z: 20.0}};
 
 const OBJECTS: [Mesh; 16] = [
   // Mesh::Sphere(Sphere{radius: 1.0, position: Vector{x: 0.0, y: 0.0, z: 0.0}, material: WHITE_MATERIAL}),
@@ -326,10 +352,10 @@ const OBJECTS: [Mesh; 16] = [
   Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: -5.0, z: 0.0}, position1: Vector{x: 5.0, y: -5.0, z: 0.0}, position2: Vector{x: 5.0, y: -5.0, z: -10.0}, normal: Vector{x: 0.0, y: 1.0, z: 0.0}, material: WHITE_MATERIAL}),
   Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: 5.0, z: 0.0}, position1: Vector{x: -5.0, y: 5.0, z: -10.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: WHITE_MATERIAL}),
   Mesh::Triangle(Triangle{position0: Vector{x: 5.0, y: 5.0, z: 0.0}, position1: Vector{x: -5.0, y: 5.0, z: 0.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: WHITE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: -1.0, y: 4.99, z: -4.0}, position1: Vector{x: -1.0, y: 4.99, z: -5.0}, position2: Vector{x: 1.0, y: 4.99, z: -5.0}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: EMMISIVE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: 1.0, y: 4.99, z: -4.0}, position1: Vector{x: -1.0, y: 4.99, z: -4.0}, position2: Vector{x: 1.0, y: 4.99, z: -5.0}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: EMMISIVE_MATERIAL}),
-  Mesh::Sphere(Sphere{position: Vector{x: -2.0, y: -3.5, z: -6.0}, radius: 1.5, material: REFLECTION_MATERIAL}),
-  Mesh::Sphere(Sphere{position: Vector{x: 2.0, y: -3.5, z: -3.0}, radius: 1.5, material: WHITE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: -1.5, y: 4.99, z: -3.5}, position1: Vector{x: -1.5, y: 4.99, z: -6.5}, position2: Vector{x: 1.5, y: 4.99, z: -6.5}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: EMMISIVE_MATERIAL}),
+  Mesh::Triangle(Triangle{position0: Vector{x: 1.5, y: 4.99, z: -3.5}, position1: Vector{x: -1.5, y: 4.99, z: -3.5}, position2: Vector{x: 1.5, y: 4.99, z: -6.5}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: EMMISIVE_MATERIAL}),
+  Mesh::Sphere(Sphere{position: Vector{x: -2.0, y: 2.0, z: -7.0}, radius: 1.8, material: REFLECTION_MATERIAL}),
+  Mesh::Sphere(Sphere{position: Vector{x: 2.0, y: -3.2, z: -3.0}, radius: 1.8, material: REFRACTION_MATERIAL}),
 ];
 
 const MAX_DEPTH: usize = 3;
@@ -339,7 +365,9 @@ const PI: f64 = 3.14159265358979323846264338327950288_f64;
 const BG_COLOR: Vector = Vector{x: 0.0, y: 0.0, z: 0.0};
 
 fn main() {
-  let pool = ThreadPool::new(num_cpus::get());
+  let cpu_count = num_cpus::get();
+  println!("cpu: {}", cpu_count);
+  let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
   let samples: usize = 5000;
@@ -348,8 +376,6 @@ fn main() {
 
   for i in 0..HEIGHT {
     for j in 0..WIDTH {
-  // for i in 100..101 {
-  //   for j in 100..101 {
       let tx = tx.clone();
       pool.execute(move || {
         let mut r: Vector = Default::default();
@@ -368,12 +394,12 @@ fn main() {
   println!("start: {}", start_time.strftime("%+").unwrap());
 
   for p in 0..WIDTH * HEIGHT - 1 {
-    print!("\rRaytracing... ({:.0}/{:.0} : {:.0}%)", p, WIDTH * HEIGHT, (p as f64) / ((WIDTH * HEIGHT) as f64) * 100.0);
+    print!("\rraytracing... ({:.0}/{:.0} : {:.0}%)", p, WIDTH * HEIGHT, (p as f64) / ((WIDTH * HEIGHT) as f64) * 100.0);
     let (i, j, color) = rx.recv().unwrap();
     output[i][j] = color;
   }
 
-  println!("\nWriting Image...");
+  println!("\nwriting image...");
   let mut f = File::create(format!("image_{}.ppm", time::now().strftime("%Y%m%d%H%M%S").unwrap())).unwrap();
   f.write_all( format!("P3\n{} {}\n{}\n", WIDTH, HEIGHT, 255).as_bytes() ).ok();
   for i in 0..HEIGHT {
