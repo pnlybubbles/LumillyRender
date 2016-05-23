@@ -358,9 +358,9 @@ const OBJECTS: [Mesh; 16] = [
   Mesh::Sphere(Sphere{position: Vector{x: 2.0, y: -3.2, z: -3.0}, radius: 1.8, material: REFRACTION_MATERIAL}),
 ];
 
-const MAX_DEPTH: usize = 3;
-const WIDTH: usize = 256;
-const HEIGHT: usize = 256;
+const MAX_DEPTH: usize = 5;
+const WIDTH: usize = 512;
+const HEIGHT: usize = 512;
 const PI: f64 = 3.14159265358979323846264338327950288_f64;
 const BG_COLOR: Vector = Vector{x: 0.0, y: 0.0, z: 0.0};
 
@@ -370,7 +370,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 50;
+  let samples: usize = 5000;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
@@ -382,7 +382,11 @@ fn main() {
         for _ in 0..samples {
           let mut ray: Ray = Default::default();
           ray.o = Vector{x: 0.0, y: 0.0, z: 15.0};
-          ray.d = Vector{x: clamp(((j as f64 + rand::random::<f64>()) * 2.0 - (WIDTH as f64 + 1.0)) / min_rsl), y: clamp(((i as f64 + rand::random::<f64>()) * 2.0 - (HEIGHT as f64 + 1.0)) / min_rsl), z: -3.0}.norm();
+          ray.d = Vector{
+            x: ((j as f64 + rand::random::<f64>()) * 2.0 - (WIDTH as f64 + 1.0)) / min_rsl,
+            y: ((i as f64 + rand::random::<f64>()) * 2.0 - (HEIGHT as f64 + 1.0)) / min_rsl,
+            z: -3.0,
+          }.norm();
           r = &r + &get_light(ray, 0).smul(1.0 / samples as f64);
         }
         tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
