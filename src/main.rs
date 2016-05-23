@@ -370,7 +370,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 5000;
+  let samples: usize = 50;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
@@ -382,7 +382,7 @@ fn main() {
         for _ in 0..samples {
           let mut ray: Ray = Default::default();
           ray.o = Vector{x: 0.0, y: 0.0, z: 15.0};
-          ray.d = Vector{x: ((j as f64) * 2.0 - (WIDTH as f64)) / min_rsl, y: ((i as f64) * 2.0 - (HEIGHT as f64)) / min_rsl, z: -3.0}.norm();
+          ray.d = Vector{x: clamp(((j as f64 + rand::random::<f64>()) * 2.0 - (WIDTH as f64 + 1.0)) / min_rsl), y: clamp(((i as f64 + rand::random::<f64>()) * 2.0 - (HEIGHT as f64 + 1.0)) / min_rsl), z: -3.0}.norm();
           r = &r + &get_light(ray, 0).smul(1.0 / samples as f64);
         }
         tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
