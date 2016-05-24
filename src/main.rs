@@ -221,15 +221,15 @@ impl Objects {
     let mut all_spheres: Vec<Sphere> = Default::default();
     for v in triangles {
       if v.material.emmisive > 0.0 {
-        emmisive_triangles.push(v.clone());
+        emmisive_triangles.push(*v);
       }
-      all_triangles.push(v.clone());
+      all_triangles.push(*v);
     }
     for v in spheres {
       if v.material.emmisive > 0.0 {
-        emmisive_spheres.push(v.clone());
+        emmisive_spheres.push(*v);
       }
-      all_spheres.push(v.clone());
+      all_spheres.push(*v);
     }
     Objects {
       triangles: all_triangles,
@@ -237,25 +237,6 @@ impl Objects {
       emmisive_triangles: emmisive_triangles,
       emmisive_spheres: emmisive_spheres,
     }
-  }
-
-  fn get_intersect(&self, r: Ray) -> Intersection {
-    let mut intersect: Intersection = Default::default();
-    intersect.cross = false;
-    let self_ = self.clone();
-    for obj in self_.triangles {
-      let i = obj.intersect(r);
-      if i.cross && (!intersect.cross || intersect.t > i.t) {
-        intersect = i;
-      }
-    }
-    for obj in self_.spheres {
-      let i = obj.intersect(r);
-      if i.cross && (!intersect.cross || intersect.t > i.t) {
-        intersect = i;
-      }
-    }
-    return intersect;
   }
 }
 
@@ -277,7 +258,7 @@ fn get_light(r: Ray, depth: usize) -> Vector{
   if depth >= MAX_DEPTH {
     return Vector{x: 0.0, y: 0.0, z: 0.0};
   }
-  let i = OBJECTS.get_intersect(r);
+  let i = get_intersect(r);
   if !i.cross {
     return BG_COLOR;
   }
@@ -380,6 +361,24 @@ fn get_light(r: Ray, depth: usize) -> Vector{
   } else {
     Vector{x: 0.0, y: 0.0, z: 0.0}
   }
+}
+
+fn get_intersect(r: Ray) -> Intersection {
+  let mut intersect: Intersection = Default::default();
+  intersect.cross = false;
+  for obj in &OBJECTS.triangles {
+    let i = obj.intersect(r);
+    if i.cross && (!intersect.cross || intersect.t > i.t) {
+      intersect = i;
+    }
+  }
+  for obj in &OBJECTS.spheres {
+    let i = obj.intersect(r);
+    if i.cross && (!intersect.cross || intersect.t > i.t) {
+      intersect = i;
+    }
+  }
+  return intersect;
 }
 
 const YELLOW_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 0.4}};
