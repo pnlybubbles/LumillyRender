@@ -238,6 +238,24 @@ impl Objects {
       emmisive_spheres: emmisive_spheres,
     }
   }
+
+  fn get_intersect(&self, r: Ray) -> Intersection {
+    let mut intersect: Intersection = Default::default();
+    intersect.cross = false;
+    for obj in &self.triangles {
+      let i = obj.intersect(r);
+      if i.cross && (!intersect.cross || intersect.t > i.t) {
+        intersect = i;
+      }
+    }
+    for obj in &self.spheres {
+      let i = obj.intersect(r);
+      if i.cross && (!intersect.cross || intersect.t > i.t) {
+        intersect = i;
+      }
+    }
+    return intersect;
+  }
 }
 
 fn clamp(x: f64) -> f64 {
@@ -258,7 +276,7 @@ fn get_light(r: Ray, depth: usize) -> Vector{
   if depth >= MAX_DEPTH {
     return Vector{x: 0.0, y: 0.0, z: 0.0};
   }
-  let i = get_intersect(r);
+  let i = OBJECTS.get_intersect(r);
   if !i.cross {
     return BG_COLOR;
   }
@@ -361,24 +379,6 @@ fn get_light(r: Ray, depth: usize) -> Vector{
   } else {
     Vector{x: 0.0, y: 0.0, z: 0.0}
   }
-}
-
-fn get_intersect(r: Ray) -> Intersection {
-  let mut intersect: Intersection = Default::default();
-  intersect.cross = false;
-  for obj in &OBJECTS.triangles {
-    let i = obj.intersect(r);
-    if i.cross && (!intersect.cross || intersect.t > i.t) {
-      intersect = i;
-    }
-  }
-  for obj in &OBJECTS.spheres {
-    let i = obj.intersect(r);
-    if i.cross && (!intersect.cross || intersect.t > i.t) {
-      intersect = i;
-    }
-  }
-  return intersect;
 }
 
 const YELLOW_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 0.4}};
