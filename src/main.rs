@@ -210,32 +210,36 @@ struct Objects {
   triangles: Vec<Triangle>,
   spheres: Vec<Sphere>,
   emmisive_triangles: Vec<Triangle>,
-  emmisive_spheres: Vec<Sphere>,
+  emmisive_triangles_area: Vec<f64>,
+  emmisive_triangles_area_total: f64,
 }
 
 impl Objects {
   fn new(triangles: &[Triangle], spheres: &[Sphere]) -> Objects {
     let mut emmisive_triangles: Vec<Triangle> = Default::default();
+    let mut emmisive_triangles_area: Vec<f64> = Default::default();
     let mut all_triangles: Vec<Triangle> = Default::default();
-    let mut emmisive_spheres: Vec<Sphere> = Default::default();
     let mut all_spheres: Vec<Sphere> = Default::default();
+    let mut emmisive_triangles_area_total = 0.0;
     for v in triangles {
       if v.material.emmisive > 0.0 {
         emmisive_triangles.push(*v);
+        let cr = (&v.position1 - &v.position0).cross(&v.position2 - &v.position0);
+        let area = 0.5 * cr.dot(&cr).sqrt();
+        emmisive_triangles_area.push(area);
+        emmisive_triangles_area_total += area;
       }
       all_triangles.push(*v);
     }
     for v in spheres {
-      if v.material.emmisive > 0.0 {
-        emmisive_spheres.push(*v);
-      }
       all_spheres.push(*v);
     }
     Objects {
       triangles: all_triangles,
       spheres: all_spheres,
       emmisive_triangles: emmisive_triangles,
-      emmisive_spheres: emmisive_spheres,
+      emmisive_triangles_area: emmisive_triangles_area,
+      emmisive_triangles_area_total: emmisive_triangles_area_total,
     }
   }
 
@@ -256,6 +260,41 @@ impl Objects {
     }
     return intersect;
   }
+
+  fn get_emmisive_point(&self) -> Vector {
+    let roulette = &self.emmisive_triangles_area_total * rand::random::<f64>();
+    let mut area = 0.0;
+    let mut ret: Vector = Default::default();
+    for (i, obj) in (&self.emmisive_triangles).iter().enumerate() {
+      area += (&self.emmisive_triangles_area)[i];
+      if roulette <= area {
+        let mut s = rand::random::<f64>();
+        let mut t = rand::random::<f64>();
+        if s + t > 1.0 {
+          s = 1.0 - s;
+          t = 1.0 - t;
+        }
+        ret = Vector{
+          x: (1.0 - s - t) * obj.position0.x + s * obj.position1.x + t * obj.position2.x,
+          y: (1.0 - s - t) * obj.position0.y + s * obj.position1.y + t * obj.position2.y,
+          z: (1.0 - s - t) * obj.position0.z + s * obj.position1.z + t * obj.position2.z,
+        };
+      }
+    }
+    return ret;
+  }
+
+  fn get_emmisive_solid_angle(&self, position: Vector) -> f64 {
+    let mut solid_angle = 0.0;
+    for obj in &self.emmisive_triangles {
+      let pe0 = (&obj.position0 - &position).norm();
+      let pe1 = (&obj.position1 - &position).norm();
+      let pe2 = (&obj.position2 - &position).norm();
+      let cr = (&pe1 - &pe0).cross(&pe2 - &pe0);
+      solid_angle += cr.dot(&cr).sqrt();
+    }
+    return solid_angle;
+  }
 }
 
 fn clamp(x: f64) -> f64 {
@@ -272,7 +311,7 @@ fn to_int(x: f64) -> i64 {
   return (clamp(x) * 255.0) as i64
 }
 
-fn get_light(r: Ray, depth: usize) -> Vector{
+fn get_light(r: Ray, depth: usize, no_emmisive: bool) -> Vector{
   if depth >= MAX_DEPTH {
     return Vector{x: 0.0, y: 0.0, z: 0.0};
   }
@@ -300,14 +339,24 @@ fn get_light(r: Ray, depth: usize) -> Vector{
   // diffuse
   let mut diffuse_color = Vector{x: 0.0, y: 0.0, z: 0.0};
   if tp == 0 {
-    // let theta = PI * rand::random::<f64>();
-    // let phi = 2.0 * PI * rand::random::<f64>();
-    // let mut d = Vector{x: theta.sin() * phi.cos(), y: theta.sin() * phi.sin(), z: theta.cos()};
-    // let mut dn = d.dot(&i.normal);
-    // if dn < 0.0 {
-    //   dn = -dn;
-    //   d = d.smul(-1.0);
-    // }
+    // emmisive direction
+    let emmisive_position = OBJECTS.get_emmisive_point();
+    let ip_ep = &emmisive_position - &i.position;
+    let d_e = ip_ep.norm();
+    let test_ray = Ray{
+      o: &i.position + &i.normal.smul(0.01),
+      d: d_e,
+    };
+    let test_i = OBJECTS.get_intersect(test_ray);
+    if test_i.cross && test_i.material.emmisive == 1.0 {
+      let prob = OBJECTS.get_emmisive_solid_angle(i.position) / (2.0 * PI);
+      let mut ip_ep_n = d_e.dot(&i.normal);
+      if ip_ep_n < 0.0 {
+        ip_ep_n = 0.0;
+      }
+      diffuse_color = (&test_i.material.color * &i.material.color).smul(prob * ip_ep_n);
+    }
+    // other direction
     let r1: f64 = 2.0 * PI* rand::random::<f64>();
     let r2: f64 = rand::random::<f64>();
     let r2s: f64 = r2.sqrt();
@@ -319,7 +368,7 @@ fn get_light(r: Ray, depth: usize) -> Vector{
     let d = (&(&u.smul(r1.cos() * r2s) + &v.smul(r1.sin() * r2s)) + &w.smul((1.0 - r2).sqrt())).norm();
     let dn = d.dot(&i.normal);
     let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
-    diffuse_color = &get_light(new_ray, depth + 1) * &i.material.color.smul(dn);
+    diffuse_color = &diffuse_color + &(&get_light(new_ray, depth + 1, true) * &i.material.color.smul(dn));
   }
 
   // reflection
@@ -327,7 +376,7 @@ fn get_light(r: Ray, depth: usize) -> Vector{
   if tp == 1 {
     let d = &r.d - &i.normal.smul(2.0 * r.d.dot(&i.normal));
     let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
-    reflection_color = get_light(new_ray, depth);
+    reflection_color = get_light(new_ray, depth, false);
   }
 
   // refraction
@@ -358,14 +407,16 @@ fn get_light(r: Ray, depth: usize) -> Vector{
     }
     if cn != 0.0 {
       let new_ray = Ray{d: d.norm(), o: o};
-      refraction_color = get_light(new_ray, depth);
+      refraction_color = get_light(new_ray, depth, false);
     }
   }
 
   // emmisive
   let mut emmisive_color = Vector{x: 0.0, y: 0.0, z: 0.0};
   if tp == 3 {
-    emmisive_color = i.material.color;
+    if !no_emmisive {
+      emmisive_color = i.material.color;
+    }
   }
 
   return if tp == 0 {
@@ -415,8 +466,8 @@ lazy_static! {
 }
 
 const MAX_DEPTH: usize = 5;
-const WIDTH: usize = 256;
-const HEIGHT: usize = 256;
+const WIDTH: usize = 512;
+const HEIGHT: usize = 512;
 const PI: f64 = 3.14159265358979323846264338327950288_f64;
 const BG_COLOR: Vector = Vector{x: 0.0, y: 0.0, z: 0.0};
 
@@ -426,7 +477,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 50;
+  let samples: usize = 100;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
@@ -443,7 +494,7 @@ fn main() {
             y: ((i as f64 + rand::random::<f64>()) * 2.0 - (HEIGHT as f64 + 1.0)) / min_rsl,
             z: -3.0,
           }.norm();
-          r = &r + &get_light(ray, 0).smul(1.0 / samples as f64);
+          r = &r + &get_light(ray, 0, false).smul(1.0 / samples as f64);
         }
         tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
       });
