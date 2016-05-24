@@ -5,6 +5,9 @@ extern crate threadpool;
 extern crate num_cpus;
 extern crate time;
 
+#[macro_use]
+extern crate lazy_static;
+
 use std::io::prelude::*;
 use std::fs::File;
 use std::ops::{Add, Sub, Mul};
@@ -108,6 +111,16 @@ struct Sphere {
   material: Material,
 }
 
+impl Sphere {
+  fn new(position: Vector, radius: f64, material: Material) -> Sphere {
+    Sphere {
+      radius: radius,
+      position: position,
+      material: material,
+    }
+  }
+}
+
 impl Shape for Sphere {
   fn intersect(self, r: Ray) -> Intersection {
     let mut i: Intersection = Default::default();
@@ -140,6 +153,18 @@ struct Triangle {
   position2: Vector,
   normal: Vector,
   material: Material,
+}
+
+impl Triangle {
+  fn new(position0: Vector, position1: Vector, position2: Vector, material: Material) -> Triangle {
+    Triangle {
+      position0: position0,
+      position1: position1,
+      position2: position2,
+      normal: (&position1 - &position0).cross(&position2 - &position0).norm(),
+      material: material,
+    }
+  }
 }
 
 impl Shape for Triangle {
@@ -180,18 +205,57 @@ impl Shape for Triangle {
   }
 }
 
-#[derive(Debug, Copy, Clone)]
-enum Mesh {
-  Sphere(Sphere),
-  Triangle(Triangle),
+#[derive(Debug, Clone, Default)]
+struct Objects {
+  triangles: Vec<Triangle>,
+  spheres: Vec<Sphere>,
+  emmisive_triangles: Vec<Triangle>,
+  emmisive_spheres: Vec<Sphere>,
 }
 
-impl Mesh {
-  fn intersect(&self, r: Ray) -> Intersection {
-    match *self {
-      Mesh::Sphere(i) => i.intersect(r),
-      Mesh::Triangle(i) => i.intersect(r),
+impl Objects {
+  fn new(triangles: &[Triangle], spheres: &[Sphere]) -> Objects {
+    let mut emmisive_triangles: Vec<Triangle> = Default::default();
+    let mut all_triangles: Vec<Triangle> = Default::default();
+    let mut emmisive_spheres: Vec<Sphere> = Default::default();
+    let mut all_spheres: Vec<Sphere> = Default::default();
+    for v in triangles {
+      if v.material.emmisive > 0.0 {
+        emmisive_triangles.push(v.clone());
+      }
+      all_triangles.push(v.clone());
     }
+    for v in spheres {
+      if v.material.emmisive > 0.0 {
+        emmisive_spheres.push(v.clone());
+      }
+      all_spheres.push(v.clone());
+    }
+    Objects {
+      triangles: all_triangles,
+      spheres: all_spheres,
+      emmisive_triangles: emmisive_triangles,
+      emmisive_spheres: emmisive_spheres,
+    }
+  }
+
+  fn get_intersect(&self, r: Ray) -> Intersection {
+    let mut intersect: Intersection = Default::default();
+    intersect.cross = false;
+    let self_ = self.clone();
+    for obj in self_.triangles {
+      let i = obj.intersect(r);
+      if i.cross && (!intersect.cross || intersect.t > i.t) {
+        intersect = i;
+      }
+    }
+    for obj in self_.spheres {
+      let i = obj.intersect(r);
+      if i.cross && (!intersect.cross || intersect.t > i.t) {
+        intersect = i;
+      }
+    }
+    return intersect;
   }
 }
 
@@ -213,7 +277,7 @@ fn get_light(r: Ray, depth: usize) -> Vector{
   if depth >= MAX_DEPTH {
     return Vector{x: 0.0, y: 0.0, z: 0.0};
   }
-  let i = get_intersect(r);
+  let i = OBJECTS.get_intersect(r);
   if !i.cross {
     return BG_COLOR;
   }
@@ -318,18 +382,6 @@ fn get_light(r: Ray, depth: usize) -> Vector{
   }
 }
 
-fn get_intersect(r: Ray) -> Intersection {
-  let mut intersect: Intersection = Default::default();
-  intersect.cross = false;
-  for (_, obj) in OBJECTS.iter().enumerate() {
-    let i = obj.intersect(r.clone());
-    if i.cross && (!intersect.cross || intersect.t > i.t) {
-      intersect = i;
-    }
-  }
-  return intersect;
-}
-
 const YELLOW_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 0.4}};
 const BLUE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.4, y: 0.4, z: 1.0}};
 const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
@@ -337,30 +389,35 @@ const REFLECTION_MATERIAL: Material = Material{diffuse: 0.1, reflection: 0.9, re
 const REFRACTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.2, refraction: 0.8, emmisive: 0.0, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
 const EMMISIVE_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 0.0, emmisive: 1.0, color: Vector{x: 20.0, y: 20.0, z: 20.0}};
 
-const OBJECTS: [Mesh; 16] = [
-  // Mesh::Sphere(Sphere{radius: 1.0, position: Vector{x: 0.0, y: 0.0, z: 0.0}, material: WHITE_MATERIAL}),
-  // Mesh::Triangle(Triangle{position0: Vector{x: 1.0, y: 1.0, z: 0.0}, position1: Vector{x: -1.0, y: 1.0, z: 0.0}, position2: Vector{x: 0.0, y: 0.0, z: 0.0}, normal: Vector{x: 0.0, y: 0.0, z: 1.0}, material: WHITE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: 5.0, z: 0.0}, position1: Vector{x: -5.0, y: -5.0, z: 0.0}, position2: Vector{x: -5.0, y: 5.0, z: -10.0}, normal: Vector{x: 1.0, y: 0.0, z: 0.0}, material: YELLOW_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: -5.0, z: 0.0}, position1: Vector{x: -5.0, y: -5.0, z: -10.0}, position2: Vector{x: -5.0, y: 5.0, z: -10.0}, normal: Vector{x: 1.0, y: 0.0, z: 0.0}, material: YELLOW_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: 5.0, y: -5.0, z: 0.0}, position1: Vector{x: 5.0, y: 5.0, z: 0.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: -1.0, y: 0.0, z: 0.0}, material: BLUE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: 5.0, y: -5.0, z: -10.0}, position1: Vector{x: 5.0, y: -5.0, z: 0.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: -1.0, y: 0.0, z: 0.0}, material: BLUE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: 5.0, z: -10.0}, position1: Vector{x: -5.0, y: -5.0, z: -10.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: 0.0, y: 0.0, z: 1.0}, material: WHITE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: -5.0, z: -10.0}, position1: Vector{x: 5.0, y: -5.0, z: -10.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: 0.0, y: 0.0, z: 1.0}, material: WHITE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: -5.0, z: 0.0}, position1: Vector{x: -5.0, y: 5.0, z: 0.0}, position2: Vector{x: 5.0, y: 5.0, z: 0.0}, normal: Vector{x: 0.0, y: 0.0, z: -1.0}, material: WHITE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: 5.0, y: -5.0, z: 0.0}, position1: Vector{x: -5.0, y: -5.0, z: 0.0}, position2: Vector{x: 5.0, y: 5.0, z: 0.0}, normal: Vector{x: 0.0, y: 0.0, z: -1.0}, material: WHITE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: -5.0, z: -10.0}, position1: Vector{x: -5.0, y: -5.0, z: 0.0}, position2: Vector{x: 5.0, y: -5.0, z: -10.0}, normal: Vector{x: 0.0, y: 1.0, z: 0.0}, material: WHITE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: -5.0, z: 0.0}, position1: Vector{x: 5.0, y: -5.0, z: 0.0}, position2: Vector{x: 5.0, y: -5.0, z: -10.0}, normal: Vector{x: 0.0, y: 1.0, z: 0.0}, material: WHITE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: -5.0, y: 5.0, z: 0.0}, position1: Vector{x: -5.0, y: 5.0, z: -10.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: WHITE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: 5.0, y: 5.0, z: 0.0}, position1: Vector{x: -5.0, y: 5.0, z: 0.0}, position2: Vector{x: 5.0, y: 5.0, z: -10.0}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: WHITE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: -1.5, y: 4.99, z: -3.5}, position1: Vector{x: -1.5, y: 4.99, z: -6.5}, position2: Vector{x: 1.5, y: 4.99, z: -6.5}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: EMMISIVE_MATERIAL}),
-  Mesh::Triangle(Triangle{position0: Vector{x: 1.5, y: 4.99, z: -3.5}, position1: Vector{x: -1.5, y: 4.99, z: -3.5}, position2: Vector{x: 1.5, y: 4.99, z: -6.5}, normal: Vector{x: 0.0, y: -1.0, z: 0.0}, material: EMMISIVE_MATERIAL}),
-  Mesh::Sphere(Sphere{position: Vector{x: -2.0, y: 2.0, z: -7.0}, radius: 1.8, material: REFLECTION_MATERIAL}),
-  Mesh::Sphere(Sphere{position: Vector{x: 2.0, y: -3.2, z: -3.0}, radius: 1.8, material: REFRACTION_MATERIAL}),
-];
+lazy_static! {
+  static ref TRIANGLE_OBJECTS: [Triangle; 14] = [
+    Triangle::new(Vector{x: -5.0, y: 5.0, z: 0.0}, Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: -5.0, y: 5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: 0.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: -5.0, z: 0.0}, Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: 0.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: 5.0, z: 0.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: 5.0, z: 0.0}, Vector{x: -5.0, y: 5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, EMMISIVE_MATERIAL),
+    Triangle::new(Vector{x: 1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, EMMISIVE_MATERIAL),
+  ];
+
+  static ref SPHERE_OBJECTS: [Sphere; 2] = [
+    Sphere::new(Vector{x: -2.0, y: 2.0, z: -7.0}, 1.8, REFLECTION_MATERIAL),
+    Sphere::new(Vector{x: 2.0, y: -3.2, z: -3.0}, 1.8, REFRACTION_MATERIAL),
+  ];
+
+  static ref OBJECTS: Objects = Objects::new(&*TRIANGLE_OBJECTS, &*SPHERE_OBJECTS);
+}
 
 const MAX_DEPTH: usize = 5;
-const WIDTH: usize = 512;
-const HEIGHT: usize = 512;
+const WIDTH: usize = 256;
+const HEIGHT: usize = 256;
 const PI: f64 = 3.14159265358979323846264338327950288_f64;
 const BG_COLOR: Vector = Vector{x: 0.0, y: 0.0, z: 0.0};
 
@@ -370,7 +427,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 5000;
+  let samples: usize = 50;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
