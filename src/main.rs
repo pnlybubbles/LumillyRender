@@ -344,7 +344,7 @@ fn get_light(r: Ray, depth: usize, no_emmisive: bool) -> Vector{
     let ip_ep = &emmisive_position - &i.position;
     let d_e = ip_ep.norm();
     let test_ray = Ray{
-      o: &i.position + &i.normal.smul(0.01),
+      o: &i.position + &d_e.smul(0.01),
       d: d_e,
     };
     let test_i = OBJECTS.get_intersect(test_ray);
@@ -437,7 +437,7 @@ const BLUE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refracti
 const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
 const REFLECTION_MATERIAL: Material = Material{diffuse: 0.1, reflection: 0.9, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
 const REFRACTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.2, refraction: 0.8, emmisive: 0.0, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
-const EMMISIVE_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 0.0, emmisive: 1.0, color: Vector{x: 20.0, y: 20.0, z: 20.0}};
+const EMMISIVE_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 0.0, emmisive: 1.0, color: Vector{x: 15.0, y: 15.0, z: 15.0}};
 
 lazy_static! {
   static ref TRIANGLE_OBJECTS: [Triangle; 14] = [
@@ -477,7 +477,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 100;
+  let samples: usize = 1000;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
