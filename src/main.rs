@@ -477,7 +477,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 1000;
+  let samples: usize = 10;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
