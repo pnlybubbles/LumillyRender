@@ -368,7 +368,16 @@ fn get_light(r: Ray, depth: usize, no_emmisive: bool) -> Vector{
     let d = (&(&u.smul(r1.cos() * r2s) + &v.smul(r1.sin() * r2s)) + &w.smul((1.0 - r2).sqrt())).norm();
     let dn = d.dot(&i.normal);
     let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
-    diffuse_color = &diffuse_color + &(&get_light(new_ray, depth + 1, true) * &i.material.color.smul(dn));
+    // let theta = PI * rand::random::<f64>();
+    // let phi = 2.0 * PI * rand::random::<f64>();
+    // let mut d = Vector{x: theta.sin() * phi.cos(), y: theta.sin() * phi.sin(), z: theta.cos()};
+    // let mut dn = d.dot(&i.normal);
+    // if dn < 0.0 {
+    //   dn = -dn;
+    //   d = d.smul(-1.0);
+    // }
+    // let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
+    diffuse_color = &diffuse_color + &(&get_light(new_ray, depth + 1, true) * &i.material.color);
   }
 
   // reflection
@@ -477,7 +486,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 10;
+  let samples: usize = 100;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
