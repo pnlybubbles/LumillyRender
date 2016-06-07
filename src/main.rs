@@ -357,17 +357,34 @@ fn get_light(r: Ray, depth: usize, no_emmisive: bool) -> Vector{
       diffuse_color = (&test_i.material.color * &i.material.color).smul(prob * ip_ep_n);
     }
     // other direction
-    let r1: f64 = 2.0 * PI* rand::random::<f64>();
-    let r2: f64 = rand::random::<f64>();
-    let r2s: f64 = r2.sqrt();
+
+    // orthonormal coordinate with cos importance sampling
+    // let r1: f64 = 2.0 * PI* rand::random::<f64>();
+    // let r2: f64 = rand::random::<f64>();
+    // let r2s: f64 = r2.sqrt();
+
+    // let w = i.normal;
+    // let u = if w.x.abs() > 0.1 { Vector{x: 0.0, y: 1.0, z: 0.0} } else { Vector{x: 1.0, y: 0.0, z: 0.0 } }.cross(w).norm();
+    // let v = w.cross(u);
+
+    // let d = (&(&u.smul(r1.cos() * r2s) + &v.smul(r1.sin() * r2s)) + &w.smul((1.0 - r2).sqrt())).norm();
+    // let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
+    // diffuse_color = &diffuse_color + &(&get_light(new_ray, depth + 1, true) * &i.material.color);
+
+    // orthonormal coordinate
+    let theta = PI * rand::random::<f64>() * 0.5;
+    let phi = 2.0 * PI * rand::random::<f64>();
 
     let w = i.normal;
-    let u = if w.x.abs() > 0.1 { Vector{x: 0.0, y: 1.0, z: 0.0} } else { Vector{x: 1.0, y: 0.0, z: 0.0 } }.cross(w).norm();
+    let u = if w.x.abs() > 0.1 { Vector{x: 0.0, y: 1.0, z: 0.0} } else { Vector{x: 1.0, y: 0.0, z: 0.0 } }.cross(w);
     let v = w.cross(u);
 
-    let d = (&(&u.smul(r1.cos() * r2s) + &v.smul(r1.sin() * r2s)) + &w.smul((1.0 - r2).sqrt())).norm();
+    let d = (&(&u.smul(theta.sin() * phi.cos()) + &v.smul(theta.sin() * phi.sin())) + &w.smul(theta.cos())).norm();
     let dn = d.dot(&i.normal);
     let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
+    diffuse_color = &diffuse_color + &(&get_light(new_ray, depth + 1, true) * &i.material.color).smul(dn / PI);
+
+    // normal inversing
     // let theta = PI * rand::random::<f64>();
     // let phi = 2.0 * PI * rand::random::<f64>();
     // let mut d = Vector{x: theta.sin() * phi.cos(), y: theta.sin() * phi.sin(), z: theta.cos()};
@@ -377,7 +394,7 @@ fn get_light(r: Ray, depth: usize, no_emmisive: bool) -> Vector{
     //   d = d.smul(-1.0);
     // }
     // let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
-    diffuse_color = &diffuse_color + &(&get_light(new_ray, depth + 1, true) * &i.material.color);
+    // diffuse_color = &diffuse_color + &(&get_light(new_ray, depth + 1, true) * &i.material.color).smul(dn / PI);
   }
 
   // reflection
@@ -441,12 +458,12 @@ fn get_light(r: Ray, depth: usize, no_emmisive: bool) -> Vector{
   }
 }
 
-const YELLOW_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 0.4}};
-const BLUE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.4, y: 0.4, z: 1.0}};
+const YELLOW_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 0.5}};
+const BLUE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.5, y: 0.5, z: 1.0}};
 const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emmisive: 0.0, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
 const REFLECTION_MATERIAL: Material = Material{diffuse: 0.1, reflection: 0.9, refraction: 0.0, emmisive: 0.0, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
 const REFRACTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.2, refraction: 0.8, emmisive: 0.0, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
-const EMMISIVE_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 0.0, emmisive: 1.0, color: Vector{x: 15.0, y: 15.0, z: 15.0}};
+const EMMISIVE_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 0.0, emmisive: 1.0, color: Vector{x: 11.0, y: 11.0, z: 11.0}};
 
 lazy_static! {
   static ref TRIANGLE_OBJECTS: [Triangle; 14] = [
@@ -486,7 +503,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 100;
+  let samples: usize = 10;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
