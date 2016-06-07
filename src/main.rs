@@ -308,7 +308,7 @@ fn clamp(x: f64) -> f64 {
 }
 
 fn to_int(x: f64) -> i64 {
-  return (clamp(x) * 255.0) as i64
+  return (clamp(x).powf(1 / 2.2) * 255.0) as i64
 }
 
 fn get_light(r: Ray, depth: usize, no_emmisive: bool) -> Vector{
