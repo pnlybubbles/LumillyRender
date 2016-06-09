@@ -308,7 +308,7 @@ fn clamp(x: f64) -> f64 {
 }
 
 fn to_int(x: f64) -> i64 {
-  return (clamp(x).powf(1 / 2.2) * 255.0) as i64
+  return (clamp(x).powf(1.0 / 2.2) * 255.0) as i64
 }
 
 fn get_light(r: Ray, depth: usize, no_emmisive: bool) -> Vector{
@@ -382,7 +382,7 @@ fn get_light(r: Ray, depth: usize, no_emmisive: bool) -> Vector{
     let d = (&(&u.smul(theta.sin() * phi.cos()) + &v.smul(theta.sin() * phi.sin())) + &w.smul(theta.cos())).norm();
     let dn = d.dot(&i.normal);
     let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
-    diffuse_color = &diffuse_color + &(&get_light(new_ray, depth + 1, true) * &i.material.color).smul(dn / PI);
+    diffuse_color = &diffuse_color + &(&get_light(new_ray, depth + 1, true) * &i.material.color).smul(PI / dn);
 
     // normal inversing
     // let theta = PI * rand::random::<f64>();
@@ -394,7 +394,7 @@ fn get_light(r: Ray, depth: usize, no_emmisive: bool) -> Vector{
     //   d = d.smul(-1.0);
     // }
     // let new_ray = Ray{d: d, o: &i.position + &d.smul(0.01)};
-    // diffuse_color = &diffuse_color + &(&get_light(new_ray, depth + 1, true) * &i.material.color).smul(dn / PI);
+    // diffuse_color = &diffuse_color + &(&get_light(new_ray, depth + 1, true) * &i.material.color).smul(PI / dn);
   }
 
   // reflection
