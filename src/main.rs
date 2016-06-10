@@ -426,11 +426,16 @@ lazy_static! {
 
 const DEPTH: usize = 5;
 const DEPTH_LIMIT: usize = 10;
-const WIDTH: usize = 256;
-const HEIGHT: usize = 256;
+const WIDTH: usize = 512;
+const HEIGHT: usize = 512;
 const PI: f64 = 3.14159265358979323846264338327950288_f64;
 const EPS: f64 = 1e-6;
 const BG_COLOR: Vector = Vector{x: 0.0, y: 0.0, z: 0.0};
+
+const CROP_OFFSET_BOTTOM: usize = 340;
+const CROP_OFFSET_LEFT: usize = 60;
+const CROP_HEIGHT: usize = 128;
+const CROP_WIDTH: usize = 128;
 
 fn main() {
   let cpu_count = num_cpus::get();
@@ -442,8 +447,8 @@ fn main() {
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
-  for i in 0..HEIGHT {
-    for j in 0..WIDTH {
+  for i in CROP_OFFSET_BOTTOM..(CROP_OFFSET_BOTTOM + CROP_HEIGHT) {
+    for j in CROP_OFFSET_LEFT..(CROP_OFFSET_LEFT + CROP_WIDTH) {
       let tx = tx.clone();
       pool.execute(move || {
         let mut r: Vector = Default::default();
@@ -465,8 +470,8 @@ fn main() {
   let start_time = time::now();
   println!("start: {}", start_time.strftime("%+").unwrap());
 
-  for p in 0..WIDTH * HEIGHT - 1 {
-    print!("\rraytracing... ({:.0}/{:.0} : {:.0}%)", p, WIDTH * HEIGHT, (p as f64) / ((WIDTH * HEIGHT) as f64) * 100.0);
+  for p in 0..CROP_WIDTH * CROP_HEIGHT - 1 {
+    print!("\rraytracing... ({:.0}/{:.0} : {:.0}%)", p, CROP_WIDTH * CROP_HEIGHT, (p as f64) / ((CROP_WIDTH * CROP_HEIGHT) as f64) * 100.0);
     let (i, j, color) = rx.recv().unwrap();
     output[i][j] = color;
   }
