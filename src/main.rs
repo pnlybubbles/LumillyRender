@@ -266,40 +266,40 @@ impl Objects {
     return intersect;
   }
 
-  fn get_emission_point(&self) -> Vector {
-    let roulette = &self.emission_triangles_area_total * rand::random::<f64>();
-    let mut area = 0.0;
-    let mut ret: Vector = Default::default();
-    for (i, obj) in (&self.emission_triangles).iter().enumerate() {
-      area += (&self.emission_triangles_area)[i];
-      if roulette <= area {
-        let mut s = rand::random::<f64>();
-        let mut t = rand::random::<f64>();
-        if s + t > 1.0 {
-          s = 1.0 - s;
-          t = 1.0 - t;
-        }
-        ret = Vector{
-          x: (1.0 - s - t) * obj.position0.x + s * obj.position1.x + t * obj.position2.x,
-          y: (1.0 - s - t) * obj.position0.y + s * obj.position1.y + t * obj.position2.y,
-          z: (1.0 - s - t) * obj.position0.z + s * obj.position1.z + t * obj.position2.z,
-        };
-      }
-    }
-    return ret;
-  }
+  // fn get_emission_point(&self) -> Vector {
+  //   let roulette = &self.emission_triangles_area_total * rand::random::<f64>();
+  //   let mut area = 0.0;
+  //   let mut ret: Vector = Default::default();
+  //   for (i, obj) in (&self.emission_triangles).iter().enumerate() {
+  //     area += (&self.emission_triangles_area)[i];
+  //     if roulette <= area {
+  //       let mut s = rand::random::<f64>();
+  //       let mut t = rand::random::<f64>();
+  //       if s + t > 1.0 {
+  //         s = 1.0 - s;
+  //         t = 1.0 - t;
+  //       }
+  //       ret = Vector{
+  //         x: (1.0 - s - t) * obj.position0.x + s * obj.position1.x + t * obj.position2.x,
+  //         y: (1.0 - s - t) * obj.position0.y + s * obj.position1.y + t * obj.position2.y,
+  //         z: (1.0 - s - t) * obj.position0.z + s * obj.position1.z + t * obj.position2.z,
+  //       };
+  //     }
+  //   }
+  //   return ret;
+  // }
 
-  fn get_emission_solid_angle(&self, position: Vector) -> f64 {
-    let mut solid_angle = 0.0;
-    for obj in &self.emission_triangles {
-      let pe0 = (&obj.position0 - &position).norm();
-      let pe1 = (&obj.position1 - &position).norm();
-      let pe2 = (&obj.position2 - &position).norm();
-      let cr = (&pe1 - &pe0).cross(&pe2 - &pe0);
-      solid_angle += cr.dot(&cr).sqrt();
-    }
-    return solid_angle;
-  }
+  // fn get_emission_solid_angle(&self, position: Vector) -> f64 {
+  //   let mut solid_angle = 0.0;
+  //   for obj in &self.emission_triangles {
+  //     let pe0 = (&obj.position0 - &position).norm();
+  //     let pe1 = (&obj.position1 - &position).norm();
+  //     let pe2 = (&obj.position2 - &position).norm();
+  //     let cr = (&pe1 - &pe0).cross(&pe2 - &pe0);
+  //     solid_angle += cr.dot(&cr).sqrt();
+  //   }
+  //   return solid_angle;
+  // }
 }
 
 fn clamp(x: f64) -> f64 {
@@ -341,6 +341,9 @@ fn radiance(r: Ray, depth: usize) -> Vector{
   if continue_rr_prob != 1.0 && rand::random::<f64>() >= continue_rr_prob {
     return i.material.emission;
   }
+  // if depth > DEPTH {
+  //   return i.material.emission;
+  // }
   // 拡散反射、鏡面反射、屈折のそれぞれの割合からどの処理を行うかをロシアンルーレットで決定する
   let brdf_type_rr = (i.material.diffuse + i.material.reflection + i.material.refraction) * rand::random::<f64>();
   let mut brdf_type_rr_prob = i.material.refraction;
@@ -354,25 +357,32 @@ fn radiance(r: Ray, depth: usize) -> Vector{
   }
   // 拡散反射
   if brdf_type == 0 {
-    // 乱数を生成(半球上で一様分布)
+    // 乱数を生成(半球上で一様にサンプル)
     let theta = PI * rand::random::<f64>() * 0.5;
     let phi = 2.0 * PI * rand::random::<f64>();
+    // 乱数を生成(cosにしたがって重点的にサンプル)
+    // let r1: f64 = 2.0 * PI* rand::random::<f64>();
+    // let r2: f64 = rand::random::<f64>();
+    // let r2s: f64 = r2.sqrt();
 
     // 反射点での法線方向を基準にした正規直交基底を生成
     let w = i.normal;
-    let u = if w.x.abs() > 0.1 { Vector{x: 0.0, y: 1.0, z: 0.0} } else { Vector{x: 1.0, y: 0.0, z: 0.0 } }.cross(w);
+    let u = if w.x.abs() > EPS { Vector{x: 0.0, y: 1.0, z: 0.0} } else { Vector{x: 1.0, y: 0.0, z: 0.0 } }.cross(w);
     let v = w.cross(u);
 
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     let d = &(&u.smul(theta.sin() * phi.cos()) + &v.smul(theta.sin() * phi.sin())) + &w.smul(theta.cos());
+    // let d = &(&u.smul(r1.cos() * r2s) + &v.smul(r1.sin() * r2s)) + &w.smul((1.0 - r2).sqrt());
     // cos項を計算
     let dn = d.dot(&i.normal);
     // 新しいレイを作る
     let new_ray = Ray{d: d, o: i.position};
-    // BRDFは半球全体に一様分布なので σ / π
+    // BRDFは半球全体に一様に散乱するDiffuse面を考えると σ / π
     let brdf = i.material.color.smul(1.0 / PI);
     // 確率密度関数はサンプルした乱数が半球上で一様分布なので 1 / 2π
     let pdf = 1.0 / (2.0 * PI);
+    // 確率密度関数はサンプルした乱数がcosに依存した分布なので cosθ / π
+    // let pdf = dn / PI;
     // レンダリング方程式にしたがって放射輝度を計算する
     // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (BRDFタイプ用と再帰抑制用)
     // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
@@ -381,12 +391,12 @@ fn radiance(r: Ray, depth: usize) -> Vector{
   return Vector{x: 0.0, y: 0.0, z: 0.0};
 }
 
-const YELLOW_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 1.0, y: 1.0, z: 0.5}};
-const BLUE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.5, y: 0.5, z: 1.0}};
-const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
-const REFLECTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 1.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
-const REFRACTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 1.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
-const EMISSION_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 3.0, y: 3.0, z: 3.0}, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
+const YELLOW_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.75, y: 0.75, z: 0.25}};
+const BLUE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.25, y: 0.25, z: 0.75}};
+const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.75, y: 0.75, z: 0.75}};
+// const REFLECTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 1.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
+// const REFRACTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 1.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
+const EMISSION_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 12.0, y: 12.0, z: 12.0}, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
 
 lazy_static! {
   static ref TRIANGLE_OBJECTS: [Triangle; 14] = [
@@ -414,8 +424,8 @@ lazy_static! {
   static ref OBJECTS: Objects = Objects::new(&*TRIANGLE_OBJECTS, &*SPHERE_OBJECTS);
 }
 
-const DEPTH: usize = 3;
-const DEPTH_LIMIT: usize = 5;
+const DEPTH: usize = 5;
+const DEPTH_LIMIT: usize = 10;
 const WIDTH: usize = 256;
 const HEIGHT: usize = 256;
 const PI: f64 = 3.14159265358979323846264338327950288_f64;
@@ -428,7 +438,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 20;
+  let samples: usize = 100;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
