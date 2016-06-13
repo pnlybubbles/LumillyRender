@@ -100,3 +100,4 @@ Cargo.lock
 
 image*.png
 image*.ppm
+image/
