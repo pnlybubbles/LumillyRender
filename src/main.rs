@@ -360,11 +360,16 @@ fn radiance(r: Ray, depth: usize) -> Vector{
   }
   // 拡散反射
   if brdf_type == 0 {
-    // 乱数を生成(半球上で一様にサンプル)
+    // 乱数を生成
+    // (半球面上で球面極座標を使った謎サンプル)
     // let theta = PI * rand::random::<f64>() * 0.5;
     // let phi = 2.0 * PI * rand::random::<f64>();
-    // 乱数を生成(cosにしたがって重点的にサンプル)
-    let r1: f64 = 2.0 * PI* rand::random::<f64>();
+    // (半球面状で一様にサンプル)
+    // let r1 = 2.0 * PI * rand::random::<f64>();
+    // let r2 = rand::random::<f64>();
+    // let r2s = (1.0 - r2 * r2).sqrt();
+    // (cosにしたがって重点的にサンプル)
+    let r1: f64 = 2.0 * PI * rand::random::<f64>();
     let r2: f64 = rand::random::<f64>();
     let r2s: f64 = r2.sqrt();
 
@@ -374,7 +379,11 @@ fn radiance(r: Ray, depth: usize) -> Vector{
     let v = w.cross(u);
 
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
+    // (半球面上で球面極座標を使った謎サンプル)
     // let d = &(&u.smul(theta.sin() * phi.cos()) + &v.smul(theta.sin() * phi.sin())) + &w.smul(theta.cos());
+    // (半球面状で一様にサンプル)
+    // let d = &(&u.smul(r1.cos() * r2s) + &v.smul(r1.sin() * r2s)) + &w.smul(r2);
+    // (cosにしたがって重点的にサンプル)
     let d = &(&u.smul(r1.cos() * r2s) + &v.smul(r1.sin() * r2s)) + &w.smul((1.0 - r2).sqrt());
     // cos項を計算
     let dn = d.dot(&i.normal);
@@ -382,15 +391,19 @@ fn radiance(r: Ray, depth: usize) -> Vector{
     let new_ray = Ray{d: d, o: i.position};
     // BRDFは半球全体に一様に散乱するDiffuse面を考えると σ / π
     let brdf = i.material.color.smul(1.0 / PI);
-    // 確率密度関数はサンプルした乱数が半球上で一様分布なので 1 / 2π
+    // 確率密度関数
+    // (半球面上で球面極座標を使った謎サンプル) 1 / (π^2 * sinθ)
+    // let cr = d.cross(i.normal);
+    // let pdf = 1.0 / (PI * PI * cr.dot(&cr)); // これ間違ってるぽい
+    // (半球面状で一様にサンプル) 1 / 2π
     // let pdf = 1.0 / (2.0 * PI);
-    // 確率密度関数はサンプルした乱数がcosに依存した分布なので cosθ / π
+    // (cosにしたがって重点的にサンプル) cosθ / π
     let pdf = dn / PI;
     // レンダリング方程式にしたがって放射輝度を計算する
     // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (BRDFタイプ用と再帰抑制用)
     // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
     return &i.material.emission + &(&brdf * &radiance(new_ray, depth + 1).smul(dn / (pdf * continue_rr_prob * brdf_type_rr_prob)));
-    // return &i.material.emission + &(&i.material.color * &radiance(new_ray, depth + 1).smul(2.0 * dn / (continue_rr_prob * brdf_type_rr_prob)));
+    // return &i.material.emission + &(&i.material.color * &radiance(new_ray, depth + 1).smul(dn / (continue_rr_prob * brdf_type_rr_prob)));
     // return &i.material.emission + &(&i.material.color * &radiance(new_ray, depth + 1).smul(1.0 / continue_rr_prob * brdf_type_rr_prob));
   }
   return Vector{x: 0.0, y: 0.0, z: 0.0};
@@ -431,20 +444,20 @@ lazy_static! {
 
 const DEPTH: usize = 5;
 const DEPTH_LIMIT: usize = 5;
-const WIDTH: usize = 512;
-const HEIGHT: usize = 512;
+const WIDTH: usize = 256;
+const HEIGHT: usize = 256;
 const PI: f64 = 3.14159265358979323846264338327950288_f64;
 const EPS: f64 = 1e-6;
 const BG_COLOR: Vector = Vector{x: 0.0, y: 0.0, z: 0.0};
 
-const CROP_OFFSET_BOTTOM: usize = 30;
-const CROP_OFFSET_LEFT: usize = 224;
-const CROP_HEIGHT: usize = 64;
-const CROP_WIDTH: usize = 64;
-// const CROP_OFFSET_BOTTOM: usize = 0;
-// const CROP_OFFSET_LEFT: usize = 0;
-// const CROP_HEIGHT: usize = 512;
-// const CROP_WIDTH: usize = 512;
+// const CROP_OFFSET_BOTTOM: usize = 30;
+// const CROP_OFFSET_LEFT: usize = 224;
+// const CROP_HEIGHT: usize = 64;
+// const CROP_WIDTH: usize = 64;
+const CROP_OFFSET_BOTTOM: usize = 0;
+const CROP_OFFSET_LEFT: usize = 0;
+const CROP_HEIGHT: usize = 256;
+const CROP_WIDTH: usize = 256;
 
 fn main() {
   let cpu_count = num_cpus::get();
@@ -452,7 +465,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 2000;
+  let samples: usize = 100;
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
 
