@@ -397,6 +397,9 @@ fn radiance(r: Ray, depth: usize) -> Vector{
     // return &i.material.emission + &(&brdf * &radiance(new_ray, depth + 1).smul(dn / (pdf * continue_rr_prob * brdf_type_rr_prob)));
     // return &i.material.emission + &(&i.material.color * &radiance(new_ray, depth + 1).smul(2.0 * dn / (continue_rr_prob * brdf_type_rr_prob)));
     return &i.material.emission + &(&i.material.color * &radiance(new_ray, depth + 1).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
+  } else if brdf_type == 1 { // 鏡面
+    let new_ray = Ray{d: &r.d - &i.normal.smul(2.0 * r.d.dot(&i.normal)), o: i.position};
+    return &i.material.emission + &(&i.material.color * &radiance(new_ray, depth + 1).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
   }
   return Vector{x: 0.0, y: 0.0, z: 0.0};
 }
