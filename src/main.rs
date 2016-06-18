@@ -344,9 +344,6 @@ fn radiance(r: Ray, depth: usize) -> Vector{
   if continue_rr_prob != 1.0 && rand::random::<f64>() >= continue_rr_prob {
     return i.material.emission;
   }
-  // if depth >= DEPTH {
-  //   return i.material.emission;
-  // }
   // 拡散反射、鏡面反射、屈折のそれぞれの割合からどの処理を行うかをロシアンルーレットで決定する
   let brdf_type_rr = rand::random::<f64>();
   let mut brdf_type_rr_prob = i.material.refraction;
@@ -400,6 +397,76 @@ fn radiance(r: Ray, depth: usize) -> Vector{
   } else if brdf_type == 1 { // 鏡面
     let new_ray = Ray{d: &r.d - &i.normal.smul(2.0 * r.d.dot(&i.normal)), o: i.position};
     return &i.material.emission + &(&i.material.color * &radiance(new_ray, depth + 1).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
+  } else if brdf_type == 2 { // 屈折面
+    // cosθ
+    let mut dn = r.d.dot(&i.normal);
+    let mut n = i.normal;
+    // 真空屈折率
+    let eta_v = 1.0;
+    // 物体屈折率
+    let eta = 1.5;
+    // n1 / n2
+    let nn;
+    // n2 / n1
+    let nni;
+    // 入射方向の判別
+    if dn < 0.0 {
+      // 表から物体へ
+      nn = eta_v / eta;
+      nni = eta / eta_v;
+    } else {
+      // 裏から物体外へ
+      nn = eta / eta_v;
+      nni = eta_v / eta;
+      dn = -dn;
+      n = n.smul(-1.0);
+    }
+    // 鏡面反射レイ
+    let reflection_ray = Ray{d: &r.d - &i.normal.smul(2.0 * r.d.dot(&i.normal)), o: i.position};
+    // 判別式(全半射)
+    let det = 1.0 - nn * nn * (1.0 - dn * dn);
+    if det < 0.0 {
+      // 全反射
+      return &i.material.color * &radiance(reflection_ray, depth + 1).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob));
+    }
+    // 屈折レイ
+    let refraction_ray = Ray{d: &r.d.smul(nn) - &n.smul(nn * dn + det.sqrt()), o: i.position};
+    // 垂直入射での反射量
+    // n1 - n2
+    let nnn;
+    // cos1 or cos2
+    let c;
+    if dn < 0.0 {
+      // 表から物体へ
+      nnn = eta_v - eta;
+      c = -dn;
+    } else {
+      // 裏から物体外へ
+      nnn = eta - eta_v;
+      c = refraction_ray.d.dot(&i.normal);
+    }
+    // n1 + n2
+    let nnp = eta + eta_v;
+    let f_0 = (nnn * nnn) / (nnp * nnp);
+    // Fresnelの式(Schlickの近似)より
+    let reflection_radiance_ratio = f_0 + (1.0 - f_0) * (1.0 - c).powi(5);
+    let refraction_radiance_ratio = (1.0 - reflection_radiance_ratio) * nni * nni;
+    // ロシアンルーレットで反射と屈折のどちらかの寄与を取る
+    // 最初の数回は両方追跡する
+    if depth > 2 {
+      // どちらか一方
+      let refraction_rr_prob = 0.25 + 0.5 * reflection_radiance_ratio;
+      if rand::random::<f64>() < refraction_rr_prob {
+        // 反射
+        return &i.material.color * &radiance(reflection_ray, depth + 1).smul(reflection_radiance_ratio / (continue_rr_prob * brdf_type_rr_prob * refraction_rr_prob));
+      } else {
+        // 屈折
+        return &i.material.color * &radiance(refraction_ray, depth + 1).smul(refraction_radiance_ratio / (continue_rr_prob * brdf_type_rr_prob * (1.0 - refraction_rr_prob)));
+      }
+    } else {
+      // 両方
+      return (&i.material.color * &(&radiance(reflection_ray, depth + 1).smul(reflection_radiance_ratio) + &radiance(refraction_ray, depth + 1).smul(refraction_radiance_ratio))).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob));
+    }
   }
   return Vector{x: 0.0, y: 0.0, z: 0.0};
 }
@@ -407,8 +474,8 @@ fn radiance(r: Ray, depth: usize) -> Vector{
 const YELLOW_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.75, y: 0.75, z: 0.25}};
 const BLUE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.25, y: 0.25, z: 0.75}};
 const WHITE_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.75, y: 0.75, z: 0.75}};
-// const REFLECTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 1.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
-// const REFRACTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 1.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.0, y: 0.0, z: 0.0}};
+const REFLECTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 1.0, refraction: 0.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.99, y: 0.99, z: 0.99}};
+const REFRACTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, refraction: 1.0, emission: Vector{x: 0.0, y: 0.0, z: 0.0}, color: Vector{x: 0.99, y: 0.99, z: 0.99}};
 const EMISSION_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 12.0, y: 12.0, z: 12.0}, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
 
 lazy_static! {
@@ -430,8 +497,8 @@ lazy_static! {
   ];
 
   static ref SPHERE_OBJECTS: [Sphere; 2] = [
-    Sphere::new(Vector{x: -2.0, y: 2.0, z: -7.0}, 1.8, WHITE_MATERIAL),
-    Sphere::new(Vector{x: 2.0, y: -3.2, z: -3.0}, 1.8, WHITE_MATERIAL),
+    Sphere::new(Vector{x: -2.0, y: 2.0, z: -7.0}, 1.8, REFLECTION_MATERIAL),
+    Sphere::new(Vector{x: 2.0, y: -3.2, z: -3.0}, 1.8, REFRACTION_MATERIAL),
   ];
 
   static ref OBJECTS: Objects = Objects::new(&*TRIANGLE_OBJECTS, &*SPHERE_OBJECTS);
@@ -464,7 +531,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 256;
+  let samples: usize = 1024;
   println!("samples: {}", samples);
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
