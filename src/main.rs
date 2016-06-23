@@ -266,40 +266,40 @@ impl Objects {
     return intersect;
   }
 
-  // fn get_emission_point(&self) -> Vector {
-  //   let roulette = &self.emission_triangles_area_total * rand::random::<f64>();
-  //   let mut area = 0.0;
-  //   let mut ret: Vector = Default::default();
-  //   for (i, obj) in (&self.emission_triangles).iter().enumerate() {
-  //     area += (&self.emission_triangles_area)[i];
-  //     if roulette <= area {
-  //       let mut s = rand::random::<f64>();
-  //       let mut t = rand::random::<f64>();
-  //       if s + t > 1.0 {
-  //         s = 1.0 - s;
-  //         t = 1.0 - t;
-  //       }
-  //       ret = Vector{
-  //         x: (1.0 - s - t) * obj.position0.x + s * obj.position1.x + t * obj.position2.x,
-  //         y: (1.0 - s - t) * obj.position0.y + s * obj.position1.y + t * obj.position2.y,
-  //         z: (1.0 - s - t) * obj.position0.z + s * obj.position1.z + t * obj.position2.z,
-  //       };
-  //     }
-  //   }
-  //   return ret;
-  // }
+  fn get_emission_point(&self) -> Vector {
+    let roulette = &self.emission_triangles_area_total * rand::random::<f64>();
+    let mut area = 0.0;
+    let mut ret: Vector = Default::default();
+    for (i, obj) in (&self.emission_triangles).iter().enumerate() {
+      area += (&self.emission_triangles_area)[i];
+      if roulette <= area {
+        let mut s = rand::random::<f64>();
+        let mut t = rand::random::<f64>();
+        if s + t > 1.0 {
+          s = 1.0 - s;
+          t = 1.0 - t;
+        }
+        ret = Vector{
+          x: (1.0 - s - t) * obj.position0.x + s * obj.position1.x + t * obj.position2.x,
+          y: (1.0 - s - t) * obj.position0.y + s * obj.position1.y + t * obj.position2.y,
+          z: (1.0 - s - t) * obj.position0.z + s * obj.position1.z + t * obj.position2.z,
+        };
+      }
+    }
+    return ret;
+  }
 
-  // fn get_emission_solid_angle(&self, position: Vector) -> f64 {
-  //   let mut solid_angle = 0.0;
-  //   for obj in &self.emission_triangles {
-  //     let pe0 = (&obj.position0 - &position).norm();
-  //     let pe1 = (&obj.position1 - &position).norm();
-  //     let pe2 = (&obj.position2 - &position).norm();
-  //     let cr = (&pe1 - &pe0).cross(&pe2 - &pe0);
-  //     solid_angle += cr.dot(&cr).sqrt();
-  //   }
-  //   return solid_angle;
-  // }
+  fn get_emission_solid_angle(&self, position: Vector) -> f64 {
+    let mut solid_angle = 0.0;
+    for obj in &self.emission_triangles {
+      let pe0 = (&obj.position0 - &position).norm();
+      let pe1 = (&obj.position1 - &position).norm();
+      let pe2 = (&obj.position2 - &position).norm();
+      let cr = (&pe1 - &pe0).cross(&pe2 - &pe0);
+      solid_angle += cr.dot(&cr).sqrt();
+    }
+    return solid_angle;
+  }
 }
 
 fn clamp(x: f64) -> f64 {
@@ -316,16 +316,15 @@ fn to_int(x: f64) -> i64 {
   return (clamp(x).powf(1.0 / 2.2) * 255.0) as i64
 }
 
-fn radiance(r: Ray, depth: usize) -> Vector{
+fn radiance(r: Ray, depth: usize, no_emission: bool) -> Vector{
   // すべてのオブジェクトと当たり判定を行う
   let i = OBJECTS.get_intersect(r);
   // 当たらなかった場合は背景色を返す
   if !i.cross {
     return BG_COLOR;
   }
-  if i.material.emission.dot(&i.material.emission) > 0.0 {
-    return i.material.emission;
-  }
+  // 放射
+  let l_e = if no_emission { Vector{x: 0.0, y: 0.0, z: 0.0} } else { i.material.emission };
   // 再帰抑制用のロシアンルーレットの確率を決定する
   // 鏡面反射、屈折の時は必ず次のパスをトレースする
   // 拡散反射の時は各色の反射率のうち最大のものを使う
@@ -357,6 +356,20 @@ fn radiance(r: Ray, depth: usize) -> Vector{
   }
   // 拡散反射
   if brdf_type == 0 {
+    // 光源方向へサンプリング
+    let mut light_direction_radiance = Vector{x: 0.0, y: 0.0, z: 0.0};
+    let emmisive_position = OBJECTS.get_emission_point();
+    let d_e = (&emmisive_position - &i.position).norm();
+    let test_ray = Ray{
+      o: &i.position + &i.normal.smul(0.01),
+      d: d_e,
+    };
+    let test_i = OBJECTS.get_intersect(test_ray);
+    if test_i.cross && test_i.material.emission.dot(&test_i.material.emission) > 0.0 {
+      let light_direction_weight = OBJECTS.get_emission_solid_angle(i.position) / (2.0 * PI);
+      let den = d_e.dot(&i.normal);
+      light_direction_radiance = &l_e + &(&i.material.color * &test_i.material.emission.smul(den * light_direction_weight));
+    }
     // 乱数を生成
     // (半球面状で一様にサンプル)
     // let r1 = 2.0 * PI * rand::random::<f64>();
@@ -391,12 +404,12 @@ fn radiance(r: Ray, depth: usize) -> Vector{
     // レンダリング方程式にしたがって放射輝度を計算する
     // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (BRDFタイプ用と再帰抑制用)
     // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
-    // return &i.material.emission + &(&brdf * &radiance(new_ray, depth + 1).smul(dn / (pdf * continue_rr_prob * brdf_type_rr_prob)));
-    // return &i.material.emission + &(&i.material.color * &radiance(new_ray, depth + 1).smul(2.0 * dn / (continue_rr_prob * brdf_type_rr_prob)));
-    return &i.material.emission + &(&i.material.color * &radiance(new_ray, depth + 1).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
+    // return &l_e + &(&brdf * &radiance(new_ray, depth + 1).smul(dn / (pdf * continue_rr_prob * brdf_type_rr_prob)));
+    // return &l_e + &(&i.material.color * &radiance(new_ray, depth + 1).smul(2.0 * dn / (continue_rr_prob * brdf_type_rr_prob)));
+    return &l_e + &(&light_direction_radiance + &(&i.material.color * &radiance(new_ray, depth + 1, true)).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
   } else if brdf_type == 1 { // 鏡面
     let new_ray = Ray{d: &r.d - &i.normal.smul(2.0 * r.d.dot(&i.normal)), o: i.position};
-    return &i.material.emission + &(&i.material.color * &radiance(new_ray, depth + 1).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
+    return &l_e + &(&i.material.color * &radiance(new_ray, depth + 1, false).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
   } else if brdf_type == 2 { // 屈折面
     // cosθ
     let mut dn = r.d.dot(&i.normal);
@@ -427,7 +440,7 @@ fn radiance(r: Ray, depth: usize) -> Vector{
     let det = 1.0 - nn * nn * (1.0 - dn * dn);
     if det < 0.0 {
       // 全反射
-      return &i.material.color * &radiance(reflection_ray, depth + 1).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob));
+      return &i.material.color * &radiance(reflection_ray, depth + 1, false).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob));
     }
     // 屈折レイ
     let refraction_ray = Ray{d: &r.d.smul(nn) - &n.smul(nn * dn + det.sqrt()), o: i.position};
@@ -458,14 +471,14 @@ fn radiance(r: Ray, depth: usize) -> Vector{
       let refraction_rr_prob = 0.25 + 0.5 * reflection_radiance_ratio;
       if rand::random::<f64>() < refraction_rr_prob {
         // 反射
-        return &i.material.color * &radiance(reflection_ray, depth + 1).smul(reflection_radiance_ratio / (continue_rr_prob * brdf_type_rr_prob * refraction_rr_prob));
+        return &i.material.color * &radiance(reflection_ray, depth + 1, false).smul(reflection_radiance_ratio / (continue_rr_prob * brdf_type_rr_prob * refraction_rr_prob));
       } else {
         // 屈折
-        return &i.material.color * &radiance(refraction_ray, depth + 1).smul(refraction_radiance_ratio / (continue_rr_prob * brdf_type_rr_prob * (1.0 - refraction_rr_prob)));
+        return &i.material.color * &radiance(refraction_ray, depth + 1, false).smul(refraction_radiance_ratio / (continue_rr_prob * brdf_type_rr_prob * (1.0 - refraction_rr_prob)));
       }
     } else {
       // 両方
-      return (&i.material.color * &(&radiance(reflection_ray, depth + 1).smul(reflection_radiance_ratio) + &radiance(refraction_ray, depth + 1).smul(refraction_radiance_ratio))).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob));
+      return (&i.material.color * &(&radiance(reflection_ray, depth + 1, false).smul(reflection_radiance_ratio) + &radiance(refraction_ray, depth + 1, false).smul(refraction_radiance_ratio))).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob));
     }
   }
   return Vector{x: 0.0, y: 0.0, z: 0.0};
@@ -531,7 +544,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 1024;
+  let samples: usize = 1;
   println!("samples: {}", samples);
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
   let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
@@ -549,7 +562,7 @@ fn main() {
             y: ((i as f64 + rand::random::<f64>()) * 2.0 - (HEIGHT as f64 + 1.0)) / min_rsl,
             z: -3.0,
           }.norm();
-          r = &r + &radiance(ray, 0).smul(1.0 / samples as f64);
+          r = &r + &radiance(ray, 0, false).smul(1.0 / samples as f64);
         }
         tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
       });
