@@ -357,18 +357,20 @@ fn radiance(r: Ray, depth: usize, no_emission: bool) -> Vector{
   // 拡散反射
   if brdf_type == 0 {
     // 光源方向へサンプリング
-    let mut light_direction_radiance = Vector{x: 0.0, y: 0.0, z: 0.0};
+    let mut direct_light_radiance = Vector{x: 0.0, y: 0.0, z: 0.0};
     let emmisive_position = OBJECTS.get_emission_point();
-    let d_e = (&emmisive_position - &i.position).norm();
+    let i_e = &emmisive_position - &i.position;
+    let d_e = i_e.norm();
     let test_ray = Ray{
       o: &i.position + &i.normal.smul(0.01),
       d: d_e,
     };
     let test_i = OBJECTS.get_intersect(test_ray);
     if test_i.cross && test_i.material.emission.dot(&test_i.material.emission) > 0.0 {
-      let light_direction_weight = OBJECTS.get_emission_solid_angle(i.position) / (2.0 * PI);
-      let den = d_e.dot(&i.normal);
-      light_direction_radiance = &l_e + &(&i.material.color * &test_i.material.emission.smul(den * light_direction_weight));
+      let direct_light_weight = OBJECTS.get_emission_solid_angle(i.position) / (2.0 * PI);
+      let direct_light_pdf = 1.0 / OBJECTS.emission_triangles_area_total;
+      let g_term = (d_e.dot(&i.normal) * (d_e.smul(-1.0)).dot(&test_i.normal)) / i_e.dot(&i_e);
+      direct_light_radiance = &l_e + &(&i.material.color * &test_i.material.emission.smul(g_term * direct_light_weight / direct_light_pdf));
     }
     // 乱数を生成
     // (半球面状で一様にサンプル)
@@ -406,7 +408,7 @@ fn radiance(r: Ray, depth: usize, no_emission: bool) -> Vector{
     // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
     // return &l_e + &(&brdf * &radiance(new_ray, depth + 1).smul(dn / (pdf * continue_rr_prob * brdf_type_rr_prob)));
     // return &l_e + &(&i.material.color * &radiance(new_ray, depth + 1).smul(2.0 * dn / (continue_rr_prob * brdf_type_rr_prob)));
-    return &l_e + &(&light_direction_radiance + &(&i.material.color * &radiance(new_ray, depth + 1, true)).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
+    return &l_e + &(&direct_light_radiance + &(&i.material.color * &radiance(new_ray, depth + 1, true)).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
   } else if brdf_type == 1 { // 鏡面
     let new_ray = Ray{d: &r.d - &i.normal.smul(2.0 * r.d.dot(&i.normal)), o: i.position};
     return &l_e + &(&i.material.color * &radiance(new_ray, depth + 1, false).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
