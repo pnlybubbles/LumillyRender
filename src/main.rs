@@ -358,6 +358,7 @@ fn radiance(r: Ray, depth: usize, no_emission: bool) -> Vector{
   if brdf_type == 0 {
     // 光源方向へサンプリング
     let mut direct_light_radiance = Vector{x: 0.0, y: 0.0, z: 0.0};
+    // 光源面から1点をサンプル(一様分布)
     let emmisive_position = OBJECTS.get_emission_point();
     let i_e = &emmisive_position - &i.position;
     let d_e = i_e.norm();
@@ -365,12 +366,18 @@ fn radiance(r: Ray, depth: usize, no_emission: bool) -> Vector{
       o: &i.position + &i.normal.smul(0.01),
       d: d_e,
     };
+    // 可視関数用のテストレイを光源面上のサンプル点に飛ばす
     let test_i = OBJECTS.get_intersect(test_ray);
+    // 光源と交差しなかった場合、寄与は無し
     if test_i.cross && test_i.material.emission.dot(&test_i.material.emission) > 0.0 {
-      let direct_light_weight = OBJECTS.get_emission_solid_angle(i.position) / (2.0 * PI);
-      let direct_light_pdf = 1.0 / OBJECTS.emission_triangles_area_total;
+      // ジオメトリターム
       let g_term = (d_e.dot(&i.normal) * (d_e.smul(-1.0)).dot(&test_i.normal)) / i_e.dot(&i_e);
-      direct_light_radiance = &l_e + &(&i.material.color * &test_i.material.emission.smul(g_term * direct_light_weight / direct_light_pdf));
+      // 光源面積測度での確率密度関数(一様分布)
+      let direct_light_pdf = 1.0 / OBJECTS.emission_triangles_area_total;
+      // BRDFは半球全体に一様に散乱するDiffuse面を考えると σ / π
+      let brdf = i.material.color.smul(1.0 / PI);
+      // 積分範囲は光源面上
+      direct_light_radiance = &l_e + &(&brdf * &test_i.material.emission.smul(g_term / direct_light_pdf));
     }
     // 乱数を生成
     // (半球面状で一様にサンプル)
@@ -408,6 +415,7 @@ fn radiance(r: Ray, depth: usize, no_emission: bool) -> Vector{
     // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
     // return &l_e + &(&brdf * &radiance(new_ray, depth + 1).smul(dn / (pdf * continue_rr_prob * brdf_type_rr_prob)));
     // return &l_e + &(&i.material.color * &radiance(new_ray, depth + 1).smul(2.0 * dn / (continue_rr_prob * brdf_type_rr_prob)));
+    // 積分範囲は光源以外なので光源に当たった場合の寄与は無し
     return &l_e + &(&direct_light_radiance + &(&i.material.color * &radiance(new_ray, depth + 1, true)).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
   } else if brdf_type == 1 { // 鏡面
     let new_ray = Ray{d: &r.d - &i.normal.smul(2.0 * r.d.dot(&i.normal)), o: i.position};
