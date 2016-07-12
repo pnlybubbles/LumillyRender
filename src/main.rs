@@ -118,20 +118,22 @@ impl Camera {
     }
   }
 
-  // fn get_lens_point() -> Vector {
-  //   let r1 = 2.0 * PI * rand::random::<f64>();
-  //   let r2 = rand::random::<f64>();
-  //   return Vector{x: }
-  // }
+  fn get_lens_point(self) -> Vector {
+    // レンズ中心からの相対座標
+    let r1 = 2.0 * PI * rand::random::<f64>();
+    let r2 = rand::random::<f64>();
+    return &self.right.smul(r1.cos() * r2 * self.lens_radius) + &self.up.smul(r1.sin() * r2 * self.lens_radius);
+  }
 
   fn get_ray(self, top: usize, left: usize) -> Ray {
     let screen_direction =
       &(&self.right.smul(((left as f64 + rand::random::<f64>() - 0.5) / (self.width as f64) - 0.5) * self.screen_width) +
       &self.up.smul(((top as f64 + rand::random::<f64>() - 0.5) / (self.height as f64) - 0.5) * self.screen_height)) +
       &self.forward.smul(self.direction_distance);
-    // let screen_distance = screen_direction.dot(&self.direction.norm());
-    // let object_plane_direction = screen_direction.smul(focus_distance / screen_distance);
-    return Ray{o: self.position, d: screen_direction.norm()};
+    let screen_distance = screen_direction.dot(&self.direction.norm());
+    let object_plane_direction = screen_direction.smul(self.focus_distance / screen_distance);
+    let lens_point = self.get_lens_point();
+    return Ray{o: &self.position + &lens_point, d: (&object_plane_direction - &lens_point).norm()};
   }
 
   // fn lens_radiance(lens_origin: Vector, incomming_radiance: Vector) -> Vector {
