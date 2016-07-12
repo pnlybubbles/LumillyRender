@@ -90,13 +90,18 @@ struct Camera {
   screen_height: f64,
   screen_width: f64,
   focus_distance: f64,
-  to_direction: Vector,
+  lens_radius: f64,
+  forward: Vector,
+  up: Vector,
+  right: Vector,
   direction_distance: f64,
 }
 
 impl Camera {
-  fn new(position: Vector, direction: Vector, height: usize, width: usize, screen_height: f64, screen_width: f64, focus_distance: f64) -> Camera {
+  fn new(position: Vector, direction: Vector, height: usize, width: usize, screen_height: f64, screen_width: f64, focus_distance: f64, lens_radius: f64) -> Camera {
     let direction_distance = direction.dot(&direction).sqrt();
+    let forward = direction.norm();
+    let right = forward.cross(if forward.y.abs() < 1.0 - EPS { Vector{x: 0.0, y: 1.0, z: 0.0} } else { Vector{x: 1.0, y: 0.0, z: 0.0 } });
     Camera {
       position: position,
       height: height,
@@ -105,17 +110,27 @@ impl Camera {
       screen_width: screen_width,
       direction: direction,
       focus_distance: focus_distance,
-      to_direction: &direction - &Vector{x: 0.0, y: 0.0, z: direction_distance},
+      lens_radius: lens_radius,
+      forward: forward,
+      right: right,
+      up: right.cross(forward),
       direction_distance: direction_distance,
     }
   }
 
+  // fn get_lens_point() -> Vector {
+  //   let r1 = 2.0 * PI * rand::random::<f64>();
+  //   let r2 = rand::random::<f64>();
+  //   return Vector{x: }
+  // }
+
   fn get_ray(self, top: usize, left: usize) -> Ray {
-    let screen_direction = &Vector{
-      x: ((left as f64 + rand::random::<f64>() - 0.5) / (self.width as f64) - 0.5) * self.screen_width,
-      y: ((top as f64 + rand::random::<f64>() - 0.5) / (self.height as f64) - 0.5) * self.screen_height,
-      z: self.direction_distance,
-    } + &self.to_direction;
+    let screen_direction =
+      &(&self.right.smul(((left as f64 + rand::random::<f64>() - 0.5) / (self.width as f64) - 0.5) * self.screen_width) +
+      &self.up.smul(((top as f64 + rand::random::<f64>() - 0.5) / (self.height as f64) - 0.5) * self.screen_height)) +
+      &self.forward.smul(self.direction_distance);
+    // let screen_distance = screen_direction.dot(&self.direction.norm());
+    // let object_plane_direction = screen_direction.smul(focus_distance / screen_distance);
     return Ray{o: self.position, d: screen_direction.norm()};
   }
 
@@ -599,7 +614,7 @@ fn main() {
   println!("samples: {}", samples);
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
 
-  let cam = Camera::new(Vector{x: 0.0, y: 0.0, z: 15.0}, Vector{x: 0.0, y: 0.0, z: -15.0}, HEIGHT, WIDTH, 10.0, 10.0, 7.0);
+  let cam = Camera::new(Vector{x: 0.0, y: 0.0, z: 15.0}, Vector{x: 0.0, y: 0.0, z: -15.0}, HEIGHT, WIDTH, 10.0, 10.0, 7.0, 0.0);
 
   for i in CROP_OFFSET_BOTTOM..(CROP_OFFSET_BOTTOM + CROP_HEIGHT) {
     for j in CROP_OFFSET_LEFT..(CROP_OFFSET_LEFT + CROP_WIDTH) {
