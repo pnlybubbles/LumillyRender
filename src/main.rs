@@ -17,7 +17,6 @@ use std::default::Default;
 use threadpool::ThreadPool;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::{Sender, Receiver};
-use std::cmp;
 
 #[derive(Debug, Copy, Clone, Default)]
 struct Vector {
@@ -80,6 +79,48 @@ impl VectorOps for Vector {
 struct Ray {
   o: Vector,
   d: Vector
+}
+
+#[derive(Debug, Copy, Clone, Default)]
+struct Camera {
+  position: Vector,
+  direction: Vector,
+  height: usize,
+  width: usize,
+  screen_height: f64,
+  screen_width: f64,
+  focus_distance: f64,
+  to_direction: Vector,
+  direction_distance: f64,
+}
+
+impl Camera {
+  fn new(position: Vector, direction: Vector, height: usize, width: usize, screen_height: f64, screen_width: f64, focus_distance: f64) -> Camera {
+    let direction_distance = direction.dot(&direction).sqrt();
+    Camera {
+      position: position,
+      height: height,
+      width: width,
+      screen_height: screen_height,
+      screen_width: screen_width,
+      direction: direction,
+      focus_distance: focus_distance,
+      to_direction: &direction - &Vector{x: 0.0, y: 0.0, z: direction_distance},
+      direction_distance: direction_distance,
+    }
+  }
+
+  fn get_ray(self, top: usize, left: usize) -> Ray {
+    let screen_direction = &Vector{
+      x: ((left as f64 + rand::random::<f64>() - 0.5) / (self.width as f64) - 0.5) * self.screen_width,
+      y: ((top as f64 + rand::random::<f64>() - 0.5) / (self.height as f64) - 0.5) * self.screen_height,
+      z: self.direction_distance,
+    } + &self.to_direction;
+    return Ray{o: self.position, d: screen_direction.norm()};
+  }
+
+  // fn lens_radiance(lens_origin: Vector, incomming_radiance: Vector) -> Vector {
+  // }
 }
 
 #[derive(Debug, Copy, Clone, Default)]
@@ -289,17 +330,17 @@ impl Objects {
     return ret;
   }
 
-  fn get_emission_solid_angle(&self, position: Vector) -> f64 {
-    let mut solid_angle = 0.0;
-    for obj in &self.emission_triangles {
-      let pe0 = (&obj.position0 - &position).norm();
-      let pe1 = (&obj.position1 - &position).norm();
-      let pe2 = (&obj.position2 - &position).norm();
-      let cr = (&pe1 - &pe0).cross(&pe2 - &pe0);
-      solid_angle += cr.dot(&cr).sqrt();
-    }
-    return solid_angle;
-  }
+  // fn get_emission_solid_angle(&self, position: Vector) -> f64 {
+  //   let mut solid_angle = 0.0;
+  //   for obj in &self.emission_triangles {
+  //     let pe0 = (&obj.position0 - &position).norm();
+  //     let pe1 = (&obj.position1 - &position).norm();
+  //     let pe2 = (&obj.position2 - &position).norm();
+  //     let cr = (&pe1 - &pe0).cross(&pe2 - &pe0);
+  //     solid_angle += cr.dot(&cr).sqrt();
+  //   }
+  //   return solid_angle;
+  // }
 }
 
 fn clamp(x: f64) -> f64 {
@@ -557,7 +598,8 @@ fn main() {
   let samples: usize = 1;
   println!("samples: {}", samples);
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
-  let min_rsl: f64 = cmp::min(WIDTH, HEIGHT) as f64;
+
+  let cam = Camera::new(Vector{x: 0.0, y: 0.0, z: 15.0}, Vector{x: 0.0, y: 0.0, z: -15.0}, HEIGHT, WIDTH, 10.0, 10.0, 7.0);
 
   for i in CROP_OFFSET_BOTTOM..(CROP_OFFSET_BOTTOM + CROP_HEIGHT) {
     for j in CROP_OFFSET_LEFT..(CROP_OFFSET_LEFT + CROP_WIDTH) {
@@ -565,13 +607,7 @@ fn main() {
       pool.execute(move || {
         let mut r: Vector = Default::default();
         for _ in 0..samples {
-          let mut ray: Ray = Default::default();
-          ray.o = Vector{x: 0.0, y: 0.0, z: 15.0};
-          ray.d = Vector{
-            x: ((j as f64 + rand::random::<f64>()) * 2.0 - (WIDTH as f64 + 1.0)) / min_rsl,
-            y: ((i as f64 + rand::random::<f64>()) * 2.0 - (HEIGHT as f64 + 1.0)) / min_rsl,
-            z: -3.0,
-          }.norm();
+          let ray = cam.get_ray(i, j);
           r = &r + &radiance(ray, 0, false).smul(1.0 / samples as f64);
         }
         tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
