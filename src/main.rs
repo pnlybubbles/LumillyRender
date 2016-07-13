@@ -91,17 +91,20 @@ struct Camera {
   screen_width: f64,
   focus_distance: f64,
   lens_radius: f64,
+  sensor_sensitivity: f64,
   forward: Vector,
   up: Vector,
   right: Vector,
   direction_distance: f64,
+  sensor_pixel_area: f64,
 }
 
 impl Camera {
-  fn new(position: Vector, direction: Vector, height: usize, width: usize, screen_height: f64, screen_width: f64, focus_distance: f64, lens_radius: f64) -> Camera {
+  fn new(position: Vector, direction: Vector, height: usize, width: usize, screen_height: f64, screen_width: f64, focus_distance: f64, lens_radius: f64, sensor_sensitivity: f64) -> Camera {
     let direction_distance = direction.dot(&direction).sqrt();
     let forward = direction.norm();
     let right = forward.cross(if forward.y.abs() < 1.0 - EPS { Vector{x: 0.0, y: 1.0, z: 0.0} } else { Vector{x: 1.0, y: 0.0, z: 0.0 } });
+    let sensor_pixel_area = (screen_height / height as f64) * (screen_width / width as f64);
     Camera {
       position: position,
       height: height,
@@ -111,33 +114,44 @@ impl Camera {
       direction: direction,
       focus_distance: focus_distance,
       lens_radius: lens_radius,
+      sensor_sensitivity: sensor_sensitivity / sensor_pixel_area,
       forward: forward,
       right: right,
       up: right.cross(forward),
       direction_distance: direction_distance,
+      sensor_pixel_area: sensor_pixel_area,
     }
   }
 
-  fn get_lens_point(self) -> Vector {
-    // レンズ中心からの相対座標
-    let r1 = 2.0 * PI * rand::random::<f64>();
-    let r2 = rand::random::<f64>();
-    return &self.right.smul(r1.cos() * r2 * self.lens_radius) + &self.up.smul(r1.sin() * r2 * self.lens_radius);
-  }
-
-  fn get_ray(self, top: usize, left: usize) -> Ray {
-    let screen_direction =
+  fn get_sensor_direction(self, top: usize, left: usize) -> Vector {
+    return
       &(&self.right.smul(((left as f64 + rand::random::<f64>() - 0.5) / (self.width as f64) - 0.5) * self.screen_width) +
       &self.up.smul(((top as f64 + rand::random::<f64>() - 0.5) / (self.height as f64) - 0.5) * self.screen_height)) +
-      &self.forward.smul(self.direction_distance);
-    let screen_distance = screen_direction.dot(&self.direction.norm());
-    let object_plane_direction = screen_direction.smul(self.focus_distance / screen_distance);
-    let lens_point = self.get_lens_point();
-    return Ray{o: &self.position + &lens_point, d: (&object_plane_direction - &lens_point).norm()};
+      &self.forward.smul(-1.0 * self.direction_distance);
   }
 
-  // fn lens_radiance(lens_origin: Vector, incomming_radiance: Vector) -> Vector {
-  // }
+  fn get_lens_direction(self) -> Vector {
+    // レンズ中心からの相対座標
+    let r1 = 2.0 * PI * rand::random::<f64>();
+    let r2 = rand::random::<f64>().sqrt() * self.lens_radius;
+    return &self.right.smul(r1.cos() * r2) + &self.up.smul(r1.sin() * r2);
+  }
+
+  fn get_ray(self, sensor_direction: Vector, lens_direction: Vector) -> Ray {
+    let screen_direction = sensor_direction.smul(-1.0);
+    let screen_distance = screen_direction.dot(&self.forward);
+    let object_plane_direction = screen_direction.smul(self.focus_distance / screen_distance);
+    return Ray{o: &self.position + &lens_direction, d: (&object_plane_direction - &lens_direction).norm()};
+  }
+
+  fn lens_radiance(self, sensor_direction: Vector, lens_direction: Vector, incomming_radiance: Vector) -> Vector {
+    let sensor_lens_direction = &lens_direction - &sensor_direction;
+    let sensor_lens_direction_cos = sensor_lens_direction.norm().dot(&self.forward);
+    let g_term = (sensor_lens_direction_cos * sensor_lens_direction_cos) / sensor_lens_direction.dot(&sensor_lens_direction);
+    let lens_pdf = 1.0 / (PI * self.lens_radius * self.lens_radius);
+    let sensor_pdf = 1.0 / self.sensor_pixel_area;
+    return incomming_radiance.smul(self.sensor_sensitivity * g_term / lens_pdf / sensor_pdf);
+  }
 }
 
 #[derive(Debug, Copy, Clone, Default)]
@@ -561,18 +575,18 @@ const EMISSION_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refr
 
 lazy_static! {
   static ref TRIANGLE_OBJECTS: [Triangle; 14] = [
-    Triangle::new(Vector{x: -5.0, y: 5.0, z: 0.0}, Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: 5.0, z: 5.0}, Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
     Triangle::new(Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
     Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: -5.0, y: 5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: 0.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: 0.0}, Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: 0.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: 5.0, z: 0.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: 5.0, z: 0.0}, Vector{x: -5.0, y: 5.0, z: 0.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: -5.0, y: 5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: 5.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: -5.0, z: 5.0}, Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: 5.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: 5.0, z: 5.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: 5.0, z: 5.0}, Vector{x: -5.0, y: 5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
     Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, EMISSION_MATERIAL),
     Triangle::new(Vector{x: 1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, EMISSION_MATERIAL),
   ];
@@ -612,11 +626,16 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 1;
+  let samples: usize = 5;
   println!("samples: {}", samples);
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
 
-  let cam = Camera::new(Vector{x: 0.0, y: 0.0, z: 15.0}, Vector{x: 0.0, y: 0.0, z: -15.0}, HEIGHT, WIDTH, 10.0, 10.0, 7.0, 0.0);
+  let camera_position = Vector{x: 0.0, y: 0.0, z: 15.0};
+  let screen_direction = Vector{x: 0.0, y: 0.0, z: -15.0};
+  let focus_distance = 7.0 + screen_direction.dot(&screen_direction).sqrt();
+  let lens_radius = 2.0;
+  let sensor_sensitivity = 1.0;
+  let cam = Camera::new(camera_position, screen_direction, HEIGHT, WIDTH, 10.0, 10.0, focus_distance, lens_radius, sensor_sensitivity);
 
   for i in CROP_OFFSET_BOTTOM..(CROP_OFFSET_BOTTOM + CROP_HEIGHT) {
     for j in CROP_OFFSET_LEFT..(CROP_OFFSET_LEFT + CROP_WIDTH) {
@@ -624,7 +643,10 @@ fn main() {
       pool.execute(move || {
         let mut r: Vector = Default::default();
         for _ in 0..samples {
-          let ray = cam.get_ray(i, j);
+          let sensor_direction = cam.get_sensor_direction(i, j);
+          let lens_direction = cam.get_lens_direction();
+          let ray = cam.get_ray(sensor_direction, lens_direction);
+          // r = &r + &cam.lens_radiance(sensor_direction, lens_direction, radiance(ray, 0, false)).smul(1.0 / samples as f64);
           r = &r + &radiance(ray, 0, false).smul(1.0 / samples as f64);
         }
         tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
@@ -646,7 +668,7 @@ fn main() {
   f.write_all( format!("P3\n{} {}\n{}\n", WIDTH, HEIGHT, 255).as_bytes() ).ok();
   for i in 0..HEIGHT {
     for j in 0..WIDTH {
-      f.write_all( format!("{} {} {} ", to_int(output[HEIGHT - i - 1][j].x), to_int(output[HEIGHT - i - 1][j].y), to_int(output[HEIGHT - i - 1][j].z)).as_bytes() ).ok();
+      f.write_all( format!("{} {} {} ", to_int(output[i][j].x), to_int(output[i][j].y), to_int(output[i][j].z)).as_bytes() ).ok();
     }
   }
 
