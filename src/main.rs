@@ -102,6 +102,7 @@ struct Camera {
 impl Camera {
   fn new(position: Vector, direction: Vector, height: usize, width: usize, screen_height: f64, screen_width: f64, focus_distance: f64, lens_radius: f64, sensor_sensitivity: f64) -> Camera {
     let direction_distance = direction.dot(&direction).sqrt();
+    // カメラの向きを基準とした正規直交基底をつくる
     let forward = direction.norm();
     let right = forward.cross(if forward.y.abs() < 1.0 - EPS { Vector{x: 0.0, y: 1.0, z: 0.0} } else { Vector{x: 1.0, y: 0.0, z: 0.0 } });
     let sensor_pixel_area = (screen_height / height as f64) * (screen_width / width as f64);
@@ -140,18 +141,24 @@ impl Camera {
 
   fn get_ray(self, sensor_position: Vector, lens_position: Vector) -> Ray {
     let sensor_direction = &sensor_position - &self.position;
+    // センサーの位置はスクリーンの位置の逆側
     let screen_direction = sensor_direction.smul(-1.0);
     let screen_distance = screen_direction.dot(&self.forward);
+    // 焦点が合う距離にあるオブジェクトプレーンの中心までの相対位置
     let object_plane_direction = screen_direction.smul(self.focus_distance / screen_distance);
     return Ray{o: lens_position, d: (&object_plane_direction - &(&lens_position - &self.position)).norm()};
   }
 
-  fn lens_radiance(self, sensor_position: Vector, lens_position: Vector, incomming_radiance: Vector) -> Vector {
+  fn sensor_flux(self, sensor_position: Vector, lens_position: Vector, incomming_radiance: Vector) -> Vector {
     let sensor_lens_direction = &lens_position - &sensor_position;
     let sensor_lens_direction_cos = sensor_lens_direction.norm().dot(&self.forward);
+    // ジオメトリターム
     let g_term = (sensor_lens_direction_cos * sensor_lens_direction_cos) / sensor_lens_direction.dot(&sensor_lens_direction);
+    // レンズ上でのサンプルの確率密度関数 (1 / π * r^2)
     let lens_pdf = 1.0 / (PI * self.lens_radius * self.lens_radius);
+    // イメージセンサー1ピクセル内でのサンプルの確率密度関数 (1 / w * h)
     let sensor_pdf = 1.0 / self.sensor_pixel_area;
+    // L * W * G / (P_lens * P_sensor)
     return incomming_radiance.smul(self.sensor_sensitivity * g_term / lens_pdf / sensor_pdf);
   }
 }
@@ -648,7 +655,9 @@ fn main() {
           let sensor_position = cam.get_sensor_point(i, j);
           let lens_position = cam.get_lens_point();
           let ray = cam.get_ray(sensor_position, lens_position);
-          r = &r + &cam.lens_radiance(sensor_position, lens_position, radiance(ray, 0, false)).smul(1.0 / samples as f64);
+          // radiance: レンズ上の点までの放射輝度を計算
+          // sensor_flux: レンズからイメージセンサー1ピクセルでの放射束を計算
+          r = &r + &cam.sensor_flux(sensor_position, lens_position, radiance(ray, 0, false)).smul(1.0 / samples as f64);
           // r = &r + &radiance(ray, 0, false).smul(1.0 / samples as f64);
         }
         tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
@@ -670,6 +679,7 @@ fn main() {
   f.write_all( format!("P3\n{} {}\n{}\n", WIDTH, HEIGHT, 255).as_bytes() ).ok();
   for i in 0..HEIGHT {
     for j in 0..WIDTH {
+      // イメージセンサーでは上下左右反転した画像が取得できるので、反転して出力する
       f.write_all( format!("{} {} {} ", to_int(output[i][WIDTH - j - 1].x), to_int(output[i][WIDTH - j - 1].y), to_int(output[i][WIDTH - j - 1].z)).as_bytes() ).ok();
     }
   }
