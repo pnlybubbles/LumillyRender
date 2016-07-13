@@ -239,16 +239,50 @@ struct Triangle {
   position2: Vector,
   normal: Vector,
   material: Material,
+  checker: bool,
+  basis: Vector,
+  vertical0: Vector,
+  vertical1: Vector,
 }
 
 impl Triangle {
   fn new(position0: Vector, position1: Vector, position2: Vector, material: Material) -> Triangle {
+    let v0 = &position1 - &position2;
+    let v1 = &position2 - &position0;
+    let v2 = &position0 - &position1;
+    let mut checker = true;
+    let mut basis: Vector = Default::default();
+    let mut vertical0: Vector = Default::default();
+    let mut vertical1: Vector = Default::default();
+    if material.emission.dot(&material.emission) == 0.0 {
+      if v0.dot(&v1).abs() < EPS {
+        basis = position2;
+        vertical0 = v0.norm();
+        vertical1 = v1.smul(-1.0).norm();
+      } else if v1.dot(&v2).abs() < EPS {
+        basis = position0;
+        vertical0 = v1.norm();
+        vertical1 = v2.smul(-1.0).norm();
+      } else if v2.dot(&v0).abs() < EPS {
+        basis = position1;
+        vertical0 = v2.norm();
+        vertical1 = v0.smul(-1.0).norm();
+      } else {
+        checker = false;
+      }
+    } else {
+      checker = false;
+    }
     Triangle {
       position0: position0,
       position1: position1,
       position2: position2,
       normal: (&position1 - &position0).cross(&position2 - &position0).norm(),
       material: material,
+      checker: checker,
+      basis: basis,
+      vertical0: vertical0,
+      vertical1: vertical1,
     }
   }
 }
@@ -286,7 +320,16 @@ impl Shape for Triangle {
     i.t = t;
     i.normal = self.normal;
     i.position = p;
-    i.material = self.material;
+    if self.checker {
+      let comp0 = (&p - &self.basis).dot(&self.vertical0);
+      let comp1 = (&p - &self.basis).dot(&self.vertical1);
+        i.material = self.material;
+      if (((comp0 / 1.0).floor() + (comp1 / 1.0).floor()) as i32) % 2 == 0 {
+        i.material.color = i.material.color.smul(0.6);
+      }
+    } else {
+      i.material = self.material;
+    }
     return i;
   }
 }
@@ -584,18 +627,18 @@ const EMISSION_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refr
 
 lazy_static! {
   static ref TRIANGLE_OBJECTS: [Triangle; 14] = [
-    Triangle::new(Vector{x: -5.0, y: 5.0, z: 5.0}, Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
     Triangle::new(Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
     Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: -5.0, y: 5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: 5.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: 5.0}, Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: 5.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: -5.0, z: 5.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: 5.0, z: 5.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: 5.0, z: 5.0}, Vector{x: -5.0, y: 5.0, z: 5.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    Triangle::new(Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
     Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, EMISSION_MATERIAL),
     Triangle::new(Vector{x: 1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, EMISSION_MATERIAL),
   ];
@@ -642,7 +685,7 @@ fn main() {
   let camera_position = Vector{x: 0.0, y: 0.0, z: 15.0};
   let screen_direction = Vector{x: 0.0, y: 0.0, z: -15.0};
   let focus_distance = 3.0 + screen_direction.dot(&screen_direction).sqrt();
-  let lens_radius = 2.0;
+  let lens_radius = 0.001;
   let sensor_sensitivity = 1.0;
   let cam = Camera::new(camera_position, screen_direction, HEIGHT, WIDTH, 10.0, 10.0, focus_distance, lens_radius, sensor_sensitivity);
 
