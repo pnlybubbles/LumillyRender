@@ -114,7 +114,7 @@ impl Camera {
       direction: direction,
       focus_distance: focus_distance,
       lens_radius: lens_radius,
-      sensor_sensitivity: sensor_sensitivity / sensor_pixel_area,
+      sensor_sensitivity: sensor_sensitivity * direction_distance * direction_distance / (sensor_pixel_area * PI * lens_radius * lens_radius),
       forward: forward,
       right: right,
       up: right.cross(forward),
@@ -123,29 +123,31 @@ impl Camera {
     }
   }
 
-  fn get_sensor_direction(self, top: usize, left: usize) -> Vector {
+  fn get_sensor_point(self, top: usize, left: usize) -> Vector {
+    // イメージセンサー1ピクセル内の点を取得
     return
-      &(&self.right.smul(((left as f64 + rand::random::<f64>() - 0.5) / (self.width as f64) - 0.5) * self.screen_width) +
+      &(&(&self.right.smul(((left as f64 + rand::random::<f64>() - 0.5) / (self.width as f64) - 0.5) * self.screen_width) +
       &self.up.smul(((top as f64 + rand::random::<f64>() - 0.5) / (self.height as f64) - 0.5) * self.screen_height)) +
-      &self.forward.smul(-1.0 * self.direction_distance);
+      &self.forward.smul(-1.0 * self.direction_distance)) + &self.position;
   }
 
-  fn get_lens_direction(self) -> Vector {
-    // レンズ中心からの相対座標
+  fn get_lens_point(self) -> Vector {
+    // 円形レンズ内に一様分布
     let r1 = 2.0 * PI * rand::random::<f64>();
     let r2 = rand::random::<f64>().sqrt() * self.lens_radius;
-    return &self.right.smul(r1.cos() * r2) + &self.up.smul(r1.sin() * r2);
+    return &(&self.right.smul(r1.cos() * r2) + &self.up.smul(r1.sin() * r2)) + &self.position;
   }
 
-  fn get_ray(self, sensor_direction: Vector, lens_direction: Vector) -> Ray {
+  fn get_ray(self, sensor_position: Vector, lens_position: Vector) -> Ray {
+    let sensor_direction = &sensor_position - &self.position;
     let screen_direction = sensor_direction.smul(-1.0);
     let screen_distance = screen_direction.dot(&self.forward);
     let object_plane_direction = screen_direction.smul(self.focus_distance / screen_distance);
-    return Ray{o: &self.position + &lens_direction, d: (&object_plane_direction - &lens_direction).norm()};
+    return Ray{o: lens_position, d: (&object_plane_direction - &(&lens_position - &self.position)).norm()};
   }
 
-  fn lens_radiance(self, sensor_direction: Vector, lens_direction: Vector, incomming_radiance: Vector) -> Vector {
-    let sensor_lens_direction = &lens_direction - &sensor_direction;
+  fn lens_radiance(self, sensor_position: Vector, lens_position: Vector, incomming_radiance: Vector) -> Vector {
+    let sensor_lens_direction = &lens_position - &sensor_position;
     let sensor_lens_direction_cos = sensor_lens_direction.norm().dot(&self.forward);
     let g_term = (sensor_lens_direction_cos * sensor_lens_direction_cos) / sensor_lens_direction.dot(&sensor_lens_direction);
     let lens_pdf = 1.0 / (PI * self.lens_radius * self.lens_radius);
@@ -626,13 +628,13 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 5;
+  let samples: usize = 1;
   println!("samples: {}", samples);
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
 
   let camera_position = Vector{x: 0.0, y: 0.0, z: 15.0};
   let screen_direction = Vector{x: 0.0, y: 0.0, z: -15.0};
-  let focus_distance = 7.0 + screen_direction.dot(&screen_direction).sqrt();
+  let focus_distance = 3.0 + screen_direction.dot(&screen_direction).sqrt();
   let lens_radius = 2.0;
   let sensor_sensitivity = 1.0;
   let cam = Camera::new(camera_position, screen_direction, HEIGHT, WIDTH, 10.0, 10.0, focus_distance, lens_radius, sensor_sensitivity);
@@ -643,11 +645,11 @@ fn main() {
       pool.execute(move || {
         let mut r: Vector = Default::default();
         for _ in 0..samples {
-          let sensor_direction = cam.get_sensor_direction(i, j);
-          let lens_direction = cam.get_lens_direction();
-          let ray = cam.get_ray(sensor_direction, lens_direction);
-          // r = &r + &cam.lens_radiance(sensor_direction, lens_direction, radiance(ray, 0, false)).smul(1.0 / samples as f64);
-          r = &r + &radiance(ray, 0, false).smul(1.0 / samples as f64);
+          let sensor_position = cam.get_sensor_point(i, j);
+          let lens_position = cam.get_lens_point();
+          let ray = cam.get_ray(sensor_position, lens_position);
+          r = &r + &cam.lens_radiance(sensor_position, lens_position, radiance(ray, 0, false)).smul(1.0 / samples as f64);
+          // r = &r + &radiance(ray, 0, false).smul(1.0 / samples as f64);
         }
         tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
       });
@@ -668,7 +670,7 @@ fn main() {
   f.write_all( format!("P3\n{} {}\n{}\n", WIDTH, HEIGHT, 255).as_bytes() ).ok();
   for i in 0..HEIGHT {
     for j in 0..WIDTH {
-      f.write_all( format!("{} {} {} ", to_int(output[i][j].x), to_int(output[i][j].y), to_int(output[i][j].z)).as_bytes() ).ok();
+      f.write_all( format!("{} {} {} ", to_int(output[i][WIDTH - j - 1].x), to_int(output[i][WIDTH - j - 1].y), to_int(output[i][WIDTH - j - 1].z)).as_bytes() ).ok();
     }
   }
 
