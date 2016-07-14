@@ -501,7 +501,7 @@ fn radiance(r: Ray, depth: usize, no_emission: bool) -> Vector{
       // BRDFは半球全体に一様に散乱するDiffuse面を考えると σ / π
       let brdf = i.material.color.smul(1.0 / PI);
       // 積分範囲は光源面上
-      direct_light_radiance = &l_e + &(&brdf * &test_i.material.emission.smul(g_term / direct_light_pdf));
+      direct_light_radiance = &brdf * &test_i.material.emission.smul(g_term / direct_light_pdf);
     }
     // 乱数を生成
     // (半球面状で一様にサンプル)
@@ -540,7 +540,7 @@ fn radiance(r: Ray, depth: usize, no_emission: bool) -> Vector{
     // return &l_e + &(&brdf * &radiance(new_ray, depth + 1).smul(dn / (pdf * continue_rr_prob * brdf_type_rr_prob)));
     // return &l_e + &(&i.material.color * &radiance(new_ray, depth + 1).smul(2.0 * dn / (continue_rr_prob * brdf_type_rr_prob)));
     // 積分範囲は光源以外なので光源に当たった場合の寄与は無し
-    return &l_e + &(&direct_light_radiance + &(&i.material.color * &radiance(new_ray, depth + 1, true)).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
+    return &l_e + &(&direct_light_radiance + &(&i.material.color * &radiance(new_ray, depth + 1, true))).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob));
   } else if brdf_type == 1 { // 鏡面
     let new_ray = Ray{d: &r.d - &i.normal.smul(2.0 * r.d.dot(&i.normal)), o: i.position};
     return &l_e + &(&i.material.color * &radiance(new_ray, depth + 1, false).smul(1.0 / (continue_rr_prob * brdf_type_rr_prob)));
@@ -685,7 +685,7 @@ fn main() {
   let camera_position = Vector{x: 0.0, y: 0.0, z: 15.0};
   let screen_direction = Vector{x: 0.0, y: 0.0, z: -15.0};
   let focus_distance = 3.0 + screen_direction.dot(&screen_direction).sqrt();
-  let lens_radius = 0.001;
+  let lens_radius = 0.1;
   let sensor_sensitivity = 1.0;
   let cam = Camera::new(camera_position, screen_direction, HEIGHT, WIDTH, 10.0, 10.0, focus_distance, lens_radius, sensor_sensitivity);
 
