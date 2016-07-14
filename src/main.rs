@@ -4,12 +4,14 @@ extern crate rand;
 extern crate threadpool;
 extern crate num_cpus;
 extern crate time;
+extern crate image;
 
 #[macro_use]
 extern crate lazy_static;
 
-use std::io::prelude::*;
+// use std::io::prelude::*;
 use std::fs::File;
+use std::path::Path;
 use std::ops::{Add, Sub, Mul};
 // use std::num::Float;
 use std::default::Default;
@@ -436,8 +438,8 @@ fn clamp(x: f64) -> f64 {
   return x
 }
 
-fn to_int(x: f64) -> i64 {
-  return (clamp(x).powf(1.0 / 2.2) * 255.0) as i64
+fn to_int(x: f64) -> u8 {
+  return (clamp(x).powf(1.0 / 2.2) * 255.0) as u8
 }
 
 fn radiance(r: Ray, depth: usize, no_emission: bool) -> Vector{
@@ -718,14 +720,24 @@ fn main() {
   }
 
   println!("\nwriting image...");
-  let mut f = File::create(format!("image_{}_{}.ppm", time::now().strftime("%Y%m%d%H%M%S").unwrap(), samples)).unwrap();
-  f.write_all( format!("P3\n{} {}\n{}\n", WIDTH, HEIGHT, 255).as_bytes() ).ok();
-  for i in 0..HEIGHT {
-    for j in 0..WIDTH {
-      // イメージセンサーでは上下左右反転した画像が取得できるので、反転して出力する
-      f.write_all( format!("{} {} {} ", to_int(output[i][WIDTH - j - 1].x), to_int(output[i][WIDTH - j - 1].y), to_int(output[i][WIDTH - j - 1].z)).as_bytes() ).ok();
-    }
+
+  let mut imgbuf = image::ImageBuffer::new(WIDTH as u32, HEIGHT as u32);
+  for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
+    let j = x as usize;
+    let i = y as usize;
+    *pixel = image::Rgb([to_int(output[i][WIDTH - j - 1].x), to_int(output[i][WIDTH - j - 1].y), to_int(output[i][WIDTH - j - 1].z)]);
   }
+  let ref mut f = File::create(&Path::new(&format!("image_{}_{}.png", time::now().strftime("%Y%m%d%H%M%S").unwrap(), samples))).unwrap();
+  let _ = image::ImageRgb8(imgbuf).save(f, image::PNG);
+
+  // let mut f = File::create().unwrap();
+  // f.write_all( format!("P3\n{} {}\n{}\n", WIDTH, HEIGHT, 255).as_bytes() ).ok();
+  // for i in 0..HEIGHT {
+  //   for j in 0..WIDTH {
+  //     // イメージセンサーでは上下左右反転した画像が取得できるので、反転して出力する
+  //     f.write_all( format!("{} {} {} ", to_int(output[i][WIDTH - j - 1].x), to_int(output[i][WIDTH - j - 1].y), to_int(output[i][WIDTH - j - 1].z)).as_bytes() ).ok();
+  //   }
+  // }
 
   let end_time = time::now();
   println!("end: {}", end_time.strftime("%+").unwrap());
