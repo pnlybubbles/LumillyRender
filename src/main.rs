@@ -447,7 +447,20 @@ fn radiance(r: Ray, depth: usize, no_emission: bool) -> Vector{
   let i = OBJECTS.get_intersect(r);
   // 当たらなかった場合は背景色を返す
   if !i.cross {
-    return BG_COLOR;
+    if IBL {
+      let theta = (r.d.z / r.d.dot(&r.d).sqrt()).acos();
+      let phi = (r.d.x / (r.d.x * r.d.x + r.d.y * r.d.y).sqrt()).acos();
+      let h = HDR_IMAGE_HEIGHT as f64;
+      let index = (h * theta / PI * h * 2.0 + h * phi / PI).floor() as usize;
+      if index >= 2 * h as usize * h as usize {
+        println!("{:?}", "OMG!");
+        return BG_COLOR;
+      }
+      let color = HDR_IMAGE[index];
+      return Vector{x: color.data[0] as f64, y: color.data[1] as f64, z: color.data[2] as f64};
+    } else {
+      return BG_COLOR;
+    }
   }
   // 放射
   let l_e = if no_emission { Vector{x: 0.0, y: 0.0, z: 0.0} } else { i.material.emission };
@@ -628,30 +641,36 @@ const REFRACTION_MATERIAL: Material = Material{diffuse: 0.0, reflection: 0.0, re
 const EMISSION_MATERIAL: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector{x: 12.0, y: 12.0, z: 12.0}, color: Vector{x: 1.0, y: 1.0, z: 1.0}};
 
 lazy_static! {
-  static ref TRIANGLE_OBJECTS: [Triangle; 14] = [
-    Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, WHITE_MATERIAL),
+  static ref TRIANGLE_OBJECTS: [Triangle; 2] = [
+    // Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
+    // Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, YELLOW_MATERIAL),
+    // Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
+    // Triangle::new(Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, BLUE_MATERIAL),
+    // Triangle::new(Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    // Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    // Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, WHITE_MATERIAL),
+    // Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, WHITE_MATERIAL),
     Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
     Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
-    Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, EMISSION_MATERIAL),
-    Triangle::new(Vector{x: 1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, EMISSION_MATERIAL),
+    // Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    // Triangle::new(Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, WHITE_MATERIAL),
+    // Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, EMISSION_MATERIAL),
+    // Triangle::new(Vector{x: 1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, EMISSION_MATERIAL),
   ];
 
   static ref SPHERE_OBJECTS: [Sphere; 2] = [
-    Sphere::new(Vector{x: -2.0, y: 2.0, z: -7.0}, 1.8, REFLECTION_MATERIAL),
+    // Sphere::new(Vector{x: -2.0, y: 2.0, z: -7.0}, 1.8, REFLECTION_MATERIAL),
+    Sphere::new(Vector{x: -2.0, y: -3.2, z: -7.0}, 1.8, REFLECTION_MATERIAL),
     Sphere::new(Vector{x: 2.0, y: -3.2, z: -3.0}, 1.8, REFRACTION_MATERIAL),
   ];
 
   static ref OBJECTS: Objects = Objects::new(&*TRIANGLE_OBJECTS, &*SPHERE_OBJECTS);
+
+  static ref HDR_IMAGE: Vec<image::Rgb<f32>> = image::hdr::read_raw_file(&Path::new("ibl.hdr")).unwrap();
 }
+
+const IBL: bool = true;
+const HDR_IMAGE_HEIGHT: usize = 180;
 
 const DEPTH: usize = 5;
 const DEPTH_LIMIT: usize = 64;
