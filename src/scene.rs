@@ -8,7 +8,7 @@ use constant::*;
 
 #[derive(Debug)]
 pub enum Background {
-  Ibl(Vec<image::Rgb<f32>>, usize),
+  Ibl(Vec<image::Rgb<f32>>, usize, usize),
   Color(Vector),
 }
 
@@ -17,7 +17,7 @@ pub struct Scene {
   pub objects: Objects,
   pub depth: usize,
   pub depth_limit: usize,
-  background: Background,
+  pub background: Background,
 }
 
 impl Scene {
@@ -36,12 +36,17 @@ impl Scene {
     // 当たらなかった場合は背景色を返す
     if !i.is_intersect {
       match self.background {
-        Background::Ibl(ref hdr_image, height) => {
+        Background::Ibl(ref hdr_image, height, offset) => {
           let theta = (ray.direction.y).acos();
-          let phi = (ray.direction.z / ray.direction.x).atan();
-          let h = height as f64;
-          let index = (h * theta / PI * h * 2.0 + h * phi / PI).floor() as usize;
-          if index >= 2 * h as usize * h as usize {
+          let phi_pr = (ray.direction.z / ray.direction.x).atan();
+          let phi = if ray.direction.x < 0.0 { phi_pr + PI } else { phi_pr } + PI / 2.0;
+          // if rand::random::<f64>() < 0.001 {
+            // println!("{:?}", phi);
+          // }
+          let x = (height as f64 * phi / PI).round() as usize + offset;
+          let y = (height as f64 * theta / PI).round() as usize;
+          let index = y * height * 2 + if x > height * 2 { x % (height * 2) } else { x };
+          if index >= 2 * height * height {
             return Vector::new(0.0, 0.0, 0.0);
           }
           let color = hdr_image[index];

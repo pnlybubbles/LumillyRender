@@ -18,7 +18,7 @@ mod triangle;
 mod scene;
 mod util;
 
-use std::io::{self, BufReader};
+use std::io::{BufReader};
 use std::fs::File;
 use std::path::Path;
 use threadpool::ThreadPool;
@@ -34,8 +34,8 @@ use sphere::Sphere;
 use scene::{Scene, Background};
 use util::*;
 
-const WIDTH: usize = 512;
 const HEIGHT: usize = 512;
+const WIDTH: usize = 512;
 
 const CROP_OFFSET_BOTTOM: usize = 0;
 const CROP_OFFSET_LEFT: usize = 0;
@@ -43,10 +43,11 @@ const CROP_HEIGHT: usize = 512;
 const CROP_WIDTH: usize = 512;
 
 fn main() {
-  let camera_position = Vector{x: 0.0, y: 0.0, z: 10.0};
-  let screen_direction = Vector{x: 0.0, y: 0.0, z: -5.0};
-  let focus_distance = 3.0 + screen_direction.len();
-  let lens_radius = 0.00001;
+  let camera_position = Vector{x: 0.0, y: 0.0, z: 5.0};
+  let screen_direction = Vector{x: 0.0, y: -0.5, z: -6.0};
+  let focus_distance = 1.8 + screen_direction.len();
+  let lens_radius = 0.3;
+  // let lens_radius = 10e-5;
   let sensor_sensitivity = 1.0;
   let cam = Camera::new(camera_position, screen_direction, HEIGHT, WIDTH, 10.0, 10.0, focus_distance, lens_radius, sensor_sensitivity);
 
@@ -66,8 +67,8 @@ fn main() {
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, white_material),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, white_material),
+    Triangle::new(Vector{x: -10.0, y: -5.0, z: -20.0}, Vector{x: -10.0, y: -5.0, z: 0.0}, Vector{x: 10.0, y: -5.0, z: -20.0}, white_material),
+    Triangle::new(Vector{x: -10.0, y: -5.0, z: 0.0}, Vector{x: 10.0, y: -5.0, z: 0.0}, Vector{x: 10.0, y: -5.0, z: -20.0}, white_material),
     // Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, emission_material),
@@ -75,7 +76,7 @@ fn main() {
   ];
 
   let sphere_objects = vec![
-    Sphere::new(Vector{x: -2.0, y: -3.2, z: -7.0}, 1.8, reflection_material),
+    Sphere::new(Vector{x: -2.0, y: -3.2, z: -4.0}, 1.8, reflection_material),
     Sphere::new(Vector{x: 2.0, y: -3.2, z: -3.0}, 1.8, refraction_material),
   ];
 
@@ -88,7 +89,10 @@ fn main() {
   let depth = 5;
   let limit_depth = 64;
   let hdr_image_height = hdr_image.metadata().height as usize;
-  let background = Background::Ibl(hdr_image.read_image_hdr().unwrap(), hdr_image_height);
+  let hdr_image_data = hdr_image.read_image_hdr().unwrap();
+  let hdr_image_longitude_offset = 2500;
+  println!("{:?}", hdr_image_data.len());
+  let background = Background::Ibl(hdr_image_data, hdr_image_height, hdr_image_longitude_offset);
   let scene_shared = Arc::new(Scene::new(objects, depth, limit_depth, background));
 
   let cpu_count = num_cpus::get();
