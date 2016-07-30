@@ -18,6 +18,7 @@ mod triangle;
 mod scene;
 mod util;
 
+use std::io::{self, BufReader};
 use std::fs::File;
 use std::path::Path;
 use threadpool::ThreadPool;
@@ -30,7 +31,7 @@ use material::Material;
 use objects::Objects;
 use triangle::Triangle;
 use sphere::Sphere;
-use scene::Scene;
+use scene::{Scene, Background};
 use util::*;
 
 const WIDTH: usize = 512;
@@ -42,10 +43,10 @@ const CROP_HEIGHT: usize = 512;
 const CROP_WIDTH: usize = 512;
 
 fn main() {
-  let camera_position = Vector{x: 0.0, y: 0.0, z: 15.0};
-  let screen_direction = Vector{x: 0.0, y: 0.0, z: -15.0};
+  let camera_position = Vector{x: 0.0, y: 0.0, z: 10.0};
+  let screen_direction = Vector{x: 0.0, y: 0.0, z: -5.0};
   let focus_distance = 3.0 + screen_direction.len();
-  let lens_radius = 0.1;
+  let lens_radius = 0.00001;
   let sensor_sensitivity = 1.0;
   let cam = Camera::new(camera_position, screen_direction, HEIGHT, WIDTH, 10.0, 10.0, focus_distance, lens_radius, sensor_sensitivity);
 
@@ -57,20 +58,20 @@ fn main() {
   let emission_material: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector::new(12.0, 12.0, 12.0), color: Vector::new(1.0, 1.0, 1.0)};
 
   let triangle_objects = vec![
-    Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, yellow_material),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, yellow_material),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, blue_material),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, blue_material),
-    Triangle::new(Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
-    Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, white_material),
-    Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, white_material),
-    Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
-    Triangle::new(Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
-    Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, emission_material),
-    Triangle::new(Vector{x: 1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, emission_material),
+    // Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, yellow_material),
+    // Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, yellow_material),
+    // Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, blue_material),
+    // Triangle::new(Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, blue_material),
+    // Triangle::new(Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
+    // Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
+    // Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
+    // Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, white_material),
+    Triangle::new(Vector{x: -5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: 0.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, white_material),
+    // Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
+    // Triangle::new(Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
+    // Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, emission_material),
+    // Triangle::new(Vector{x: 1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, emission_material),
   ];
 
   let sphere_objects = vec![
@@ -80,16 +81,22 @@ fn main() {
 
   let objects = Objects::new(triangle_objects, sphere_objects);
 
+  let hdr_image = image::hdr::HDRDecoder::new(BufReader::new(File::open("ibl.hdr").unwrap())).unwrap();
+
+  println!("{:?}", hdr_image.metadata());
+
   let depth = 5;
   let limit_depth = 64;
-  let scene_shared = Arc::new(Scene::new(objects, depth, limit_depth));
+  let hdr_image_height = hdr_image.metadata().height as usize;
+  let background = Background::Ibl(hdr_image.read_image_hdr().unwrap(), hdr_image_height);
+  let scene_shared = Arc::new(Scene::new(objects, depth, limit_depth, background));
 
   let cpu_count = num_cpus::get();
   println!("cpu: {}", cpu_count);
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 1;
+  let samples: usize = 100;
   println!("samples: {}", samples);
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
 

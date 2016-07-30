@@ -1,4 +1,5 @@
 extern crate rand;
+extern crate image;
 
 use vector::Vector;
 use ray::Ray;
@@ -6,42 +7,48 @@ use objects::Objects;
 use constant::*;
 
 #[derive(Debug)]
+pub enum Background {
+  Ibl(Vec<image::Rgb<f32>>, usize),
+  Color(Vector),
+}
+
+#[derive(Debug)]
 pub struct Scene {
   pub objects: Objects,
   pub depth: usize,
   pub depth_limit: usize,
-  pub background_color: Vector,
+  background: Background,
 }
 
 impl Scene {
-  pub fn new(objects: Objects, depth: usize, depth_limit: usize) -> Scene {
+  pub fn new(objects: Objects, depth: usize, depth_limit: usize, background: Background) -> Scene {
     return Scene {
       objects: objects,
       depth: depth,
       depth_limit: depth_limit,
-      background_color: Vector::new(0.0, 0.0, 0.0),
+      background: background,
     };
   }
 
-  pub fn radiance(&self, ray: Ray, depth: usize, no_emission: bool) -> Vector{
+  pub fn radiance(&self, ray: Ray, depth: usize, no_emission: bool) -> Vector {
     // すべてのオブジェクトと当たり判定を行う
     let i = self.objects.get_intersect(ray);
     // 当たらなかった場合は背景色を返す
     if !i.is_intersect {
-      // if IBL {
-      //   let theta = (ray.direction.z / ray.direction.dot(&ray.direction).sqrt()).acos();
-      //   let phi = (ray.direction.x / (ray.direction.x * ray.direction.x + ray.direction.y * ray.direction.y).sqrt()).acos();
-      //   let h = HDR_IMAGE_HEIGHT as f64;
-      //   let index = (h * theta / PI * h * 2.0 + h * phi / PI).floor() as usize;
-      //   if index >= 2 * h as usize * h as usize {
-      //     println!("{:?}", "OMG!");
-      //     return self.background_color;
-      //   }
-      //   let color = HDR_IMAGE[index];
-      //   return Vector{x: coloray.directionata[0] as f64, y: coloray.directionata[1] as f64, z: color.data[2] as f64};
-      // } else {
-        return self.background_color;
-      // }
+      match self.background {
+        Background::Ibl(ref hdr_image, height) => {
+          let theta = (ray.direction.y).acos();
+          let phi = (ray.direction.z / ray.direction.x).atan();
+          let h = height as f64;
+          let index = (h * theta / PI * h * 2.0 + h * phi / PI).floor() as usize;
+          if index >= 2 * h as usize * h as usize {
+            return Vector::new(0.0, 0.0, 0.0);
+          }
+          let color = hdr_image[index];
+          return Vector{x: color.data[0] as f64, y: color.data[1] as f64, z: color.data[2] as f64};
+        },
+        Background::Color(color) => return color,
+      }
     }
     // 放射
     let l_e = if no_emission { Vector::new(0.0, 0.0, 0.0) } else { i.material.emission };

@@ -27,25 +27,25 @@ impl Triangle {
     let mut basis: Vector = Default::default();
     let mut vertical0: Vector = Default::default();
     let mut vertical1: Vector = Default::default();
-    if material.emission.sqr_len() == 0.0 {
-      if v0.dot(v1).abs() < EPS {
-        basis = position2;
-        vertical0 = v0.norm();
-        vertical1 = (v1 * (-1.0)).norm();
-      } else if v1.dot(v2).abs() < EPS {
-        basis = position0;
-        vertical0 = v1.norm();
-        vertical1 = (v2 * (-1.0)).norm();
-      } else if v2.dot(v0).abs() < EPS {
-        basis = position1;
-        vertical0 = v2.norm();
-        vertical1 = (v0 * (-1.0)).norm();
-      } else {
-        checker = false;
-      }
-    } else {
+    // if material.emission.sqr_len() == 0.0 {
+    //   if v0.dot(v1).abs() < EPS {
+    //     basis = position2;
+    //     vertical0 = v0.norm();
+    //     vertical1 = (v1 * (-1.0)).norm();
+    //   } else if v1.dot(v2).abs() < EPS {
+    //     basis = position0;
+    //     vertical0 = v1.norm();
+    //     vertical1 = (v2 * (-1.0)).norm();
+    //   } else if v2.dot(v0).abs() < EPS {
+    //     basis = position1;
+    //     vertical0 = v2.norm();
+    //     vertical1 = (v0 * (-1.0)).norm();
+    //   } else {
+    //     checker = false;
+    //   }
+    // } else {
       checker = false;
-    }
+    // }
     Triangle {
       position0: position0,
       position1: position1,
