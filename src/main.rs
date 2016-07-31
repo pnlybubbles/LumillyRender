@@ -34,13 +34,13 @@ use sphere::Sphere;
 use scene::{Scene, Background};
 use util::*;
 
-const HEIGHT: usize = 800;
-const WIDTH: usize = 1200;
+const HEIGHT: usize = 1080;
+const WIDTH: usize = 1920;
 
 const CROP_OFFSET_BOTTOM: usize = 0;
 const CROP_OFFSET_LEFT: usize = 0;
-const CROP_HEIGHT: usize = 800;
-const CROP_WIDTH: usize = 1200;
+const CROP_HEIGHT: usize = 1080;
+const CROP_WIDTH: usize = 1920;
 
 fn main() {
   let camera_position = Vector{x: -11.5, y: 1.0, z: 13.0};
@@ -79,8 +79,8 @@ fn main() {
 
   let sphere_objects = vec![
     Sphere::new(Vector{x: -4.0, y: -3.2, z: 0.5}, 1.8, refraction_material),
-    Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 1.8, reflection_material),
-    Sphere::new(Vector{x: 2.0, y: -3.2, z: 4.0}, 1.8, white_material),
+    Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 1.8, white_material),
+    Sphere::new(Vector{x: 2.0, y: -3.2, z: 4.0}, 1.8, reflection_material),
   ];
 
   let objects = Objects::new(triangle_objects, sphere_objects);
