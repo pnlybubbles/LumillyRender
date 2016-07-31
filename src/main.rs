@@ -128,9 +128,7 @@ fn main() {
   println!("start: {}", start_time.strftime("%+").unwrap());
 
   for p in 0..CROP_WIDTH * CROP_HEIGHT - 1 {
-    if p % CROP_WIDTH == 0 {
-      print!("\rraytracing... ({:.0}/{:.0} : {:.0}%)", p, CROP_WIDTH * CROP_HEIGHT, (p as f64) / ((CROP_WIDTH * CROP_HEIGHT) as f64) * 100.0);
-    }
+    print!("\rraytracing... ({:.0}/{:.0} : {:.0}%)", p, CROP_WIDTH * CROP_HEIGHT, (p as f64) / ((CROP_WIDTH * CROP_HEIGHT) as f64) * 100.0);
     let (i, j, color) = rx.recv().unwrap();
     output[i][j] = color;
   }
