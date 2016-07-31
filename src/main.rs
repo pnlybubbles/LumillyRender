@@ -34,22 +34,24 @@ use sphere::Sphere;
 use scene::{Scene, Background};
 use util::*;
 
-const HEIGHT: usize = 512;
-const WIDTH: usize = 512;
+const HEIGHT: usize = 1080;
+const WIDTH: usize = 1920;
 
 const CROP_OFFSET_BOTTOM: usize = 0;
 const CROP_OFFSET_LEFT: usize = 0;
-const CROP_HEIGHT: usize = 512;
-const CROP_WIDTH: usize = 512;
+const CROP_HEIGHT: usize = 1080;
+const CROP_WIDTH: usize = 1920;
 
 fn main() {
-  let camera_position = Vector{x: 0.0, y: 0.0, z: 5.0};
-  let screen_direction = Vector{x: 0.0, y: -0.5, z: -6.0};
-  let focus_distance = 1.8 + screen_direction.len();
+  let camera_position = Vector{x: -11.5, y: 1.0, z: 13.0};
+  let screen_direction = Vector{x: 8.18, y: -2.0, z: -9.0};
+  let focus_distance = 3.0 + screen_direction.len();
   let lens_radius = 0.3;
   // let lens_radius = 10e-5;
   let sensor_sensitivity = 1.0;
-  let cam = Camera::new(camera_position, screen_direction, HEIGHT, WIDTH, 10.0, 10.0, focus_distance, lens_radius, sensor_sensitivity);
+  let screen_height = 10.0;
+  let screen_width = screen_height * (WIDTH as f64 / HEIGHT as f64);
+  let cam = Camera::new(camera_position, screen_direction, HEIGHT, WIDTH, screen_height, screen_width, focus_distance, lens_radius, sensor_sensitivity);
 
   let yellow_material: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.75, 0.75, 0.25)};
   let blue_material: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.25, 0.25, 0.75)};
@@ -67,8 +69,8 @@ fn main() {
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
-    Triangle::new(Vector{x: -10.0, y: -5.0, z: -20.0}, Vector{x: -10.0, y: -5.0, z: 0.0}, Vector{x: 10.0, y: -5.0, z: -20.0}, white_material),
-    Triangle::new(Vector{x: -10.0, y: -5.0, z: 0.0}, Vector{x: 10.0, y: -5.0, z: 0.0}, Vector{x: 10.0, y: -5.0, z: -20.0}, white_material),
+    Triangle::new(Vector{x: -8.0, y: -5.0, z: -8.0}, Vector{x: -8.0, y: -5.0, z: 8.0}, Vector{x: 8.0, y: -5.0, z: -8.0}, white_material),
+    Triangle::new(Vector{x: -8.0, y: -5.0, z: 8.0}, Vector{x: 8.0, y: -5.0, z: 8.0}, Vector{x: 8.0, y: -5.0, z: -8.0}, white_material),
     // Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, emission_material),
@@ -76,8 +78,9 @@ fn main() {
   ];
 
   let sphere_objects = vec![
-    Sphere::new(Vector{x: -2.0, y: -3.2, z: -4.0}, 1.8, reflection_material),
-    Sphere::new(Vector{x: 2.0, y: -3.2, z: -3.0}, 1.8, refraction_material),
+    Sphere::new(Vector{x: -4.0, y: -3.2, z: 0.5}, 1.8, refraction_material),
+    Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 1.8, white_material),
+    Sphere::new(Vector{x: 2.0, y: -3.2, z: 4.0}, 1.8, reflection_material),
   ];
 
   let objects = Objects::new(triangle_objects, sphere_objects);
@@ -91,7 +94,6 @@ fn main() {
   let hdr_image_height = hdr_image.metadata().height as usize;
   let hdr_image_data = hdr_image.read_image_hdr().unwrap();
   let hdr_image_longitude_offset = 2500;
-  println!("{:?}", hdr_image_data.len());
   let background = Background::Ibl(hdr_image_data, hdr_image_height, hdr_image_longitude_offset);
   let scene_shared = Arc::new(Scene::new(objects, depth, limit_depth, background));
 
@@ -100,7 +102,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 100;
+  let samples: usize = 10000;
   println!("samples: {}", samples);
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
 
