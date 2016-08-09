@@ -7,4 +7,5 @@ pub struct Material {
   pub diffuse: f64,
   pub reflection: f64,
   pub refraction: f64,
+  pub roughness: f64,
 }
