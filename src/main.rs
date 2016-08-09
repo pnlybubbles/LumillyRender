@@ -34,20 +34,20 @@ use sphere::Sphere;
 use scene::{Scene, Background};
 use util::*;
 
-const HEIGHT: usize = 270;
-const WIDTH: usize = 480;
+const HEIGHT: usize = 270 * 2;
+const WIDTH: usize = 480 * 2;
 
-const CROP_OFFSET_BOTTOM: usize = 0;
-const CROP_OFFSET_LEFT: usize = 0;
-const CROP_HEIGHT: usize = 270;
-const CROP_WIDTH: usize = 480;
+const CROP_OFFSET_TOP: usize = 255;
+const CROP_OFFSET_RIGHT: usize = 230;
+const CROP_HEIGHT: usize = 165;
+const CROP_WIDTH: usize = 165;
 
 fn main() {
   let camera_position = Vector{x: -11.5, y: 1.0, z: 13.0};
   let screen_direction = Vector{x: 8.18, y: -2.0, z: -9.0};
   let focus_distance = 3.0 + screen_direction.len();
-  let lens_radius = 0.3;
-  // let lens_radius = 10e-5;
+  // let lens_radius = 0.3;
+  let lens_radius = 10e-5;
   let sensor_sensitivity = 1.0;
   let screen_height = 10.0;
   let screen_width = screen_height * (WIDTH as f64 / HEIGHT as f64);
@@ -78,8 +78,8 @@ fn main() {
   ];
 
   let sphere_objects = vec![
-    Sphere::new(Vector{x: -4.0, y: -3.2, z: 0.5}, 1.8, refraction_material),
-    Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 1.8, white_material),
+    // Sphere::new(Vector{x: -4.0, y: -3.2, z: 0.5}, 1.8, refraction_material),
+    // Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 1.8, white_material),
     Sphere::new(Vector{x: 2.0, y: -3.2, z: 4.0}, 1.8, reflection_material),
   ];
 
@@ -102,12 +102,12 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 10000;
+  let samples: usize = 500;
   println!("samples: {}", samples);
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
 
-  for i in CROP_OFFSET_BOTTOM..(CROP_OFFSET_BOTTOM + CROP_HEIGHT) {
-    for j in CROP_OFFSET_LEFT..(CROP_OFFSET_LEFT + CROP_WIDTH) {
+  for i in CROP_OFFSET_TOP..(CROP_OFFSET_TOP + CROP_HEIGHT) {
+    for j in CROP_OFFSET_RIGHT..(CROP_OFFSET_RIGHT + CROP_WIDTH) {
       let tx = tx.clone();
       let scene = scene_shared.clone();
       pool.execute(move || {

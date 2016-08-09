@@ -82,9 +82,9 @@ impl Scene {
     }
     // 拡散反射
     if brdf_type == 0 {
+      // 光源が存在するとき、光源方向へサンプリング
+      let mut direct_light_radiance = Vector::new(0.0, 0.0, 0.0);
       if self.objects.emission_area_total != 0.0 {
-        // 光源が存在するとき、光源方向へサンプリング
-        let mut direct_light_radiance = Vector::new(0.0, 0.0, 0.0);
         // 光源面から1点をサンプル(一様分布)
         let emmisive_position = self.objects.get_emission_point();
         let i_e = emmisive_position - i.position;
@@ -146,7 +146,17 @@ impl Scene {
       // 積分範囲は光源以外なので光源に当たった場合の寄与は無し
       return l_e + (direct_light_radiance + (i.material.color * self.radiance(new_ray, depth + 1, true))) * (1.0 / (continue_rr_prob * brdf_type_rr_prob));
     } else if brdf_type == 1 { // 鏡面
-      let new_ray = Ray{direction: ray.direction - i.normal * (2.0 * ray.direction.dot(i.normal)), origin: i.position};
+      // マイクロファセット分布関数
+      let roughness = 100.0;
+      let theta = (1.0 - rand::random::<f64>()).powf(1.0 / (roughness + 1.0)).acos();
+      let phi = 2.0 * PI * rand::random::<f64>();
+      // 反射点での法線方向を基準にした正規直交基底を生成
+      let w = i.normal;
+      let u = if w.x.abs() > EPS { Vector::new(0.0, 1.0, 0.0) } else { Vector::new(1.0, 0.0, 0.0) }.cross(w);
+      let v = w.cross(u);
+      // Normal Density Function
+      let ndf = u * (theta.sin() * phi.cos()) + v * (theta.sin() * phi.sin()) + w * (theta.cos());
+      let new_ray = Ray{direction: ray.direction - ndf * (2.0 * ray.direction.dot(ndf)), origin: i.position};
       return l_e + (i.material.color * self.radiance(new_ray, depth + 1, false) * (1.0 / (continue_rr_prob * brdf_type_rr_prob)));
     } else if brdf_type == 2 { // 屈折面
       // cosθ
