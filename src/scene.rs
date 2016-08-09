@@ -40,15 +40,9 @@ impl Scene {
           let theta = (ray.direction.y).acos();
           let phi_pr = (ray.direction.z / ray.direction.x).atan();
           let phi = if ray.direction.x < 0.0 { phi_pr + PI } else { phi_pr } + PI / 2.0;
-          // if rand::random::<f64>() < 0.001 {
-            // println!("{:?}", phi);
-          // }
           let x = (height as f64 * phi / PI).round() as usize + offset;
           let y = (height as f64 * theta / PI).round() as usize;
           let index = y * height * 2 + if x > height * 2 { x % (height * 2) } else { x };
-          if index >= 2 * height * height {
-            return Vector::new(0.0, 0.0, 0.0);
-          }
           let color = hdr_image[index];
           return Vector{x: color.data[0] as f64, y: color.data[1] as f64, z: color.data[2] as f64};
         },
@@ -88,28 +82,30 @@ impl Scene {
     }
     // 拡散反射
     if brdf_type == 0 {
-      // 光源方向へサンプリング
-      let mut direct_light_radiance = Vector::new(0.0, 0.0, 0.0);
-      // 光源面から1点をサンプル(一様分布)
-      let emmisive_position = self.objects.get_emission_point();
-      let i_e = emmisive_position - i.position;
-      let d_e = i_e.norm();
-      let test_ray = Ray{
-        origin: i.position + i.normal * 0.01,
-        direction: d_e,
-      };
-      // 可視関数用のテストレイを光源面上のサンプル点に飛ばす
-      let test_i = self.objects.get_intersect(test_ray);
-      // 光源と交差しなかった場合、寄与は無し
-      if test_i.is_intersect && test_i.material.emission.dot(test_i.material.emission) > 0.0 {
-        // ジオメトリターム
-        let g_term = (d_e.dot(i.normal) * (d_e * (-1.0)).dot(test_i.normal)) / i_e.dot(i_e);
-        // 光源面積測度での確率密度関数(一様分布)
-        let direct_light_pdf = 1.0 / self.objects.emission_area_total;
-        // BRDFは半球全体に一様に散乱するDiffuse面を考えると σ / π
-        let brdf = i.material.color * (1.0 / PI);
-        // 積分範囲は光源面上
-        direct_light_radiance = brdf * test_i.material.emission * (g_term / direct_light_pdf);
+      if self.objects.emission_area_total != 0.0 {
+        // 光源が存在するとき、光源方向へサンプリング
+        let mut direct_light_radiance = Vector::new(0.0, 0.0, 0.0);
+        // 光源面から1点をサンプル(一様分布)
+        let emmisive_position = self.objects.get_emission_point();
+        let i_e = emmisive_position - i.position;
+        let d_e = i_e.norm();
+        let test_ray = Ray {
+          origin: i.position + i.normal * 0.01,
+          direction: d_e,
+        };
+        // 可視関数用のテストレイを光源面上のサンプル点に飛ばす
+        let test_i = self.objects.get_intersect(test_ray);
+        // 光源と交差しなかった場合、寄与は無し
+        if test_i.is_intersect && test_i.material.emission.dot(test_i.material.emission) > 0.0 {
+          // ジオメトリターム
+          let g_term = (d_e.dot(i.normal) * (d_e * (-1.0)).dot(test_i.normal)) / i_e.dot(i_e);
+          // 光源面積測度での確率密度関数(一様分布)
+          let direct_light_pdf = 1.0 / self.objects.emission_area_total;
+          // BRDFは半球全体に一様に散乱するDiffuse面を考えると σ / π
+          let brdf = i.material.color * (1.0 / PI);
+          // 積分範囲は光源面上
+          direct_light_radiance = brdf * test_i.material.emission * (g_term / direct_light_pdf);
+        }
       }
       // 乱数を生成
       // (半球面状で一様にサンプル)
