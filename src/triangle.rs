@@ -64,10 +64,10 @@ impl Shape for Triangle {
   fn intersect(self, ray: Ray) -> Intersection {
     let mut i: Intersection = Default::default();
     let dn = ray.direction.dot(self.normal);
-    if dn >= 0.0 {
-      i.is_intersect = false;
-      return i;
-    }
+    // if dn >= 0.0 {
+    //   i.is_intersect = false;
+    //   return i;
+    // }
     let t = (self.position0 - ray.origin).dot(self.normal) / dn;
     if t < EPS {
       i.is_intersect = false;
@@ -93,16 +93,16 @@ impl Shape for Triangle {
     i.distance = t;
     i.normal = self.normal;
     i.position = p;
-    if self.checker {
-      let comp0 = (p - self.basis).dot(self.vertical0);
-      let comp1 = (p - self.basis).dot(self.vertical1);
-        i.material = self.material;
-      if (((comp0 / 1.0).floor() + (comp1 / 1.0).floor()) as i32) % 2 == 0 {
-        i.material.color = i.material.color * 0.6;
-      }
-    } else {
+    // if self.checker {
+    //   let comp0 = (p - self.basis).dot(self.vertical0);
+    //   let comp1 = (p - self.basis).dot(self.vertical1);
+    //     i.material = self.material;
+    //   if (((comp0 / 1.0).floor() + (comp1 / 1.0).floor()) as i32) % 2 == 0 {
+    //     i.material.color = i.material.color * 0.6;
+    //   }
+    // } else {
       i.material = self.material;
-    }
+    // }
     return i;
   }
 }

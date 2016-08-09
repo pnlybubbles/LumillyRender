@@ -34,13 +34,13 @@ use sphere::Sphere;
 use scene::{Scene, Background};
 use util::*;
 
-const HEIGHT: usize = 1080;
-const WIDTH: usize = 1920;
+const HEIGHT: usize = 270;
+const WIDTH: usize = 480;
 
 const CROP_OFFSET_BOTTOM: usize = 0;
 const CROP_OFFSET_LEFT: usize = 0;
-const CROP_HEIGHT: usize = 1080;
-const CROP_WIDTH: usize = 1920;
+const CROP_HEIGHT: usize = 270;
+const CROP_WIDTH: usize = 480;
 
 fn main() {
   let camera_position = Vector{x: -11.5, y: 1.0, z: 13.0};
