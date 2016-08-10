@@ -6,6 +6,7 @@ use intersection::Intersection;
 use shape::Shape;
 use triangle::Triangle;
 use sphere::Sphere;
+use constant::*;
 
 #[derive(Debug, Clone, Default)]
 pub struct Objects {
@@ -58,6 +59,21 @@ impl Objects {
       let i = obj.intersect(r);
       if i.is_intersect && (!intersect.is_intersect || intersect.distance > i.distance) {
         intersect = i;
+      }
+    }
+    if intersect.is_intersect {
+      // マイクロファセット分布関数
+      if intersect.material.roughness != 0.0 {
+        // (cosθ)^nの確率密度関数でサンプル(規格化を含む)
+        let a = 5.0 / intersect.material.roughness.powf(1.7) - 4.0;
+        let theta = (1.0 - rand::random::<f64>()).powf(1.0 / (a + 1.0)).acos();
+        let phi = 2.0 * PI * rand::random::<f64>();
+        // 反射点での法線方向を基準にした正規直交基底を生成
+        let w = intersect.normal;
+        let u = if w.x.abs() > EPS { Vector::new(0.0, 1.0, 0.0) } else { Vector::new(1.0, 0.0, 0.0) }.cross(w);
+        let v = w.cross(u);
+        // Normal Density Function
+        intersect.normal = u * (theta.sin() * phi.cos()) + v * (theta.sin() * phi.sin()) + w * (theta.cos());
       }
     }
     return intersect;

@@ -42,6 +42,14 @@ use util::*;
 // const CROP_HEIGHT: usize = 165;
 // const CROP_WIDTH: usize = 165;
 
+// const HEIGHT: usize = 270 * 1;
+// const WIDTH: usize = 480 * 1;
+
+// const CROP_OFFSET_TOP: usize = 26;
+// const CROP_OFFSET_RIGHT: usize = 153;
+// const CROP_HEIGHT: usize = 120;
+// const CROP_WIDTH: usize = 120;
+
 const HEIGHT: usize = 270 * 4;
 const WIDTH: usize = 480 * 4;
 
@@ -66,14 +74,19 @@ fn main() {
 
   // let yellow_material: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.75, 0.75, 0.25)};
   // let blue_material: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.25, 0.25, 0.75)};
-  let white_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 1.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.75, 0.75, 0.75)};
+  let white_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.75, 0.75, 0.75)};
   let reflection_material_0: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
   let reflection_material_1: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.2, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
   let reflection_material_2: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.4, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
   let reflection_material_3: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.6, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
   let reflection_material_4: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.8, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
-  // let refraction_material: Material = Material{diffuse: 0.0, reflection: 0.0, roughness: 1.0, refraction: 1.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
-  // let emission_material: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector::new(12.0, 12.0, 12.0), color: Vector::new(1.0, 1.0, 1.0)};
+  let refraction_material_0: Material = Material{diffuse: 0.0, reflection: 0.0, roughness: 0.0, refraction: 1.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
+  let refraction_material_1: Material = Material{diffuse: 0.0, reflection: 0.0, roughness: 0.01, refraction: 1.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
+  let refraction_material_2: Material = Material{diffuse: 0.0, reflection: 0.0, roughness: 0.1, refraction: 1.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
+  let refraction_material_3: Material = Material{diffuse: 0.0, reflection: 0.0, roughness: 0.2, refraction: 1.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
+  let refraction_material_4: Material = Material{diffuse: 0.0, reflection: 0.0, roughness: 0.4, refraction: 1.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
+  // let emission_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(12.0, 12.0, 12.0), color: Vector::new(1.0, 1.0, 1.0)};
+  let emission_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(1.0, 1.0, 1.0), color: Vector::new(1.0, 1.0, 1.0)};
 
   let triangle_objects = vec![
     // Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, yellow_material),
@@ -95,11 +108,11 @@ fn main() {
   let sphere_objects = vec![
     // Sphere::new(Vector{x: -4.0, y: -3.2, z: 0.5}, 1.8, refraction_material),
     // Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 1.8, white_material),
-    Sphere::new(Vector{x: -5.0, y: -4.0, z: 4.0}, 1.0, reflection_material_0),
-    Sphere::new(Vector{x: -2.5, y: -4.0, z: 4.0}, 1.0, reflection_material_1),
-    Sphere::new(Vector{x: 0.0, y: -4.0, z: 4.0}, 1.0, reflection_material_2),
-    Sphere::new(Vector{x: 2.5, y: -4.0, z: 4.0}, 1.0, reflection_material_3),
-    Sphere::new(Vector{x: 5.0, y: -4.0, z: 4.0}, 1.0, reflection_material_4),
+    Sphere::new(Vector{x: -5.0, y: -4.0, z: 4.0}, 1.0, refraction_material_0),
+    Sphere::new(Vector{x: -2.5, y: -4.0, z: 4.0}, 1.0, refraction_material_1),
+    Sphere::new(Vector{x: 0.0, y: -4.0, z: 4.0}, 1.0, refraction_material_2),
+    Sphere::new(Vector{x: 2.5, y: -4.0, z: 4.0}, 1.0, refraction_material_3),
+    Sphere::new(Vector{x: 5.0, y: -4.0, z: 4.0}, 1.0, refraction_material_4),
   ];
 
   let objects = Objects::new(triangle_objects, sphere_objects);
