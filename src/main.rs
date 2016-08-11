@@ -67,8 +67,8 @@ fn main() {
   let camera_position = Vector{x: -5.0, y: 1.5, z: 6.0};
   let screen_direction = Vector{x: 2.5, y: -0.5, z: -3.05};
   let focus_distance = 3.9 + screen_direction.len();
-  // let lens_radius = 0.3;
-  let lens_radius = 10e-5;
+  let lens_radius = 0.3;
+  // let lens_radius = 10e-5;
   let sensor_sensitivity = 1.0;
   let screen_height = 2.5;
   let screen_width = screen_height * (WIDTH as f64 / HEIGHT as f64);
@@ -99,8 +99,8 @@ fn main() {
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
-    Triangle::new(Vector{x: -3.4, y: -0.7, z: -3.4}, Vector{x: -3.4, y: -0.7, z: 3.4}, Vector{x: 3.4, y: -0.7, z: -3.4}, white_material),
-    Triangle::new(Vector{x: -3.4, y: -0.7, z: 3.4}, Vector{x: 3.4, y: -0.7, z: 3.4}, Vector{x: 3.4, y: -0.7, z: -3.4}, white_material),
+    Triangle::new(Vector{x: -3.4, y: -0.55, z: -3.4}, Vector{x: -3.4, y: -0.55, z: 3.4}, Vector{x: 3.4, y: -0.55, z: -3.4}, white_material),
+    Triangle::new(Vector{x: -3.4, y: -0.55, z: 3.4}, Vector{x: 3.4, y: -0.55, z: 3.4}, Vector{x: 3.4, y: -0.55, z: -3.4}, white_material),
     // Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, emission_material),
@@ -122,7 +122,7 @@ fn main() {
   let (models, materials) = cube.unwrap();
   println!("# of models: {}", models.len());
   println!("# of materials: {}", materials.len());
-  let x_rotate = PI / 3.5;
+  let x_rotate = PI / 3.3;
   for (i, m) in models.iter().enumerate() {
     let mesh = &m.mesh;
     println!("model[{}].name = \'{}\'", i, m.name);
