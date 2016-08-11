@@ -10,3 +10,4 @@ num_cpus = "*"
 time = "0.1"
 lazy_static = "0.1.*"
 image = { git = "https://github.com/PistonDevelopers/image.git", rev = "0e133ed6b6c10bd40c5309cc81db363c905bf702" }
+tobj = "*"
