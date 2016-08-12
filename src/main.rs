@@ -52,13 +52,13 @@ use constant::*;
 // const CROP_HEIGHT: usize = 120;
 // const CROP_WIDTH: usize = 120;
 
-const HEIGHT: usize = 270 * 2;
-const WIDTH: usize = 480 * 2;
+const HEIGHT: usize = 270 * 4;
+const WIDTH: usize = 480 * 4;
 
 const CROP_OFFSET_TOP: usize = 0;
 const CROP_OFFSET_RIGHT: usize = 0;
-const CROP_HEIGHT: usize = 270 * 2;
-const CROP_WIDTH: usize = 480 * 2;
+const CROP_HEIGHT: usize = 270 * 4;
+const CROP_WIDTH: usize = 480 * 4;
 
 fn main() {
   // let camera_position = Vector{x: -11.5, y: 1.0, z: 13.0};
@@ -66,7 +66,7 @@ fn main() {
   // let focus_distance = 3.0 + screen_direction.len();
   let camera_position = Vector{x: -5.0, y: 1.5, z: 6.0};
   let screen_direction = Vector{x: 2.5, y: -0.5, z: -3.05};
-  let focus_distance = 3.9 + screen_direction.len();
+  let focus_distance = 3.5 + screen_direction.len();
   let lens_radius = 0.3;
   // let lens_radius = 10e-5;
   let sensor_sensitivity = 1.0;
@@ -144,7 +144,7 @@ fn main() {
           x_rotate.sin() * polygon[i].y + x_rotate.cos() * polygon[i].z,
         )
       }
-      triangle_objects.push(Triangle::new(polygon[0], polygon[1], polygon[2], refraction_material_0));
+      triangle_objects.push(Triangle::new(polygon[0], polygon[1], polygon[2], reflection_material_1));
     }
   }
 
@@ -167,7 +167,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 1000;
+  let samples: usize = 10000;
   println!("samples: {}", samples);
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
 
