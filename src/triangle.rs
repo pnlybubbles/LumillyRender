@@ -32,32 +32,28 @@ impl Triangle {
 impl Shape for Triangle {
   fn intersect(self, ray: Ray) -> Intersection {
     let mut i: Intersection = Default::default();
-    let dn = ray.direction.dot(self.normal);
-    // if dn >= 0.0 {
-    //   i.is_intersect = false;
-    //   return i;
-    // }
-    let t = (self.position0 - ray.origin).dot(self.normal) / dn;
-    if t < EPS {
+    let e1 = self.position1 - self.position0;
+    let e2 = self.position2 - self.position0;
+    let q = ray.direction.cross(e2);
+    let det = q.dot(e1);
+    if det < EPS {
       i.is_intersect = false;
       return i;
     }
+    let s = ray.origin - self.position0;
+    let v = q.dot(s);
+    if v < 0.0 || v > det {
+      i.is_intersect = false;
+      return i;
+    }
+    let r = s.cross(e1);
+    let u = r.dot(ray.direction);
+    if u < 0.0 || u + v > det {
+      i.is_intersect = false;
+      return i;
+    }
+    let t = r.dot(e2) / det;
     let p = ray.origin + ray.direction * t;
-    let c0 = (self.position1 - self.position0).cross(p - self.position0);
-    if c0.dot(self.normal) < 0.0 {
-      i.is_intersect = false;
-      return i;
-    }
-    let c1 = (self.position2 - self.position1).cross(p - self.position1);
-    if c1.dot(self.normal) < 0.0 {
-      i.is_intersect = false;
-      return i;
-    }
-    let c2 = (self.position0 - self.position2).cross(p - self.position2);
-    if c2.dot(self.normal) < 0.0 {
-      i.is_intersect = false;
-      return i;
-    }
     i.is_intersect = true;
     i.distance = t;
     i.normal = self.normal;

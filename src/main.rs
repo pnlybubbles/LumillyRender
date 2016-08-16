@@ -52,13 +52,13 @@ use constant::*;
 // const CROP_HEIGHT: usize = 120;
 // const CROP_WIDTH: usize = 120;
 
-const HEIGHT: usize = 270 * 4;
-const WIDTH: usize = 480 * 4;
+const HEIGHT: usize = 270 * 2;
+const WIDTH: usize = 480 * 2;
 
 const CROP_OFFSET_TOP: usize = 0;
 const CROP_OFFSET_RIGHT: usize = 0;
-const CROP_HEIGHT: usize = 270 * 4;
-const CROP_WIDTH: usize = 480 * 4;
+const CROP_HEIGHT: usize = 270 * 2;
+const CROP_WIDTH: usize = 480 * 2;
 
 fn main() {
   // let camera_position = Vector{x: -11.5, y: 1.0, z: 13.0};
@@ -99,8 +99,8 @@ fn main() {
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
-    Triangle::new(Vector{x: -3.4, y: -0.55, z: -3.4}, Vector{x: -3.4, y: -0.55, z: 3.4}, Vector{x: 3.4, y: -0.55, z: -3.4}, white_material),
-    Triangle::new(Vector{x: -3.4, y: -0.55, z: 3.4}, Vector{x: 3.4, y: -0.55, z: 3.4}, Vector{x: 3.4, y: -0.55, z: -3.4}, white_material),
+    Triangle::new(Vector::new(-3.4, -0.55, -3.4), Vector::new(-3.4, -0.55, 3.4), Vector::new(3.4, -0.55, -3.4), white_material),
+    Triangle::new(Vector::new(-3.4, -0.55, 3.4), Vector::new(3.4, -0.55, -3.4), Vector::new(3.4, -0.55, 3.4), white_material),
     // Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, emission_material),
@@ -117,36 +117,36 @@ fn main() {
     // Sphere::new(Vector{x: 5.0, y: -4.0, z: 4.0}, 1.0, refraction_material_4),
   ];
 
-  let cube = tobj::load_obj(&Path::new("models/monkey/monkey.obj"));
-  assert!(cube.is_ok());
-  let (models, materials) = cube.unwrap();
-  println!("# of models: {}", models.len());
-  println!("# of materials: {}", materials.len());
-  let x_rotate = PI / 3.3;
-  for (i, m) in models.iter().enumerate() {
-    let mesh = &m.mesh;
-    println!("model[{}].name = \'{}\'", i, m.name);
-    println!("model[{}].mesh.material_id = {:?}", i, mesh.material_id);
-    println!("Size of model[{}].indices: {}", i, mesh.indices.len());
-    println!("model[{}].vertices: {}", i, mesh.positions.len() / 3);
-    for f in 0..mesh.indices.len() / 3 {
-      let mut polygon = [Vector::default(); 3];
-      for i in 0..3 {
-        let index: usize = f * 3 + i;
-        polygon[i] = Vector::new(
-          mesh.positions[mesh.indices[index] as usize * 3] as f64,
-          mesh.positions[mesh.indices[index] as usize * 3 + 1] as f64,
-          mesh.positions[mesh.indices[index] as usize * 3 + 2] as f64,
-        );
-        polygon[i] = Vector::new(
-          polygon[i].x,
-          x_rotate.cos() * polygon[i].y - x_rotate.sin() * polygon[i].z,
-          x_rotate.sin() * polygon[i].y + x_rotate.cos() * polygon[i].z,
-        )
-      }
-      triangle_objects.push(Triangle::new(polygon[0], polygon[1], polygon[2], reflection_material_1));
-    }
-  }
+  // let cube = tobj::load_obj(&Path::new("models/cube/cube.obj"));
+  // assert!(cube.is_ok());
+  // let (models, materials) = cube.unwrap();
+  // println!("# of models: {}", models.len());
+  // println!("# of materials: {}", materials.len());
+  // let x_rotate = PI / 3.3;
+  // for (i, m) in models.iter().enumerate() {
+  //   let mesh = &m.mesh;
+  //   println!("model[{}].name = \'{}\'", i, m.name);
+  //   println!("model[{}].mesh.material_id = {:?}", i, mesh.material_id);
+  //   println!("Size of model[{}].indices: {}", i, mesh.indices.len());
+  //   println!("model[{}].vertices: {}", i, mesh.positions.len() / 3);
+  //   for f in 0..mesh.indices.len() / 3 {
+  //     let mut polygon = [Vector::default(); 3];
+  //     for i in 0..3 {
+  //       let index: usize = f * 3 + i;
+  //       polygon[i] = Vector::new(
+  //         mesh.positions[mesh.indices[index] as usize * 3] as f64,
+  //         mesh.positions[mesh.indices[index] as usize * 3 + 1] as f64,
+  //         mesh.positions[mesh.indices[index] as usize * 3 + 2] as f64,
+  //       );
+  //       polygon[i] = Vector::new(
+  //         polygon[i].x,
+  //         x_rotate.cos() * polygon[i].y - x_rotate.sin() * polygon[i].z,
+  //         x_rotate.sin() * polygon[i].y + x_rotate.cos() * polygon[i].z,
+  //       )
+  //     }
+  //     triangle_objects.push(Triangle::new(polygon[0], polygon[1], polygon[2], white_material));
+  //   }
+  // }
 
   let objects = Objects::new(triangle_objects, sphere_objects);
 
@@ -167,7 +167,7 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 10000;
+  let samples: usize = 1;
   println!("samples: {}", samples);
   let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
 
