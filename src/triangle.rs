@@ -35,8 +35,8 @@ impl Shape for Triangle {
     let e1 = self.position1 - self.position0;
     let e2 = self.position2 - self.position0;
     let q = ray.direction.cross(e2);
-    let det = q.dot(e1);
-    if det < EPS {
+    let det = q.dot(e1); // クラメルの分母
+    if det.abs() < EPS {
       i.is_intersect = false;
       return i;
     }
