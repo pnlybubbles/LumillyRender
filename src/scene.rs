@@ -48,6 +48,8 @@ impl Scene {
         },
         Background::Color(color) => return color,
       }
+    } else {
+      return i.normal;
     }
     // 放射
     let l_e = if no_emission { Vector::new(0.0, 0.0, 0.0) } else { i.material.emission };
@@ -90,7 +92,7 @@ impl Scene {
         let i_e = emmisive_position - i.position;
         let d_e = i_e.norm();
         let test_ray = Ray {
-          origin: i.position + i.normal * 0.01,
+          origin: i.position,
           direction: d_e,
         };
         // 可視関数用のテストレイを光源面上のサンプル点に飛ばす
