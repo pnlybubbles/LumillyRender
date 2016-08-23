@@ -3,7 +3,6 @@
 extern crate threadpool;
 extern crate num_cpus;
 extern crate time;
-extern crate image;
 extern crate tobj;
 
 mod vector;
@@ -18,6 +17,7 @@ mod sphere;
 mod triangle;
 mod scene;
 mod util;
+mod save;
 
 use std::io::{BufReader};
 use std::fs::File;
@@ -35,6 +35,7 @@ use sphere::Sphere;
 use scene::{Scene, Background};
 use util::*;
 use constant::*;
+use save::save;
 
 // const HEIGHT: usize = 270 * 2;
 // const WIDTH: usize = 480 * 2;
@@ -43,14 +44,6 @@ use constant::*;
 // const CROP_OFFSET_RIGHT: usize = 230;
 // const CROP_HEIGHT: usize = 165;
 // const CROP_WIDTH: usize = 165;
-
-const HEIGHT: usize = 270 * 1;
-const WIDTH: usize = 480 * 1;
-
-const CROP_OFFSET_TOP: usize = 0;
-const CROP_OFFSET_RIGHT: usize = 0;
-const CROP_HEIGHT: usize = 270;
-const CROP_WIDTH: usize = 480;
 
 // const HEIGHT: usize = 270 * 2;
 // const WIDTH: usize = 480 * 2;
@@ -169,46 +162,47 @@ fn main() {
 
   let samples: usize = 1;
   println!("samples: {}", samples);
-  let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
+  let mut output = box [[Vector::new(0.0, 0.0, 0.0); WIDTH]; HEIGHT];
 
-  for i in CROP_OFFSET_TOP..(CROP_OFFSET_TOP + CROP_HEIGHT) {
-    for j in CROP_OFFSET_RIGHT..(CROP_OFFSET_RIGHT + CROP_WIDTH) {
-      let tx = tx.clone();
-      let scene = scene_shared.clone();
-      pool.execute(move || {
-        let mut r: Vector = Default::default();
-        for _ in 0..samples {
+  for _ in 0..samples {
+    for i in CROP_OFFSET_TOP..(CROP_OFFSET_TOP + CROP_HEIGHT) {
+      for j in CROP_OFFSET_RIGHT..(CROP_OFFSET_RIGHT + CROP_WIDTH) {
+        pool.execute(move || {
+          let tx = tx.clone();
+          let scene = scene_shared.clone();
           let sample = cam.sample(i, j);
           // radiance: レンズ上の点までの放射輝度を計算
           // sensor_flux: レンズからイメージセンサー1ピクセルでの放射束を計算
-          r = r + sample.sensor_flux(scene.radiance(sample.ray, 0, false)) * (1.0 / samples as f64);
+          let r = sample.sensor_flux(scene.radiance(sample.ray, 0, false)) * (1.0 / samples as f64);
           // r = &r + &radiance(ray, 0, false).smul(1.0 / samples as f64);
-        }
-        tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
-      });
+          tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
+        });
+      }
     }
   }
-
 
   let start_time = time::now();
   println!("start: {}", start_time.strftime("%+").unwrap());
 
-  for p in 0..CROP_WIDTH * CROP_HEIGHT - 1 {
-    print!("\rraytracing... ({:.0}/{:.0} : {:.0}%)", p, CROP_WIDTH * CROP_HEIGHT, (p as f64) / ((CROP_WIDTH * CROP_HEIGHT) as f64) * 100.0);
-    let (i, j, color) = rx.recv().unwrap();
-    output[i][j] = color;
-  }
+  let mut last_save_time = start_time;
 
-  println!("\nwriting image...");
-
-  let mut imgbuf = image::ImageBuffer::new(WIDTH as u32, HEIGHT as u32);
-  for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
-    let j = x as usize;
-    let i = y as usize;
-    *pixel = image::Rgb([to_int(output[i][WIDTH - j - 1].x), to_int(output[i][WIDTH - j - 1].y), to_int(output[i][WIDTH - j - 1].z)]);
+  for s in 0..samples {
+    for i_ in 0..CROP_HEIGHT {
+      for j_ in 0..CROP_WIDTH {
+        print!("\rraytracing... ({:.0}/{:.0} : {:.0}%)",
+          s * (i_ * CROP_WIDTH + j_),
+          samples * CROP_HEIGHT * CROP_WIDTH,
+          ((s * (i_ * CROP_WIDTH + j_)) as f64) / ((samples * CROP_HEIGHT * CROP_WIDTH) as f64) * 100.0);
+        let (i, j, color) = rx.recv().unwrap();
+        output[i][j] += color;
+      }
+    }
+    let save_time = time::now();
+    if (save_time - start_time) % SAVE_IMAGE_INTERVAL < SAVE_IMAGE_INTERVAL_ERROR || save_time - last_save_time > SAVE_IMAGE_INTERVAL {
+      println!("save: {}", (save_time - start_time).strftime("%+").unwrap());
+      save(output, s);
+    }
   }
-  let ref mut f = File::create(&Path::new(&format!("image_{}_{}.png", time::now().strftime("%Y%m%d%H%M%S").unwrap(), samples))).unwrap();
-  let _ = image::ImageRgb8(imgbuf).save(f, image::PNG);
 
   let end_time = time::now();
   println!("end: {}", end_time.strftime("%+").unwrap());
