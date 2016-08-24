@@ -48,8 +48,6 @@ impl Scene {
         },
         Background::Color(color) => return color,
       }
-    } else {
-      return i.normal;
     }
     // 放射
     let l_e = if no_emission { Vector::new(0.0, 0.0, 0.0) } else { i.material.emission };
