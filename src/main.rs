@@ -53,6 +53,9 @@ use img::Img;
 // const CROP_WIDTH: usize = 480 * 2;
 
 fn main() {
+  let start_time = time::now();
+  println!("start: {}", start_time.strftime("%+").unwrap());
+
   let camera_position = Vector{x: -11.5, y: 1.0, z: 13.0};
   let screen_direction = Vector{x: 8.18, y: -2.0, z: -9.0};
   let focus_distance = 3.0 + screen_direction.len();
@@ -108,14 +111,14 @@ fn main() {
     // Sphere::new(Vector::new(0.0, -1.0, 4.0), 1.0, refraction_material_0),
     // Sphere::new(Vector{x: 2.5, y: -4.0, z: 4.0}, 1.0, refraction_material_3),
     // Sphere::new(Vector{x: 5.0, y: -4.0, z: 4.0}, 1.0, refraction_material_4),
-    // Sphere::new(Vector{x: -7.0, y: -3.84, z: 6.0}, 0.16, reflection_material_0),
-    // Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 0.36, refraction_material_0),
-    // Sphere::new(Vector{x: 2.0, y: -3.2, z: 4.0}, 0.64, refraction_material_0),
-    // Sphere::new(Vector{x: 2.0, y: -3.2, z: 4.0}, 1.0, refraction_material_0),
-    // Sphere::new(Vector{x: 2.0, y: -3.2, z: 4.0}, 2.0, refraction_material_0),
-    Sphere::new(Vector{x: -4.0, y: -3.2, z: 0.5}, 1.8, refraction_material_0),
-    Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 1.8, white_material),
-    Sphere::new(Vector{x: 2.0, y: -3.2, z: 4.0}, 1.8, reflection_material_0),
+    Sphere::new(Vector{x: -6.0, y: -3.84, z: 4.0}, 0.16, refraction_material_0),
+    Sphere::new(Vector{x: -5.0, y: -3.64, z: 3.2}, 0.36, refraction_material_0),
+    Sphere::new(Vector{x: -4.0, y: -3.36, z: 2.4}, 0.64, reflection_material_0),
+    Sphere::new(Vector{x: -2.0, y: -3.0, z: 1.6}, 1.0, refraction_material_0),
+    Sphere::new(Vector{x: 1.0, y: -2.0, z: 0.8}, 2.0, refraction_material_0),
+    // Sphere::new(Vector{x: -4.0, y: -3.2, z: 0.5}, 1.8, refraction_material_0),
+    // Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 1.8, white_material),
+    // Sphere::new(Vector{x: 2.0, y: -3.2, z: 4.0}, 1.8, reflection_material_0),
   ];
 
   // let cube = tobj::load_obj(&Path::new("models/cube/cube.obj"));
@@ -168,8 +171,9 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 100000;
+  let samples: usize = 10000;
   println!("samples: {}", samples);
+
   let mut output = box [[Vector::new(0.0, 0.0, 0.0); WIDTH]; HEIGHT];
 
   for _ in 0..samples {
@@ -189,8 +193,6 @@ fn main() {
     }
   }
 
-  let start_time = time::now();
-  println!("start: {}", start_time.strftime("%+").unwrap());
   let mut next_save_time = SAVE_IMAGE_INTERVAL - SAVE_IMAGE_INTERVAL_ERROR;
   let time_limit_with_error = TIME_LIMIT - SAVE_IMAGE_INTERVAL_ERROR;
 
