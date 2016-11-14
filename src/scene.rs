@@ -90,7 +90,7 @@ impl Scene {
         let i_e = emmisive_position - i.position;
         let d_e = i_e.norm();
         let test_ray = Ray {
-          origin: i.position + i.normal * 0.01,
+          origin: i.position,
           direction: d_e,
         };
         // 可視関数用のテストレイを光源面上のサンプル点に飛ばす

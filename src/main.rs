@@ -3,8 +3,8 @@
 extern crate threadpool;
 extern crate num_cpus;
 extern crate time;
-extern crate image;
 extern crate tobj;
+extern crate image;
 
 mod vector;
 mod ray;
@@ -18,10 +18,10 @@ mod sphere;
 mod triangle;
 mod scene;
 mod util;
+mod img;
 
-use std::io::{BufReader};
 use std::fs::File;
-use std::path::Path;
+use std::io::{BufReader};
 use threadpool::ThreadPool;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::{Sender, Receiver};
@@ -33,8 +33,8 @@ use objects::Objects;
 use triangle::Triangle;
 use sphere::Sphere;
 use scene::{Scene, Background};
-use util::*;
 use constant::*;
+use img::Img;
 
 // const HEIGHT: usize = 270 * 2;
 // const WIDTH: usize = 480 * 2;
@@ -44,50 +44,46 @@ use constant::*;
 // const CROP_HEIGHT: usize = 165;
 // const CROP_WIDTH: usize = 165;
 
-// const HEIGHT: usize = 270 * 1;
-// const WIDTH: usize = 480 * 1;
+// const HEIGHT: usize = 270 * 2;
+// const WIDTH: usize = 480 * 2;
 
-// const CROP_OFFSET_TOP: usize = 26;
-// const CROP_OFFSET_RIGHT: usize = 153;
-// const CROP_HEIGHT: usize = 120;
-// const CROP_WIDTH: usize = 120;
-
-const HEIGHT: usize = 270 * 2;
-const WIDTH: usize = 480 * 2;
-
-const CROP_OFFSET_TOP: usize = 0;
-const CROP_OFFSET_RIGHT: usize = 0;
-const CROP_HEIGHT: usize = 270 * 2;
-const CROP_WIDTH: usize = 480 * 2;
+// const CROP_OFFSET_TOP: usize = 0;
+// const CROP_OFFSET_RIGHT: usize = 0;
+// const CROP_HEIGHT: usize = 270 * 2;
+// const CROP_WIDTH: usize = 480 * 2;
 
 fn main() {
-  // let camera_position = Vector{x: -11.5, y: 1.0, z: 13.0};
-  // let screen_direction = Vector{x: 8.18, y: -2.0, z: -9.0};
-  // let focus_distance = 3.0 + screen_direction.len();
-  let camera_position = Vector{x: -5.0, y: 1.5, z: 6.0};
-  let screen_direction = Vector{x: 2.5, y: -0.5, z: -3.05};
-  let focus_distance = 3.9 + screen_direction.len();
-  // let lens_radius = 0.3;
-  let lens_radius = 10e-5;
+  let start_time = time::now();
+  println!("start: {}", start_time.strftime("%+").unwrap());
+
+  let camera_position = Vector{x: -11.5, y: 1.0, z: 13.0};
+  let screen_direction = Vector{x: 8.18, y: -2.0, z: -9.0};
+  let focus_distance = 3.0 + screen_direction.len();
+  // let camera_position = Vector{x: -5.0, y: 1.5, z: 6.0};
+  // let screen_direction = Vector{x: 2.5, y: -0.5, z: -3.05};
+  // let focus_distance = 3.5 + screen_direction.len();
+  let lens_radius = 0.3;
+  // let lens_radius = 10e-5;
   let sensor_sensitivity = 1.0;
-  let screen_height = 2.5;
+  // let screen_height = 2.5;
+  let screen_height = 10.0;
   let screen_width = screen_height * (WIDTH as f64 / HEIGHT as f64);
   let cam = Camera::new(camera_position, screen_direction, HEIGHT, WIDTH, screen_height, screen_width, focus_distance, lens_radius, sensor_sensitivity);
 
   // let yellow_material: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.75, 0.75, 0.25)};
-  let blue_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.25, 0.25, 0.75)};
+  // let blue_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.25, 0.25, 0.75)};
   let white_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.75, 0.75, 0.75)};
   let reflection_material_0: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
-  let reflection_material_1: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.2, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
-  let reflection_material_2: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.4, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
-  let reflection_material_3: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.6, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
-  let reflection_material_4: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.8, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
+  // let reflection_material_1: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.2, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
+  // let reflection_material_2: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.4, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
+  // let reflection_material_3: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.6, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
+  // let reflection_material_4: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.8, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
   let refraction_material_0: Material = Material{diffuse: 0.0, reflection: 0.0, roughness: 0.0, refraction: 1.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
   // let refraction_material_1: Material = Material{diffuse: 0.0, reflection: 0.0, roughness: 0.01, refraction: 1.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
   // let refraction_material_2: Material = Material{diffuse: 0.0, reflection: 0.0, roughness: 0.1, refraction: 1.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
   // let refraction_material_3: Material = Material{diffuse: 0.0, reflection: 0.0, roughness: 0.2, refraction: 1.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
   // let refraction_material_4: Material = Material{diffuse: 0.0, reflection: 0.0, roughness: 0.4, refraction: 1.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
-  let emission_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(12.0, 12.0, 12.0), color: Vector::new(1.0, 1.0, 1.0)};
+  // let emission_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(12.0, 12.0, 12.0), color: Vector::new(1.0, 1.0, 1.0)};
   // let emission_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(1.0, 1.0, 1.0), color: Vector::new(1.0, 1.0, 1.0)};
 
   let mut triangle_objects = vec![
@@ -99,8 +95,8 @@ fn main() {
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
-    Triangle::new(Vector{x: -3.4, y: -0.7, z: -3.4}, Vector{x: -3.4, y: -0.7, z: 3.4}, Vector{x: 3.4, y: -0.7, z: -3.4}, white_material),
-    Triangle::new(Vector{x: -3.4, y: -0.7, z: 3.4}, Vector{x: 3.4, y: -0.7, z: 3.4}, Vector{x: 3.4, y: -0.7, z: -3.4}, white_material),
+    Triangle::new(Vector{x: -8.0, y: -5.0, z: -8.0}, Vector{x: -8.0, y: -5.0, z: 8.0}, Vector{x: 8.0, y: -5.0, z: -8.0}, white_material),
+    Triangle::new(Vector{x: -8.0, y: -5.0, z: 8.0}, Vector{x: 8.0, y: -5.0, z: 8.0}, Vector{x: 8.0, y: -5.0, z: -8.0}, white_material),
     // Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, emission_material),
@@ -112,41 +108,49 @@ fn main() {
     // Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 1.8, white_material),
     // Sphere::new(Vector{x: -5.0, y: -4.0, z: 4.0}, 1.0, refraction_material_0),
     // Sphere::new(Vector{x: -2.5, y: -4.0, z: 4.0}, 1.0, refraction_material_1),
-    // Sphere::new(Vector{x: 0.0, y: -4.0, z: 4.0}, 1.0, refraction_material_2),
+    // Sphere::new(Vector::new(0.0, -1.0, 4.0), 1.0, refraction_material_0),
     // Sphere::new(Vector{x: 2.5, y: -4.0, z: 4.0}, 1.0, refraction_material_3),
     // Sphere::new(Vector{x: 5.0, y: -4.0, z: 4.0}, 1.0, refraction_material_4),
+    Sphere::new(Vector{x: -6.0, y: -3.84, z: 4.0}, 0.16, refraction_material_0),
+    Sphere::new(Vector{x: -5.0, y: -3.64, z: 3.2}, 0.36, refraction_material_0),
+    Sphere::new(Vector{x: -4.0, y: -3.36, z: 2.4}, 0.64, reflection_material_0),
+    Sphere::new(Vector{x: -2.0, y: -3.0, z: 1.6}, 1.0, refraction_material_0),
+    Sphere::new(Vector{x: 1.0, y: -2.0, z: 0.8}, 2.0, refraction_material_0),
+    // Sphere::new(Vector{x: -4.0, y: -3.2, z: 0.5}, 1.8, refraction_material_0),
+    // Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 1.8, white_material),
+    // Sphere::new(Vector{x: 2.0, y: -3.2, z: 4.0}, 1.8, reflection_material_0),
   ];
 
-  let cube = tobj::load_obj(&Path::new("models/monkey/monkey.obj"));
-  assert!(cube.is_ok());
-  let (models, materials) = cube.unwrap();
-  println!("# of models: {}", models.len());
-  println!("# of materials: {}", materials.len());
-  let x_rotate = PI / 3.5;
-  for (i, m) in models.iter().enumerate() {
-    let mesh = &m.mesh;
-    println!("model[{}].name = \'{}\'", i, m.name);
-    println!("model[{}].mesh.material_id = {:?}", i, mesh.material_id);
-    println!("Size of model[{}].indices: {}", i, mesh.indices.len());
-    println!("model[{}].vertices: {}", i, mesh.positions.len() / 3);
-    for f in 0..mesh.indices.len() / 3 {
-      let mut polygon = [Vector::default(); 3];
-      for i in 0..3 {
-        let index: usize = f * 3 + i;
-        polygon[i] = Vector::new(
-          mesh.positions[mesh.indices[index] as usize * 3] as f64,
-          mesh.positions[mesh.indices[index] as usize * 3 + 1] as f64,
-          mesh.positions[mesh.indices[index] as usize * 3 + 2] as f64,
-        );
-        polygon[i] = Vector::new(
-          polygon[i].x,
-          x_rotate.cos() * polygon[i].y - x_rotate.sin() * polygon[i].z,
-          x_rotate.sin() * polygon[i].y + x_rotate.cos() * polygon[i].z,
-        )
-      }
-      triangle_objects.push(Triangle::new(polygon[0], polygon[1], polygon[2], refraction_material_0));
-    }
-  }
+  // let cube = tobj::load_obj(&Path::new("models/cube/cube.obj"));
+  // assert!(cube.is_ok());
+  // let (models, materials) = cube.unwrap();
+  // println!("# of models: {}", models.len());
+  // println!("# of materials: {}", materials.len());
+  // let x_rotate = PI / 3.3;
+  // for (i, m) in models.iter().enumerate() {
+  //   let mesh = &m.mesh;
+  //   println!("model[{}].name = \'{}\'", i, m.name);
+  //   println!("model[{}].mesh.material_id = {:?}", i, mesh.material_id);
+  //   println!("Size of model[{}].indices: {}", i, mesh.indices.len());
+  //   println!("model[{}].vertices: {}", i, mesh.positions.len() / 3);
+  //   for f in 0..mesh.indices.len() / 3 {
+  //     let mut polygon = [Vector::default(); 3];
+  //     for i in 0..3 {
+  //       let index: usize = f * 3 + i;
+  //       polygon[i] = Vector::new(
+  //         mesh.positions[mesh.indices[index] as usize * 3] as f64,
+  //         mesh.positions[mesh.indices[index] as usize * 3 + 1] as f64,
+  //         mesh.positions[mesh.indices[index] as usize * 3 + 2] as f64,
+  //       );
+  //       // polygon[i] = Vector::new(
+  //       //   polygon[i].x,
+  //       //   x_rotate.cos() * polygon[i].y - x_rotate.sin() * polygon[i].z,
+  //       //   x_rotate.sin() * polygon[i].y + x_rotate.cos() * polygon[i].z,
+  //       // )
+  //     }
+  //     triangle_objects.push(Triangle::new(polygon[0], polygon[1], polygon[2], white_material));
+  //   }
+  // }
 
   let objects = Objects::new(triangle_objects, sphere_objects);
 
@@ -167,47 +171,52 @@ fn main() {
   let pool = ThreadPool::new(cpu_count);
   let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
 
-  let samples: usize = 1000;
+  let samples: usize = 10000;
   println!("samples: {}", samples);
-  let mut output = box [[Vector{x: 0.0, y: 0.0, z: 0.0}; WIDTH]; HEIGHT];
 
-  for i in CROP_OFFSET_TOP..(CROP_OFFSET_TOP + CROP_HEIGHT) {
-    for j in CROP_OFFSET_RIGHT..(CROP_OFFSET_RIGHT + CROP_WIDTH) {
+  let mut output = box [[Vector::new(0.0, 0.0, 0.0); WIDTH]; HEIGHT];
+
+  for _ in 0..samples {
+    for i in CROP_OFFSET_TOP..(CROP_OFFSET_TOP + CROP_HEIGHT) {
       let tx = tx.clone();
       let scene = scene_shared.clone();
       pool.execute(move || {
-        let mut r: Vector = Default::default();
-        for _ in 0..samples {
+        for j in CROP_OFFSET_RIGHT..(CROP_OFFSET_RIGHT + CROP_WIDTH) {
           let sample = cam.sample(i, j);
           // radiance: レンズ上の点までの放射輝度を計算
           // sensor_flux: レンズからイメージセンサー1ピクセルでの放射束を計算
-          r = r + sample.sensor_flux(scene.radiance(sample.ray, 0, false)) * (1.0 / samples as f64);
+          let r = sample.sensor_flux(scene.radiance(sample.ray, 0, false));
           // r = &r + &radiance(ray, 0, false).smul(1.0 / samples as f64);
+          tx.send((i, j, Vector::new(r.x, r.y, r.z))).unwrap();
         }
-        tx.send((i, j, Vector{x: clamp(r.x), y: clamp(r.y), z: clamp(r.z)})).unwrap();
       });
     }
   }
 
-  let start_time = time::now();
-  println!("start: {}", start_time.strftime("%+").unwrap());
+  let mut next_save_time = SAVE_IMAGE_INTERVAL - SAVE_IMAGE_INTERVAL_ERROR;
+  let time_limit_with_error = TIME_LIMIT - SAVE_IMAGE_INTERVAL_ERROR;
 
-  for p in 0..CROP_WIDTH * CROP_HEIGHT - 1 {
-    print!("\rraytracing... ({:.0}/{:.0} : {:.0}%)", p, CROP_WIDTH * CROP_HEIGHT, (p as f64) / ((CROP_WIDTH * CROP_HEIGHT) as f64) * 100.0);
-    let (i, j, color) = rx.recv().unwrap();
-    output[i][j] = color;
+  for s in 0..samples {
+    print!("\rraytracing... ({:.0}/{:.0} : {:.0}%) ", s, samples, s as f64 / samples as f64 * 100.0);
+    for _ in 0..CROP_HEIGHT {
+      for _ in 0..CROP_WIDTH {
+        let (i, j, color) = rx.recv().unwrap();
+        output[i][j] = output[i][j] + color;
+      }
+    }
+    let save_time = time::now();
+    let elapse_time = (save_time - start_time).num_seconds() as f64;
+    if elapse_time > next_save_time {
+      println!("save: {}s", elapse_time);
+      Img::save_png(&output, s);
+      next_save_time += SAVE_IMAGE_INTERVAL;
+    }
+    if elapse_time > time_limit_with_error {
+      Img::save_png(&output, s);
+      println!("exceeded the time limit: {}s", elapse_time);
+      std::process::exit(0);
+    }
   }
-
-  println!("\nwriting image...");
-
-  let mut imgbuf = image::ImageBuffer::new(WIDTH as u32, HEIGHT as u32);
-  for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
-    let j = x as usize;
-    let i = y as usize;
-    *pixel = image::Rgb([to_int(output[i][WIDTH - j - 1].x), to_int(output[i][WIDTH - j - 1].y), to_int(output[i][WIDTH - j - 1].z)]);
-  }
-  let ref mut f = File::create(&Path::new(&format!("image_{}_{}.png", time::now().strftime("%Y%m%d%H%M%S").unwrap(), samples))).unwrap();
-  let _ = image::ImageRgb8(imgbuf).save(f, image::PNG);
 
   let end_time = time::now();
   println!("end: {}", end_time.strftime("%+").unwrap());
