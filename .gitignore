@@ -102,3 +102,5 @@ image*.png
 image*.ppm
 *.hdr
 image/
+src_/
+src__/

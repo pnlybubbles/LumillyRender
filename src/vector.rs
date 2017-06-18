@@ -31,6 +31,10 @@ impl Vector {
   pub fn norm(self) -> Vector {
     return self * (1.0 / self.len());
   }
+
+  pub fn to_array(self) -> [f64; 3] {
+    return [self.x, self.y, self.z];
+  }
 }
 
 impl Add for Vector {
