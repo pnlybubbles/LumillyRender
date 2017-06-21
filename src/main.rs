@@ -2,6 +2,7 @@ extern crate image;
 extern crate time;
 
 mod constant;
+mod img;
 
 use std::thread;
 use std::sync::mpsc::{channel, Sender, Receiver};
@@ -9,41 +10,41 @@ use image::{ImageBuffer, Rgb};
 use std::fs::File;
 use std::path::Path;
 use constant::*;
-
-type Pixel = [f64; 3];
-type Img = [[Pixel; WIDTH]; WIDTH];
+use img::{Img, Color};
 
 fn main() {
-  let mut output: Img = [[[0.0; 3]; HEIGHT]; WIDTH];
-  let (tx, rx): (Sender<(usize, usize, Pixel)>, Receiver<(usize, usize, Pixel)>) = channel();
+  let mut output: Img = Default::default();
+  let w = Img::width() as f64;
+  let h = Img::height() as f64;
+  let (tx, rx): (Sender<(usize, usize, Color)>, Receiver<(usize, usize, Color)>) = channel();
   for _ in 0..SPP {
     let tx = tx.clone();
     thread::spawn(move || {
-      for x in 0..WIDTH {
-        for y in 0..HEIGHT {
-          let color = [x as f64 / WIDTH as f64, y as f64 / HEIGHT as f64, (x + y) as f64 / (WIDTH + HEIGHT) as f64];
-          let _ = tx.send((x, y, color));
-        }
-      }
+      Img::each( |x, y| {
+        let color = [x as f64 / w, y as f64 / h, (x + y) as f64 / (w + h)];
+        let _ = tx.send((x, y, color));
+      });
     });
   }
   for s in 0..SPP {
     print!("\rprocessing... ({:.0}/{:.0} : {:.0}%) ", s, SPP, s as f64 / SPP as f64 * 100.0);
-    for _ in 0..WIDTH {
-      for _ in 0..HEIGHT {
-        let (x, y, pixel) = rx.recv().unwrap();
-        for i in 0..3 {
-          output[x][y][i] += pixel[i];
+    Img::each( |_, _| {
+      let (x, y, pixel) = rx.recv().unwrap();
+      output.apply(x, y, |output_pixel| {
+        for (op, p) in output_pixel.iter_mut().zip(pixel.iter()) {
+          *op += *p;
         }
+      } );
+      if (x == 100 && y == 100) {
+        println!("{:?} {:?}", output.get(100, 100), pixel);
       }
-    }
+    });
   }
-  println!("{:?}", output[0][0]);
   let mut buf = ImageBuffer::new(WIDTH as u32, HEIGHT as u32);
-  for (x_, y_, pixel) in buf.enumerate_pixels_mut() {
-    let x = x_ as usize;
-    let y = y_ as usize;
-    let color = [(output[x][y][0] / SPP as f64 * 256.0) as u8, (output[x][y][1] / SPP as f64 * 256.0) as u8, (output[x][y][2] / SPP as f64 * 256.0) as u8];
+  let k = 1.0 / SPP as f64 * 256.0;
+  for (x, y, pixel) in buf.enumerate_pixels_mut() {
+    let output_pixel = output.get(x as usize, y as usize);
+    let color = [(output_pixel[0] * k) as u8, (output_pixel[1] * k) as u8, (output_pixel[2] * k) as u8];
     *pixel = Rgb(color);
   }
   let file_name = &format!("image_{}_{}.png", time::now().strftime("%Y%m%d%H%M%S").unwrap(), SPP);
