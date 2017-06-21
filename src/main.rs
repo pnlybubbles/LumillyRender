@@ -1,4 +1,3 @@
-extern crate image;
 extern crate time;
 
 mod constant;
@@ -6,9 +5,6 @@ mod img;
 
 use std::thread;
 use std::sync::mpsc::{channel, Sender, Receiver};
-use image::{ImageBuffer, Rgb};
-use std::fs::File;
-use std::path::Path;
 use constant::*;
 use img::{Img, Color};
 
@@ -35,19 +31,14 @@ fn main() {
           *op += *p;
         }
       } );
-      if (x == 100 && y == 100) {
-        println!("{:?} {:?}", output.get(100, 100), pixel);
-      }
     });
   }
-  let mut buf = ImageBuffer::new(WIDTH as u32, HEIGHT as u32);
-  let k = 1.0 / SPP as f64 * 256.0;
-  for (x, y, pixel) in buf.enumerate_pixels_mut() {
-    let output_pixel = output.get(x as usize, y as usize);
-    let color = [(output_pixel[0] * k) as u8, (output_pixel[1] * k) as u8, (output_pixel[2] * k) as u8];
-    *pixel = Rgb(color);
-  }
   let file_name = &format!("image_{}_{}.png", time::now().strftime("%Y%m%d%H%M%S").unwrap(), SPP);
-  let ref mut f = File::create(&Path::new(file_name)).unwrap();
-  let _ = image::ImageRgb8(buf).save(f, image::PNG);
+  output.save(file_name, |pixel| {
+    let mut color = [0u8; 3];
+    for (c, p) in color.iter_mut().zip(pixel.iter()) {
+      *c = (p / SPP as f64 * 256.0) as u8
+    }
+    color
+  });
 }

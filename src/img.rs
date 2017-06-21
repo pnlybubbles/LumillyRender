@@ -1,4 +1,8 @@
+extern crate image;
+
 use constant::*;
+use std::fs::File;
+use std::path::Path;
 
 pub type Color = [f64; 3];
 
@@ -53,5 +57,15 @@ impl Img {
         f(&pixel, x, y)
       }
     }
+  }
+
+  pub fn save<F>(&self, file_name: &String, mut f: F) where F: FnMut(&Color) -> [u8; 3] {
+    let mut buf = image::ImageBuffer::new(WIDTH as u32, HEIGHT as u32);
+    for (x, y, pixel) in buf.enumerate_pixels_mut() {
+      let output_pixel = self.get(x as usize, y as usize);
+      *pixel = image::Rgb(f(output_pixel));
+    }
+    let ref mut f = File::create(&Path::new(file_name)).unwrap();
+    let _ = image::ImageRgb8(buf).save(f, image::PNG);
   }
 }
