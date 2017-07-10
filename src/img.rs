@@ -43,22 +43,6 @@ impl Img {
     }
   }
 
-  pub fn each_pixel<F>(&self, mut f: F) where F: FnMut(&Color, usize, usize) {
-    for (x, col) in self.data.iter().enumerate() {
-      for (y, pixel) in col.iter().enumerate() {
-        f(&pixel, x, y)
-      }
-    }
-  }
-
-  pub fn each_pixel_mut<F>(&mut self, mut f: F) where F: FnMut(&Color, usize, usize) {
-    for (x, col) in self.data.iter().enumerate() {
-      for (y, pixel) in col.iter().enumerate() {
-        f(&pixel, x, y)
-      }
-    }
-  }
-
   pub fn save<F>(&self, file_name: &String, mut f: F) where F: FnMut(&Color) -> [u8; 3] {
     let mut buf = image::ImageBuffer::new(WIDTH as u32, HEIGHT as u32);
     for (x, y, pixel) in buf.enumerate_pixels_mut() {
