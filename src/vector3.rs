@@ -2,10 +2,10 @@ use std::ops::{Neg, Add, Sub, Mul, Div};
 use vector::{Vector, VectorFloat};
 
 #[derive(Debug, Clone, Copy, Default)]
-struct Vector3<T> {
-  x: T,
-  y: T,
-  z: T,
+pub struct Vector3<T> {
+  pub x: T,
+  pub y: T,
+  pub z: T,
 }
 
 impl<T> Vector3<T>

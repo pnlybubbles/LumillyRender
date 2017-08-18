@@ -17,7 +17,6 @@ impl<T> Vector2<T> {
   }
 }
 
-
 impl<T> Neg for Vector2<T>
     where T: Copy + Neg<Output = T> {
   type Output = Vector2<T>;
