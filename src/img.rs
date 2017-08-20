@@ -12,7 +12,7 @@ pub struct Img {
 }
 
 impl Img {
-  pub fn save_png(output: &Box<[[Vector; WIDTH]; HEIGHT]>, samples: usize) {
+  pub fn save_png(count: usize, output: &Box<[[Vector; WIDTH]; HEIGHT]>, samples: usize) {
     println!("\nwriting image...");
 
     let mut imgbuf = image::ImageBuffer::new(WIDTH as u32, HEIGHT as u32);
@@ -21,7 +21,7 @@ impl Img {
       let i = y as usize;
       *pixel = image::Rgb([to_int(clamp(output[i][WIDTH - j - 1].x / samples as f64)), to_int(clamp(output[i][WIDTH - j - 1].y / samples as f64)), to_int(clamp(output[i][WIDTH - j - 1].z / samples as f64))]);
     }
-    let ref mut f = File::create(&Path::new(&format!("image_{}_{}.png", time::now().strftime("%Y%m%d%H%M%S").unwrap(), samples))).unwrap();
+    let ref mut f = File::create(&Path::new(&format!("{}_{}_{}.png", count, time::now().strftime("%Y%m%d%H%M%S").unwrap(), samples))).unwrap();
     let _ = image::ImageRgb8(imgbuf).save(f, image::PNG);
   }
 }

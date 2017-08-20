@@ -72,7 +72,9 @@ fn main() {
 
   // let yellow_material: Material = Material{diffuse: 1.0, reflection: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.75, 0.75, 0.25)};
   // let blue_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.25, 0.25, 0.75)};
-  let white_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.75, 0.75, 0.75)};
+  let white_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(1.0, 1.0, 1.0)};
+  let red_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(1.0, 0.30, 0.30)};
+  let blue_material: Material = Material{diffuse: 1.0, reflection: 0.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.30, 0.30, 1.0)};
   let reflection_material_0: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.0, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
   // let reflection_material_1: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.2, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
   // let reflection_material_2: Material = Material{diffuse: 0.0, reflection: 1.0, roughness: 0.4, refraction: 0.0, emission: Vector::new(0.0, 0.0, 0.0), color: Vector::new(0.99, 0.99, 0.99)};
@@ -95,8 +97,8 @@ fn main() {
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: -5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: -5.0, z: 6.0}, Vector{x: -5.0, y: -5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: 6.0}, white_material),
-    Triangle::new(Vector{x: -8.0, y: -5.0, z: -8.0}, Vector{x: -8.0, y: -5.0, z: 8.0}, Vector{x: 8.0, y: -5.0, z: -8.0}, white_material),
-    Triangle::new(Vector{x: -8.0, y: -5.0, z: 8.0}, Vector{x: 8.0, y: -5.0, z: 8.0}, Vector{x: 8.0, y: -5.0, z: -8.0}, white_material),
+    Triangle::new(Vector{x: -8.0, y: -4.0, z: -8.0}, Vector{x: -8.0, y: -4.0, z: 8.0}, Vector{x: 8.0, y: -4.0, z: -8.0}, white_material),
+    Triangle::new(Vector{x: -8.0, y: -4.0, z: 8.0}, Vector{x: 8.0, y: -4.0, z: 8.0}, Vector{x: 8.0, y: -4.0, z: -8.0}, white_material),
     // Triangle::new(Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: -10.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: 5.0, y: 5.0, z: 6.0}, Vector{x: -5.0, y: 5.0, z: 6.0}, Vector{x: 5.0, y: 5.0, z: -10.0}, white_material),
     // Triangle::new(Vector{x: -1.5, y: 4.99, z: -3.5}, Vector{x: -1.5, y: 4.99, z: -6.5}, Vector{x: 1.5, y: 4.99, z: -6.5}, emission_material),
@@ -111,11 +113,8 @@ fn main() {
     // Sphere::new(Vector::new(0.0, -1.0, 4.0), 1.0, refraction_material_0),
     // Sphere::new(Vector{x: 2.5, y: -4.0, z: 4.0}, 1.0, refraction_material_3),
     // Sphere::new(Vector{x: 5.0, y: -4.0, z: 4.0}, 1.0, refraction_material_4),
-    Sphere::new(Vector{x: -6.0, y: -3.84, z: 4.0}, 0.16, refraction_material_0),
-    Sphere::new(Vector{x: -5.0, y: -3.64, z: 3.2}, 0.36, refraction_material_0),
-    Sphere::new(Vector{x: -4.0, y: -3.36, z: 2.4}, 0.64, reflection_material_0),
-    Sphere::new(Vector{x: -2.0, y: -3.0, z: 1.6}, 1.0, refraction_material_0),
-    Sphere::new(Vector{x: 1.0, y: -2.0, z: 0.8}, 2.0, refraction_material_0),
+    Sphere::new(Vector{x: -2.0, y: -3.0, z: 1.6}, 1.0, red_material),
+    Sphere::new(Vector{x: 1.0, y: -2.0, z: 0.8}, 2.0, blue_material),
     // Sphere::new(Vector{x: -4.0, y: -3.2, z: 0.5}, 1.8, refraction_material_0),
     // Sphere::new(Vector{x: 0.8, y: -3.2, z: -0.5}, 1.8, white_material),
     // Sphere::new(Vector{x: 2.0, y: -3.2, z: 4.0}, 1.8, reflection_material_0),
@@ -154,16 +153,17 @@ fn main() {
 
   let objects = Objects::new(triangle_objects, sphere_objects);
 
-  let hdr_image = image::hdr::HDRDecoder::new(BufReader::new(File::open("ibl.hdr").unwrap())).unwrap();
+  // let hdr_image = image::hdr::HDRDecoder::new(BufReader::new(File::open("ibl.hdr").unwrap())).unwrap();
 
-  println!("{:?}", hdr_image.metadata());
+  // println!("{:?}", hdr_image.metadata());
 
   let depth = 5;
   let limit_depth = 64;
-  let hdr_image_height = hdr_image.metadata().height as usize;
-  let hdr_image_data = hdr_image.read_image_hdr().unwrap();
-  let hdr_image_longitude_offset = 2500;
-  let background = Background::Ibl(hdr_image_data, hdr_image_height, hdr_image_longitude_offset);
+  // let hdr_image_height = hdr_image.metadata().height as usize;
+  // let hdr_image_data = hdr_image.read_image_hdr().unwrap();
+  // let hdr_image_longitude_offset = 2500;
+  // let background = Background::Ibl(hdr_image_data, hdr_image_height, hdr_image_longitude_offset);
+  let background = Background::Color(Vector::new(0.95, 0.95, 1.0));
   let scene_shared = Arc::new(Scene::new(objects, depth, limit_depth, background));
 
   let cpu_count = num_cpus::get();
@@ -195,6 +195,7 @@ fn main() {
 
   let mut next_save_time = SAVE_IMAGE_INTERVAL - SAVE_IMAGE_INTERVAL_ERROR;
   let time_limit_with_error = TIME_LIMIT - SAVE_IMAGE_INTERVAL_ERROR;
+  let mut count = 0;
 
   for s in 0..samples {
     print!("\rraytracing... ({:.0}/{:.0} : {:.0}%) ", s, samples, s as f64 / samples as f64 * 100.0);
@@ -208,11 +209,13 @@ fn main() {
     let elapse_time = (save_time - start_time).num_seconds() as f64;
     if elapse_time > next_save_time {
       println!("save: {}s", elapse_time);
-      Img::save_png(&output, s);
+      Img::save_png(count, &output, s);
+      count += 1;
       next_save_time += SAVE_IMAGE_INTERVAL;
     }
     if elapse_time > time_limit_with_error {
-      Img::save_png(&output, s);
+      Img::save_png(count, &output, s);
+      count += 1;
       println!("exceeded the time limit: {}s", elapse_time);
       std::process::exit(0);
     }
