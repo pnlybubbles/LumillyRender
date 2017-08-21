@@ -74,7 +74,7 @@ impl Camera {
     }
   }
 
-  fn sample_sensor(&self, top: usize, left: usize) -> Sample<Vector3<f64>> {
+  fn sample_sensor(&self, left: usize, top: usize) -> Sample<Vector3<f64>> {
     // イメージセンサー1画素内の点の座標を取得(一様分布)
     // 原点はセンサーの中心
     // 画素内の1点を一様分布でサンプリング(0~1の乱数)
