@@ -7,13 +7,13 @@ use std::path::Path;
 pub type Color = [f64; 3];
 
 pub struct Img {
-  data: [[Color; HEIGHT]; WIDTH],
+  data: Box<[[Color; HEIGHT]; WIDTH]>,
 }
 
 impl Default for Img {
   fn default() -> Img {
     Img {
-      data: [[Default::default(); HEIGHT]; WIDTH],
+      data: box [[Default::default(); HEIGHT]; WIDTH],
     }
   }
 }
