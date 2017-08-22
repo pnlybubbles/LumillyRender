@@ -1,7 +1,7 @@
 extern crate rand;
 
 use constant::*;
-use vector::{Vector, VectorFloat};
+use vector::{VectorFloat};
 use vector2::Vector2;
 use vector3::Vector3;
 use ray::Ray;

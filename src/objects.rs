@@ -1,4 +1,3 @@
-use vector3::Vector3;
 use sphere::Sphere;
 use ray::Ray;
 use intersection::Intersection;

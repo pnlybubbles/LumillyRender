@@ -1,6 +1,5 @@
 extern crate rand;
 
-use vector::{Vector, VectorFloat};
 use vector3::Vector3;
 use ray::Ray;
 use objects::Objects;
@@ -22,11 +21,11 @@ impl Scene {
     // 当たらなかった場合は背景色を返す
     match maybe_intersect {
       None => self.background,
-      Some(i) => self.diffuse(i, &ray, depth),
+      Some(i) => self.diffuse(i, depth),
     }
   }
 
-  fn diffuse(&self, i: Intersection, ray: &Ray, depth: usize) -> Vector3<f64> {
+  fn diffuse(&self, i: Intersection, depth: usize) -> Vector3<f64> {
     // 放射
     let l_e = i.material.emission;
     // 再帰抑制用のロシアンルーレットの確率を決定する
@@ -66,7 +65,7 @@ impl Scene {
     // (cosにしたがって重点的にサンプル)
     let d = u * (r1.cos() * r2s) + v * (r1.sin() * r2s) + w * (1.0 - r2).sqrt();
     // cos項を計算
-    let dn = d.dot(i.normal);
+    // let dn = d.dot(i.normal);
     // 新しいレイを作る
     let new_ray = Ray { direction: d, origin: i.position };
     // BRDFは半球全体に一様に散乱するDiffuse面を考えると σ / π
