@@ -25,6 +25,22 @@ impl Scene {
     }
   }
 
+  pub fn normal(&self, ray: &Ray) -> Vector3<f64> {
+    let maybe_intersect = self.objects.get_intersect(&ray);
+    match maybe_intersect {
+      None => Vector3::new(0.0, 0.0, 0.0),
+      Some(i) => i.normal,
+    }
+  }
+
+  pub fn depth(&self, ray: &Ray) -> f64 {
+    let maybe_intersect = self.objects.get_intersect(&ray);
+    match maybe_intersect {
+      None => 0.0,
+      Some(i) => i.distance,
+    }
+  }
+
   fn diffuse(&self, i: Intersection, depth: usize) -> Vector3<f64> {
     // 放射
     let l_e = i.material.emission;

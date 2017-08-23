@@ -7,4 +7,4 @@ pub const WIDTH: usize = 512;
 pub const HEIGHT: usize = 512;
 // pub const WIDTH: usize = 512;
 // pub const HEIGHT: usize = 512;
-pub const SPP: usize = 10;
+pub const SPP: usize = 100;

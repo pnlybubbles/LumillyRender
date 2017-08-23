@@ -16,7 +16,7 @@ impl Sphere {
   pub fn intersect(&self, ray: &Ray) -> Option<Intersection> {
     let co = ray.origin - self.position;
     let cod = co.dot(ray.direction);
-    let det = cod * cod - co.dot(co) + self.radius * self.radius;
+    let det = cod * cod - co.sqr_len() + self.radius * self.radius;
     if det < 0.0 {
       return None;
     }
@@ -28,11 +28,10 @@ impl Sphere {
     let distance = if t1 > EPS { t1 } else { t2 };
     let position = ray.origin + ray.direction * distance;
     let outer_normal = (position - self.position).norm();
-    let normal = if outer_normal.dot(ray.direction) > 0.0 { outer_normal * -1.0 } else { outer_normal };
     Some(Intersection {
       distance: distance,
       position: position,
-      normal: normal,
+      normal: outer_normal,
       material: &(self.material),
     })
   }
