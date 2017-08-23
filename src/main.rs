@@ -40,6 +40,9 @@ use objects::Objects;
 const MODE: usize = 0;
 
 fn main() {
+  let start_time = time::now();
+  println!("start: {}", start_time.strftime("%+").unwrap());
+
   let mut output: Img = Default::default();
   let w = Img::width() as f64;
   let h = Img::height() as f64;
@@ -179,4 +182,8 @@ fn main() {
       color
     });
   }
+
+  let end_time = time::now();
+  println!("end: {}", end_time.strftime("%+").unwrap());
+  println!("elapse: {}s", (end_time - start_time).num_milliseconds() as f64 / 1000.0);
 }
