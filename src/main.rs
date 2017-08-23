@@ -37,19 +37,17 @@ fn main() {
   let mut output: Img = Default::default();
   let w = Img::width() as f64;
   let h = Img::height() as f64;
-  let cam_pos = Vector3::new(50.0, 52.0, 295.6);
-  let cam_dir = Vector3::new(0.0, -0.042612, -1.0).norm();
   let cam = Arc::new(Camera::new(
     // sensor position
-    cam_pos - cam_dir * 40.0,
+    Vector3::new(0.0, 0.0, 5.0),
     // aperture position
-    cam_pos,
+    Vector3::new(0.0, 0.0, 4.0),
     // sensor size
-    Vector2::new(30.0 * w / h, 30.0),
+    Vector2::new(2.0 * w / h, 2.0),
     // sensor resolution
     Vector2::new(Img::width(), Img::height()),
     // aperture radius
-    10e-5,
+    1e-5,
   ));
   let red_mat = Material {
     diffuse: Vector3::new(0.75, 0.25, 0.25),
@@ -68,14 +66,8 @@ fn main() {
     emission: Vector3::new(50.0, 50.0, 50.0),
   };
   let spheres = vec![
-    Sphere { position: Vector3::new(1e5 + 1.0, 40.8, 81.6), radius: 1e5, material: red_mat.clone() }, // 左
-    Sphere { position: Vector3::new(-1e5 + 99.0, 40.8, 81.6), radius: 1e5, material: blue_mat.clone() }, // 右
-    Sphere { position: Vector3::new(50.0, 40.8, 1e5), radius: 1e5, material: white_mat.clone() }, // 奥
-    Sphere { position: Vector3::new(50.0, 1e5, 81.6), radius: 1e5, material: white_mat.clone() }, // 床
-    // Sphere { position: Vector3::new(50.0, -1e5 + 81.6, 81.6), radius: 1e5, material: white_mat.clone() },
-    Sphere { position: Vector3::new(27.0, 16.5, 47.0), radius: 16.5, material: white_mat.clone() },
-    Sphere { position: Vector3::new(73.0, 16.5, 78.0), radius: 16.5, material: white_mat.clone() },
-    Sphere { position: Vector3::new(50.0, 90.0, 81.6), radius: 15.0, material: light_mat.clone() },
+    Sphere { radius: 1.0, position: Vector3::new(0.0, 0.0, 0.0), material: red_mat.clone() },
+    Sphere { radius: 1e5, position: Vector3::new(0.0, -1e5 - 1.0, 0.0), material: white_mat.clone() },
   ];
   let objects = Objects {
     objects: spheres,
@@ -83,7 +75,7 @@ fn main() {
   let scene = Arc::new(Scene {
     depth: 4,
     depth_limit: 64,
-    background: Vector3::new(0.0, 0.0, 0.0),
+    background: Vector3::new(1.0, 1.0, 1.0),
     objects: objects,
   });
   let (tx, rx): (Sender<(usize, usize, Color)>, Receiver<(usize, usize, Color)>) = channel();
@@ -104,8 +96,10 @@ fn main() {
         let l_into_sensor = scene.radiance(&ray.value, 0);
         // cos項
         let cos_term = ray.value.direction.dot(cam.forward);
+        // センサー面と開口部それぞれのサンプリング点同士の距離
+        let d = cam.aperture_sensor_distance / cos_term;
         // ジオメトリ項(m^-2)
-        let g_term = cos_term * cos_term * cam.aperture_sensor_distance / (cam.aperture_sensor_distance);
+        let g_term = cos_term * cos_term / (d * d);
         // 開口部に入射する放射照度
         let e_into_sensor = l_into_sensor * g_term;
         // 今回のサンプリングでの放射照度の推定値
