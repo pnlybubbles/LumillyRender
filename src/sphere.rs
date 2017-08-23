@@ -27,10 +27,12 @@ impl Sphere {
     }
     let distance = if t1 > EPS { t1 } else { t2 };
     let position = ray.origin + ray.direction * distance;
+    let outer_normal = (position - self.position).norm();
+    let normal = if outer_normal.dot(ray.direction) > 0.0 { outer_normal * -1.0 } else { outer_normal };
     Some(Intersection {
       distance: distance,
       position: position,
-      normal: (position - self.position).norm(),
+      normal: normal,
       material: &(self.material),
     })
   }
