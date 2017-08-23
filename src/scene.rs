@@ -72,7 +72,7 @@ impl Scene {
 
     // 反射点での法線方向を基準にした正規直交基底を生成
     let w = i.normal;
-    let u = if w.x.abs() > EPS { Vector3::new(0.0, 1.0, 0.0) } else { Vector3::new(1.0, 0.0, 0.0) }.cross(w);
+    let u = if w.x.abs() > EPS { Vector3::new(0.0, 1.0, 0.0) } else { Vector3::new(1.0, 0.0, 0.0) }.cross(w).norm();
     let v = w.cross(u);
 
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
