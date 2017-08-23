@@ -80,7 +80,7 @@ impl Scene {
     let r2: f64 = rand::random::<f64>();
     let r2s: f64 = r2.sqrt();
     // 反射点での法線方向を基準にした正規直交基底を生成
-    let w = i.normal;
+    let w = orienting_normal;
     let u = if w.x.abs() > EPS { Vector3::new(0.0, 1.0, 0.0) } else { Vector3::new(1.0, 0.0, 0.0) }.cross(w).norm();
     let v = w.cross(u);
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
