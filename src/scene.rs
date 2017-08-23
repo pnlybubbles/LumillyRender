@@ -1,5 +1,6 @@
 extern crate rand;
 
+use vector::*;
 use vector3::Vector3;
 use ray::Ray;
 use objects::Objects;
@@ -21,7 +22,7 @@ impl Scene {
     // 当たらなかった場合は背景色を返す
     match maybe_intersect {
       None => self.background,
-      Some(i) => self.diffuse(i, depth),
+      Some(i) => self.diffuse(i, &ray, depth),
     }
   }
 
@@ -29,7 +30,13 @@ impl Scene {
     let maybe_intersect = self.objects.get_intersect(&ray);
     match maybe_intersect {
       None => Vector3::new(0.0, 0.0, 0.0),
-      Some(i) => i.normal,
+      Some(i) => {
+        if i.normal.dot(ray.direction) > 0.0 {
+          i.normal * -1.0
+        } else {
+          i.normal
+        }
+      },
     }
   }
 
@@ -41,7 +48,14 @@ impl Scene {
     }
   }
 
-  fn diffuse(&self, i: Intersection, depth: usize) -> Vector3<f64> {
+  fn diffuse(&self, i: Intersection, ray: &Ray, depth: usize) -> Vector3<f64> {
+    // 拡散反射
+    // 物体の内外を考慮した法線方向から拡散反射面としての法線方向を求める
+    let orienting_normal = if i.normal.dot(ray.direction) > 0.0 {
+      i.normal * -1.0
+    } else {
+      i.normal
+    };
     // 放射
     let l_e = i.material.emission;
     // 再帰抑制用のロシアンルーレットの確率を決定する
@@ -61,40 +75,25 @@ impl Scene {
     }
     // 拡散反射
     // 乱数を生成
-    // (半球面状で一様にサンプル)
-    // let r1 = 2.0 * PI * rand::random::<f64>();
-    // let r2 = rand::random::<f64>();
-    // let r2s = (1.0 - r2 * r2).sqrt();
     // (cosにしたがって重点的にサンプル)
     let r1: f64 = 2.0 * PI * rand::random::<f64>();
     let r2: f64 = rand::random::<f64>();
     let r2s: f64 = r2.sqrt();
-
     // 反射点での法線方向を基準にした正規直交基底を生成
     let w = i.normal;
     let u = if w.x.abs() > EPS { Vector3::new(0.0, 1.0, 0.0) } else { Vector3::new(1.0, 0.0, 0.0) }.cross(w).norm();
     let v = w.cross(u);
-
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
-    // (半球面状で一様にサンプル)
-    // let d = &(&u.smul(r1.cos() * r2s) + &v.smul(r1.sin() * r2s)) + &w.smul(r2);
     // (cosにしたがって重点的にサンプル)
     let d = u * (r1.cos() * r2s) + v * (r1.sin() * r2s) + w * (1.0 - r2).sqrt();
-    // cos項を計算
-    // let dn = d.dot(i.normal);
     // 新しいレイを作る
     let new_ray = Ray { direction: d, origin: i.position };
     // BRDFは半球全体に一様に散乱するDiffuse面を考えると σ / π
-    // let brdf = i.material.diffuse.smul(1.0 / PI);
     // 確率密度関数
-    // (半球面状で一様にサンプル) 1 / 2π
-    // let pdf = 1.0 / (2.0 * PI);
     // (cosにしたがって重点的にサンプル) cosθ / π
-    // let pdf = dn / PI;
     // レンダリング方程式にしたがって放射輝度を計算する
     // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (BRDFタイプ用と再帰抑制用)
     // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
-    // return &l_e + &(&brdf * &radiance(new_ray, depth + 1).smul(dn / (pdf * continue_rr_prob * brdf_type_rr_prob)));
     return l_e + (i.material.diffuse * self.radiance(&new_ray, depth + 1) / continue_rr_prob);
   }
 }

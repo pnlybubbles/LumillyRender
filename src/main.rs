@@ -75,7 +75,7 @@ fn main() {
     emission: Vector3::new(8.0, 8.0, 8.0),
   };
   let spheres = vec![
-    Sphere { radius: 1.0, position: Vector3::new(0.0, 0.0, 0.0), material: light_mat.clone() },
+    Sphere { radius: 1.0, position: Vector3::new(0.0, 0.0, 0.5), material: white_mat.clone() },
     Sphere { radius: 1.0, position: Vector3::new(-2.0, 0.0, 0.0), material: red_mat.clone() },
     Sphere { radius: 1.0, position: Vector3::new(2.0, 0.0, 0.0), material: blue_mat.clone() },
     Sphere { radius: 1e5, position: Vector3::new(0.0, -1e5 - 1.0, 0.0), material: white_mat.clone() },
@@ -86,7 +86,7 @@ fn main() {
   let scene = Arc::new(Scene {
     depth: 4,
     depth_limit: 64,
-    background: Vector3::new(0.10, 0.09, 0.14),
+    background: Vector3::new(0.95, 0.95, 1.0),
     objects: objects,
   });
   if MODE == 0 {
