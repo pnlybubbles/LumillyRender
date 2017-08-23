@@ -48,11 +48,11 @@ fn main() {
   let h = Img::height() as f64;
   let cam = Arc::new(Camera::new(
     // sensor position
-    Vector3::new(0.0, 0.5, 5.0),
+    Vector3::new(0.0, 0.8, 8.0),
     // aperture position
-    Vector3::new(0.0, 0.4, 4.0),
+    Vector3::new(0.0, 0.7, 7.0),
     // sensor size
-    Vector2::new(2.0 * w / h, 2.0),
+    Vector2::new(1.1 * w / h, 1.1),
     // sensor resolution
     Vector2::new(Img::width(), Img::height()),
     // aperture radius
@@ -72,10 +72,10 @@ fn main() {
   };
   let light_mat = Material {
     diffuse: Vector3::new(0.0, 0.0, 0.0),
-    emission: Vector3::new(8.0, 8.0, 8.0),
+    emission: Vector3::new(5.0, 5.0, 5.0),
   };
   let spheres = vec![
-    Sphere { radius: 1.0, position: Vector3::new(0.0, 0.0, 0.5), material: white_mat.clone() },
+    Sphere { radius: 1.0, position: Vector3::new(0.0, 0.0, 0.0), material: light_mat.clone() },
     Sphere { radius: 1.0, position: Vector3::new(-2.0, 0.0, 0.0), material: red_mat.clone() },
     Sphere { radius: 1.0, position: Vector3::new(2.0, 0.0, 0.0), material: blue_mat.clone() },
     Sphere { radius: 1e5, position: Vector3::new(0.0, -1e5 - 1.0, 0.0), material: white_mat.clone() },
@@ -86,7 +86,7 @@ fn main() {
   let scene = Arc::new(Scene {
     depth: 4,
     depth_limit: 64,
-    background: Vector3::new(0.95, 0.95, 1.0),
+    background: Vector3::new(0.95, 0.95, 1.0) * 0.2,
     objects: objects,
   });
   if MODE == 0 {
