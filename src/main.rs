@@ -164,16 +164,24 @@ fn main() {
         let depth = scene.depth(&ray.value) / 10.0;
         Vector3::new(depth, depth, depth).to_array()
       } else {
-        [0.0, 0.0, 0.0]
+        unreachable!()
       };
       output.apply(x, y, |output_pixel| {
         for (op, p) in output_pixel.iter_mut().zip(pixel.iter()) {
-          // 推定値を足し合わせ
           *op = *p;
         }
       });
     });
-    let file_name = &format!("image_{}_normal.png", time::now().strftime("%Y%m%d%H%M%S").unwrap());
+    let suffix = if MODE == 1 {
+      "normal"
+    } else if MODE == 2 {
+      "cameranormal"
+    } else if MODE == 3 {
+      "depth"
+    } else {
+      unreachable!()
+    };
+    let file_name = &format!("image_{}_{}.png", time::now().strftime("%Y%m%d%H%M%S").unwrap(), suffix);
     output.save(file_name, |pixel| {
       let mut color = [0u8; 3];
       for (c, p) in color.iter_mut().zip(pixel.iter()) {
