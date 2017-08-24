@@ -18,6 +18,7 @@ mod material;
 mod scene;
 mod sphere;
 mod objects;
+mod sky;
 
 use threadpool::ThreadPool;
 use std::sync::mpsc::{channel, Sender, Receiver};
@@ -32,6 +33,7 @@ use material::*;
 use scene::Scene;
 use sphere::Sphere;
 use objects::Objects;
+use sky::*;
 
 // 0: default
 // 1: scene normal
@@ -48,9 +50,9 @@ fn main() {
   let h = Img::height() as f64;
   let cam = Arc::new(Camera::new(
     // sensor position
-    Vector3::new(0.0, 0.8, 8.0),
+    Vector3::new(0.0, -0.1, 8.0),
     // aperture position
-    Vector3::new(0.0, 0.7, 7.0),
+    Vector3::new(0.0, -0.09, 7.0),
     // sensor size
     Vector2::new(1.1 * w / h, 1.1),
     // sensor resolution
@@ -83,10 +85,14 @@ fn main() {
   let objects = Objects {
     objects: spheres,
   };
+  let sky = Arc::new(SimpleSky {
+    meridian: Vector3::new(0.46, 0.69, 1.00),
+    horizon: Vector3::new(1.00, 0.98, 0.95)
+  });
   let scene = Arc::new(Scene {
     depth: 4,
     depth_limit: 64,
-    background: Vector3::new(0.95, 0.95, 1.0) * 0.2,
+    sky: sky,
     objects: objects,
   });
   if MODE == 0 {

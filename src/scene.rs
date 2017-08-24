@@ -1,7 +1,9 @@
 extern crate rand;
 
+use std::sync::Arc;
 use vector::*;
 use vector3::Vector3;
+use sky::Sky;
 use ray::Ray;
 use objects::Objects;
 use intersection::Intersection;
@@ -10,7 +12,7 @@ pub struct Scene {
   pub objects: Objects,
   pub depth: usize,
   pub depth_limit: usize,
-  pub background: Vector3<f64>,
+  pub sky: Arc<Sky + Send + Sync>,
 }
 
 impl Scene {
@@ -19,7 +21,7 @@ impl Scene {
     let maybe_intersect = self.objects.get_intersect(&ray);
     // 当たらなかった場合は背景色を返す
     match maybe_intersect {
-      None => self.background,
+      None => self.sky.radiance(&ray),
       Some(i) => self.intersect_radiance(i, &ray, depth),
     }
   }
