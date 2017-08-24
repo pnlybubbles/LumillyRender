@@ -28,7 +28,7 @@ use vector::{Vector};
 use vector2::Vector2;
 use vector3::Vector3;
 use camera::Camera;
-use material::Material;
+use material::*;
 use scene::Scene;
 use sphere::Sphere;
 use objects::Objects;
@@ -58,22 +58,22 @@ fn main() {
     // aperture radius
     1e-5,
   ));
-  let red_mat = Material {
-    diffuse: Vector3::new(0.75, 0.25, 0.25),
+  let red_mat = Arc::new(LambertianMaterial {
+    albedo: Vector3::new(0.75, 0.25, 0.25),
     emission: Vector3::new(0.0, 0.0, 0.0),
-  };
-  let blue_mat = Material {
-    diffuse: Vector3::new(0.25, 0.25, 0.75),
+  });
+  let blue_mat = Arc::new(LambertianMaterial {
+    albedo: Vector3::new(0.25, 0.25, 0.75),
     emission: Vector3::new(0.0, 0.0, 0.0),
-  };
-  let white_mat = Material {
-    diffuse: Vector3::new(0.75, 0.75, 0.75),
+  });
+  let white_mat = Arc::new(LambertianMaterial {
+    albedo: Vector3::new(0.75, 0.75, 0.75),
     emission: Vector3::new(0.0, 0.0, 0.0),
-  };
-  let light_mat = Material {
-    diffuse: Vector3::new(0.0, 0.0, 0.0),
+  });
+  let light_mat = Arc::new(LambertianMaterial {
+    albedo: Vector3::new(0.0, 0.0, 0.0),
     emission: Vector3::new(5.0, 5.0, 5.0),
-  };
+  });
   let spheres = vec![
     Sphere { radius: 1.0, position: Vector3::new(0.0, 0.0, 0.0), material: light_mat.clone() },
     Sphere { radius: 1.0, position: Vector3::new(-2.0, 0.0, 0.0), material: red_mat.clone() },

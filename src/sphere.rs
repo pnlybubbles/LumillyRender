@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use vector::{Vector, VectorFloat};
 use vector3::Vector3;
 use ray::Ray;
@@ -5,11 +6,10 @@ use material::Material;
 use intersection::Intersection;
 use constant::*;
 
-#[derive(Debug, Default, Clone)]
 pub struct Sphere {
   pub radius: f64,
   pub position: Vector3<f64>,
-  pub material: Material,
+  pub material: Arc<Material + Send + Sync>,
 }
 
 impl Sphere {
@@ -32,7 +32,7 @@ impl Sphere {
       distance: distance,
       position: position,
       normal: outer_normal,
-      material: &(self.material),
+      material: self.material.clone(),
     })
   }
 }

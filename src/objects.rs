@@ -2,7 +2,6 @@ use sphere::Sphere;
 use ray::Ray;
 use intersection::Intersection;
 
-#[derive(Debug, Default, Clone)]
 pub struct Objects {
   pub objects: Vec<Sphere>,
 }
