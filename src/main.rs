@@ -19,6 +19,7 @@ mod scene;
 mod sphere;
 mod objects;
 mod sky;
+mod description;
 
 use threadpool::ThreadPool;
 use std::sync::mpsc::{channel, Sender, Receiver};
@@ -26,14 +27,7 @@ use std::sync::Arc;
 use constant::*;
 use img::{Img, Color};
 use vector::{Vector};
-use vector2::Vector2;
 use vector3::Vector3;
-use camera::Camera;
-use material::*;
-use scene::Scene;
-use sphere::Sphere;
-use objects::Objects;
-use sky::*;
 
 // 0: default
 // 1: scene normal
@@ -46,66 +40,8 @@ fn main() {
   println!("start: {}", start_time.strftime("%+").unwrap());
 
   let mut output: Img = Default::default();
-  let w = Img::width() as f64;
-  let h = Img::height() as f64;
-  let cam = Arc::new(Camera::new(
-    // sensor position
-    Vector3::new(0.0, -0.1, 8.0),
-    // aperture position
-    Vector3::new(0.0, -0.09, 7.0),
-    // sensor size
-    Vector2::new(1.1 * w / h, 1.1),
-    // sensor resolution
-    Vector2::new(Img::width(), Img::height()),
-    // aperture radius
-    1e-5,
-  ));
-  let red_mat = Arc::new(LambertianMaterial {
-    albedo: Vector3::new(0.75, 0.25, 0.25),
-    emission: Vector3::new(0.0, 0.0, 0.0),
-  });
-  let blue_mat = Arc::new(LambertianMaterial {
-    albedo: Vector3::new(0.25, 0.25, 0.75),
-    emission: Vector3::new(0.0, 0.0, 0.0),
-  });
-  let white_mat = Arc::new(LambertianMaterial {
-    albedo: Vector3::new(0.75, 0.75, 0.75),
-    emission: Vector3::new(0.0, 0.0, 0.0),
-  });
-  let light_mat = Arc::new(LambertianMaterial {
-    albedo: Vector3::new(0.0, 0.0, 0.0),
-    emission: Vector3::new(5.0, 5.0, 5.0),
-  });
-  let glass_mat = Arc::new(IdealRefractionMaterial {
-    albedo: Vector3::new(1.0, 1.0, 1.0),
-    emission: Vector3::new(0.0, 0.0, 0.0),
-    ior: 1.5,
-  });
-  // sin(0) = 1.0 / ior
-  let mirror_mat = Arc::new(IdealRefractionMaterial {
-    albedo: Vector3::new(1.0, 1.0, 1.0),
-    emission: Vector3::new(0.0, 0.0, 0.0),
-    ior: INF,
-  });
-  let spheres = vec![
-    Sphere { radius: 1.0, position: Vector3::new(0.0, 0.0, 0.0), material: light_mat.clone() },
-    Sphere { radius: 1.0, position: Vector3::new(-2.0, 0.0, 0.0), material: mirror_mat.clone() },
-    Sphere { radius: 1.0, position: Vector3::new(2.0, 0.0, 0.0), material: glass_mat.clone() },
-    Sphere { radius: 1e5, position: Vector3::new(0.0, -1e5 - 1.0, 0.0), material: white_mat.clone() },
-  ];
-  let objects = Objects {
-    objects: spheres,
-  };
-  let sky = Arc::new(SimpleSky {
-    meridian: Vector3::new(0.46, 0.69, 1.00),
-    horizon: Vector3::new(1.00, 0.98, 0.95)
-  });
-  let scene = Arc::new(Scene {
-    depth: 4,
-    depth_limit: 64,
-    sky: sky,
-    objects: objects,
-  });
+  let cam = Arc::new(description::camera());
+  let scene = Arc::new(description::scene());
   if MODE == 0 {
     let (tx, rx): (Sender<(usize, usize, Color)>, Receiver<(usize, usize, Color)>) = channel();
     let cpu_count = num_cpus::get();
