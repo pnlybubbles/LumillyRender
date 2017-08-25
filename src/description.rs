@@ -1,7 +1,6 @@
 use std::sync::Arc;
-use camera::Camera;
+use camera::*;
 use constant::*;
-use vector::*;
 use vector3::Vector3;
 use vector2::Vector2;
 use img::Img;
@@ -11,12 +10,12 @@ use sphere::Sphere;
 use objects::Objects;
 use sky::*;
 
-pub fn camera() -> Camera {
+pub fn camera() -> Arc<Camera + Send + Sync> {
   let w = Img::width() as f64;
   let h = Img::height() as f64;
   let cam_pos = Vector3::new(-11.5, 1.0, 13.0);
   let screen_pos = Vector3::new(8.18, -2.0, -9.0);
-  Camera::new(
+  Arc::new(PinholeCamera::new(
     // sensor position
     cam_pos - screen_pos,
     // aperture position
@@ -27,10 +26,10 @@ pub fn camera() -> Camera {
     Vector2::new(Img::width(), Img::height()),
     // aperture radius
     EPS,
-  )
+  ))
 }
 
-pub fn scene() -> Scene {
+pub fn scene() -> Arc<Scene> {
   let red_mat = Arc::new(LambertianMaterial {
     albedo: Vector3::new(0.75, 0.25, 0.25),
     emission: Vector3::new(0.0, 0.0, 0.0),
@@ -67,10 +66,10 @@ pub fn scene() -> Scene {
     objects: spheres,
   };
   let sky = Arc::new(IBLSky::new("ibl.hdr", 2500));
-  Scene {
+  Arc::new(Scene {
     depth: 5,
     depth_limit: 64,
     sky: sky,
     objects: objects,
-  }
+  })
 }

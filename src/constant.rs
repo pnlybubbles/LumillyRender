@@ -8,14 +8,14 @@ pub const INF: f64 = 1e5;
 // pub const HEIGHT: usize = 270 * 2;
 // pub const WIDTH: usize = 256;
 // pub const HEIGHT: usize = 256;
-// pub const WIDTH: usize = 480;
-// pub const HEIGHT: usize = 270;
-// pub const SPP: usize = 100;
+pub const WIDTH: usize = 480;
+pub const HEIGHT: usize = 270;
+pub const SPP: usize = 10;
 
 // pub const WIDTH: usize = 320 * 2;
 // pub const HEIGHT: usize = 240 * 2;
 // pub const SPP: usize = 1000;
 
-pub const WIDTH: usize = 1920;
-pub const HEIGHT: usize = 1080;
-pub const SPP: usize = 1000;
+// pub const WIDTH: usize = 1920;
+// pub const HEIGHT: usize = 1080;
+// pub const SPP: usize = 1000;

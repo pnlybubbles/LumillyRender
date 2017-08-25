@@ -1,14 +1,20 @@
 extern crate rand;
 
 use constant::*;
-use vector::{VectorFloat};
+use vector::*;
 use vector2::Vector2;
 use vector3::Vector3;
 use ray::Ray;
 use sample::Sample;
 
-#[derive(Debug, Default, Clone)]
-pub struct Camera {
+pub trait Camera {
+  fn sample(&self, x: usize, y: usize) -> Sample<Ray>;
+  fn geometry_term(&self, ray: &Ray) -> f64;
+  fn sensor_sensitivity(&self) -> f64;
+}
+
+#[derive(Debug, Default)]
+pub struct PinholeCamera {
   // カメラの方向を基準とした正規直交基底
   pub forward: Vector3<f64>,
   pub right: Vector3<f64>,
@@ -31,14 +37,14 @@ pub struct Camera {
   pub sensor_sensitivity: f64,
 }
 
-impl Camera {
+impl PinholeCamera {
   pub fn new(
     position: Vector3<f64>,
     aperture_position: Vector3<f64>,
     sensor_size: Vector2<f64>,
     resolution: Vector2<usize>,
     aperture_radius: f64,
-  ) -> Camera {
+  ) -> PinholeCamera {
     // レンズの方向(m)
     let direction = aperture_position - position;
     // 入射口とセンサー間の距離(m)
@@ -49,13 +55,13 @@ impl Camera {
       Vector3::new(0.0, 1.0, 0.0)
     } else {
       Vector3::new(1.0, 0.0, 0.0)
-    });
+    }).norm();
     let up = right.cross(forward);
     // 1画素の面積 = センサーの面積 / センサーの画素数
     let sensor_pixel_area = (sensor_size.x * sensor_size.y) as f64 / (resolution.x * resolution.y) as f64;
     // センサー感度はpdfを打ち消すように設定(m^2 m^-2 m^-2)
     let sensor_sensitivity = aperture_sensor_distance * aperture_sensor_distance / (sensor_pixel_area * PI * aperture_radius * aperture_radius);
-    Camera {
+    PinholeCamera {
       forward: forward,
       right: right,
       up: up,
@@ -67,19 +73,6 @@ impl Camera {
       aperture_sensor_distance: aperture_sensor_distance,
       sensor_pixel_area: sensor_pixel_area,
       sensor_sensitivity: sensor_sensitivity,
-    }
-  }
-
-  pub fn sample(&self, x: usize, y: usize) -> Sample<Ray> {
-    let sensor_sample = self.sample_sensor(x, y);
-    let aperture_sample = self.sample_aperture();
-    let ray = Ray {
-      origin: aperture_sample.value,
-      direction: (aperture_sample.value - sensor_sample.value).norm(),
-    };
-    Sample {
-      value: ray,
-      pdf: sensor_sample.pdf * aperture_sample.pdf,
     }
   }
 
@@ -117,5 +110,33 @@ impl Camera {
       value: point,
       pdf: pdf,
     }
+  }
+}
+
+impl Camera for PinholeCamera {
+  fn sample(&self, x: usize, y: usize) -> Sample<Ray> {
+    let sensor_sample = self.sample_sensor(x, y);
+    let aperture_sample = self.sample_aperture();
+    let ray = Ray {
+      origin: aperture_sample.value,
+      direction: (aperture_sample.value - sensor_sample.value).norm(),
+    };
+    Sample {
+      value: ray,
+      pdf: sensor_sample.pdf * aperture_sample.pdf,
+    }
+  }
+
+  fn geometry_term(&self, ray: &Ray) -> f64 {
+    // cos項
+    let cos_term = ray.direction.dot(self.forward);
+    // センサー面と開口部それぞれのサンプリング点同士の距離
+    let d = self.aperture_sensor_distance / cos_term;
+    // ジオメトリ項(m^-2)
+    cos_term * cos_term / (d * d)
+  }
+
+  fn sensor_sensitivity(&self) -> f64 {
+    self.sensor_sensitivity
   }
 }

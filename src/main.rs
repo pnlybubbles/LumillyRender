@@ -20,19 +20,17 @@ mod sphere;
 mod objects;
 mod sky;
 mod description;
+mod util;
 
 use std::io::{self, Write};
 use threadpool::ThreadPool;
 use std::sync::mpsc::{channel, Sender, Receiver};
-use std::sync::Arc;
 use constant::*;
 use img::{Img, Color};
-use vector::{Vector};
 use vector3::Vector3;
 
 // 0: default
-// 1: scene normal
-// 2: camera normal
+// 1: normal
 // 3: depth
 const MODE: usize = 0;
 
@@ -41,9 +39,10 @@ fn main() {
   println!("start: {}", start_time.strftime("%+").unwrap());
 
   let mut output: Img = Default::default();
-  let cam = Arc::new(description::camera());
-  let scene = Arc::new(description::scene());
+  let cam = description::camera();
+  let scene = description::scene();
   if MODE == 0 {
+    println!("spp: {}", SPP);
     let (tx, rx): (Sender<(usize, usize, Color)>, Receiver<(usize, usize, Color)>) = channel();
     let cpu_count = num_cpus::get();
     println!("cpu: {}", cpu_count);
@@ -60,23 +59,19 @@ fn main() {
           let ray = cam.sample(x, y);
           // 開口部に入射する放射輝度 (W sr^-1 m^-2)
           let l_into_sensor = scene.radiance(&ray.value, 0);
-          // cos項
-          let cos_term = ray.value.direction.dot(cam.forward);
-          // センサー面と開口部それぞれのサンプリング点同士の距離
-          let d = cam.aperture_sensor_distance / cos_term;
           // ジオメトリ項(m^-2)
-          let g_term = cos_term * cos_term / (d * d);
-          // 開口部に入射する放射照度
+          let g_term = cam.geometry_term(&ray.value);
+          // センサーに入射する放射照度
           let e_into_sensor = l_into_sensor * g_term;
           // 今回のサンプリングでの放射照度の推定値
-          let delta_e_into_sensor = e_into_sensor * (cam.sensor_sensitivity / ray.pdf);
+          let delta_e_into_sensor = e_into_sensor * (cam.sensor_sensitivity() / ray.pdf);
           let _ = tx.send((x, y, delta_e_into_sensor.to_array()));
         });
       });
     }
     for s in 0..SPP {
       print!("\rprocessing... ({:.0}/{:.0} : {:.0}%) ", s, SPP, s as f64 / SPP as f64 * 100.0);
-      io::stdout().flush();
+      io::stdout().flush().ok();
       Img::each( |_, _| {
         let (x, y, pixel) = rx.recv().unwrap();
         output.apply(x, y, |output_pixel| {
@@ -96,24 +91,11 @@ fn main() {
       }
       color
     });
-  } else if MODE == 1 || MODE == 2 || MODE == 3 {
+  } else if MODE == 1 || MODE == 3 {
     Img::each( |x, y| {
       let ray = cam.sample(x, y);
-      let pixel = if MODE == 1 || MODE == 2 {
-        let scene_normal = scene.normal(&ray.value);
-        let normal = if MODE == 1 {
-          scene_normal
-        } else {
-          // カメラ行列 (直交行列)
-          let c = [cam.right, cam.up, cam.forward];
-          // カメラ行列の逆行列
-          let ic = [
-            Vector3::new(c[0].x, c[1].x, c[2].x),
-            Vector3::new(c[0].y, c[1].y, c[2].y),
-            Vector3::new(c[0].z, c[1].z, c[2].z),
-          ];
-          ic[0] * scene_normal.x + ic[1] * scene_normal.y - ic[2] * scene_normal.z
-        };
+      let pixel = if MODE == 1 {
+        let normal = scene.normal(&ray.value);
         (normal / 2.0 + Vector3::new(0.5, 0.5, 0.5)).to_array()
       } else if MODE == 3 {
         let depth = scene.depth(&ray.value) / 10.0;
@@ -129,8 +111,6 @@ fn main() {
     });
     let suffix = if MODE == 1 {
       "normal"
-    } else if MODE == 2 {
-      "cameranormal"
     } else if MODE == 3 {
       "depth"
     } else {
