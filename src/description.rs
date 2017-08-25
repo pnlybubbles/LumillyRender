@@ -3,6 +3,7 @@ use camera::*;
 use constant::*;
 use vector3::Vector3;
 use vector2::Vector2;
+use vector::*;
 use img::Img;
 use material::*;
 use scene::Scene;
@@ -14,10 +15,10 @@ pub fn camera() -> Arc<Camera + Send + Sync> {
   let w = Img::width() as f64;
   let h = Img::height() as f64;
   let cam_pos = Vector3::new(-11.5, 1.0, 13.0);
-  let screen_pos = Vector3::new(8.18, -2.0, -9.0);
-  Arc::new(PinholeCamera::new(
+  let screen_dir = Vector3::new(8.18, -2.0, -9.0);
+  Arc::new(LensCamera::new(
     // sensor position
-    cam_pos - screen_pos,
+    cam_pos - screen_dir,
     // aperture position
     cam_pos,
     // sensor size
@@ -25,7 +26,9 @@ pub fn camera() -> Arc<Camera + Send + Sync> {
     // sensor resolution
     Vector2::new(Img::width(), Img::height()),
     // aperture radius
-    EPS,
+    0.3,
+    // focus_distance
+    3.0 + screen_dir.len(),
   ))
 }
 

@@ -56,11 +56,9 @@ fn main() {
         Img::each( |x, y| {
           // センサーの1画素に入射する放射輝度を立体角測度でモンテカルロ積分し放射照度を得る
           // カメラから出射されるレイをサンプリング
-          let ray = cam.sample(x, y);
+          let (ray, g_term) = cam.sample(x, y);
           // 開口部に入射する放射輝度 (W sr^-1 m^-2)
           let l_into_sensor = scene.radiance(&ray.value, 0);
-          // ジオメトリ項(m^-2)
-          let g_term = cam.geometry_term(&ray.value);
           // センサーに入射する放射照度
           let e_into_sensor = l_into_sensor * g_term;
           // 今回のサンプリングでの放射照度の推定値
@@ -93,7 +91,7 @@ fn main() {
     });
   } else if MODE == 1 || MODE == 3 {
     Img::each( |x, y| {
-      let ray = cam.sample(x, y);
+      let (ray, _) = cam.sample(x, y);
       let pixel = if MODE == 1 {
         let normal = scene.normal(&ray.value);
         (normal / 2.0 + Vector3::new(0.5, 0.5, 0.5)).to_array()
