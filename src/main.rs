@@ -21,6 +21,7 @@ mod objects;
 mod sky;
 mod description;
 
+use std::io::{self, Write};
 use threadpool::ThreadPool;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::sync::Arc;
@@ -75,6 +76,7 @@ fn main() {
     }
     for s in 0..SPP {
       print!("\rprocessing... ({:.0}/{:.0} : {:.0}%) ", s, SPP, s as f64 / SPP as f64 * 100.0);
+      io::stdout().flush();
       Img::each( |_, _| {
         let (x, y, pixel) = rx.recv().unwrap();
         output.apply(x, y, |output_pixel| {
