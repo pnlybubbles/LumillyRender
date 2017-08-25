@@ -68,11 +68,11 @@ impl Scene {
     // レンダリング方程式にしたがって放射輝度を計算する
     // マテリアル
     // 新しいRayのサンプリング
-    let (sample_ray, cos_term) = i.material.sample(&ray, &i);
+    let (sample_ray, brdf, cos_term) = i.material.sample(&ray, &i);
     // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (再帰抑制用)
     // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
     let l_i = self.radiance(&sample_ray.value, depth + 1);
-    let brdf = i.material.brdf(ray.direction, sample_ray.value.direction, i.normal);
-    return l_e + (brdf * l_i * cos_term / sample_ray.pdf / continue_rr_prob);
+    let pdf = sample_ray.pdf / continue_rr_prob;
+    return l_e + (brdf * l_i * cos_term / pdf);
   }
 }

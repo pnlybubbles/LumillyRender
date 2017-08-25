@@ -76,10 +76,15 @@ fn main() {
     albedo: Vector3::new(0.0, 0.0, 0.0),
     emission: Vector3::new(5.0, 5.0, 5.0),
   });
+  let glass_mat = Arc::new(IdealRefractionMaterial {
+    albedo: Vector3::new(1.0, 1.0, 1.0),
+    emission: Vector3::new(0.0, 0.0, 0.0),
+    ior: 1.5,
+  });
   let spheres = vec![
     Sphere { radius: 1.0, position: Vector3::new(0.0, 0.0, 0.0), material: light_mat.clone() },
     Sphere { radius: 1.0, position: Vector3::new(-2.0, 0.0, 0.0), material: red_mat.clone() },
-    Sphere { radius: 1.0, position: Vector3::new(2.0, 0.0, 0.0), material: blue_mat.clone() },
+    Sphere { radius: 1.0, position: Vector3::new(2.0, 0.0, 0.0), material: glass_mat.clone() },
     Sphere { radius: 1e5, position: Vector3::new(0.0, -1e5 - 1.0, 0.0), material: white_mat.clone() },
   ];
   let objects = Objects {
