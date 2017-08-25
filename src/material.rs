@@ -6,6 +6,7 @@ use ray::Ray;
 use sample::Sample;
 use constant::*;
 use intersection::Intersection;
+use util::*;
 
 pub trait Material {
   // 物体自体の放射成分
@@ -60,8 +61,7 @@ impl Material for LambertianMaterial {
     let r2s: f64 = r2.sqrt();
     // 反射点での法線方向を基準にした正規直交基底を生成
     let w = normal;
-    let u = if w.x.abs() > EPS { Vector3::new(0.0, 1.0, 0.0) } else { Vector3::new(1.0, 0.0, 0.0) }.cross(w).norm();
-    let v = w.cross(u);
+    let (u, v) = normal.orthonormal_basis();
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     // (cosにしたがって重点的にサンプル)
     let d = u * (r1.cos() * r2s) + v * (r1.sin() * r2s) + w * (1.0 - r2).sqrt();
