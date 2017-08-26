@@ -54,17 +54,13 @@ impl Material for LambertianMaterial {
   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3<f64>, f64) {
     // 拡散反射
     let normal = self.orienting_normal(in_ray.direction, i.normal);
-    // 乱数を生成
-    // (cosにしたがって重点的にサンプル)
-    let r1: f64 = 2.0 * PI * rand::random::<f64>();
-    let r2: f64 = rand::random::<f64>();
-    let r2s: f64 = r2.sqrt();
     // 反射点での法線方向を基準にした正規直交基底を生成
     let w = normal;
     let (u, v) = normal.orthonormal_basis();
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     // (cosにしたがって重点的にサンプル)
-    let d = u * (r1.cos() * r2s) + v * (r1.sin() * r2s) + w * (1.0 - r2).sqrt();
+    let sample = Sampler::hemisphere_cos_importance();
+    let d = u * sample.x + v * sample.y + w * sample.z;
     // 新しいレイを作る
     let new_ray = Ray { direction: d, origin: i.position };
     // cos項
@@ -201,5 +197,106 @@ impl Material for IdealRefractionMaterial {
         cos_term,
       )
     }
+  }
+}
+
+struct CookTorranceMaterial {
+  // 鏡面反射率
+  reflectance: Vector3<f64>,
+  // 吸収係数
+  absorptance: Vector3<f64>,
+  // 屈折率
+  ior: f64,
+  // ラフネス
+  roughness: f64,
+}
+
+impl CookTorranceMaterial {
+  fn alpha() {
+    self.roughness * self.roughness
+  }
+
+  // マイクロファセット分布関数 (Microfacet Distribution Functions)
+  fn ndf(h: Vector3<f64>, n: Vector3<f64>) -> f64 {
+    // GGX
+    let a = self.alpha();
+    let a2 = a * a;
+    let n_dot_h = n.dot(h);
+    let b = 1.0 - (1.0 - a2) * n_dot_h * n_dot_h;
+    a2 / (PI * b * b)
+  }
+
+  // 幾何減衰項 (Masking-Shadowing Fucntion)
+  fn geometry(l: Vector3<f64>, x: Vector3<f64>, n: Vector3<f64>) -> f64 {
+    // Height-Correlated Masking and Shadowing (Smith Joint Masking-Shadowing Function)
+    1.0 / (1.0 + gamma_ggx(l, n) + gamma_ggx(v, n))
+  }
+
+  fn gamma_ggx(x: Vector3<f64>, n: Vector3<f64>) -> f64 {
+    let a = self.alpha();
+    let a2 = a * a;
+    let x_dot_n = x.dot(n);
+    (-1.0 + (1.0 + a2 * (1.0 / x_dot_n + x_dot_n - 1.0)).sqrt()) / 2.0
+  }
+
+  // フレネル項
+  fn fresnel(v: Vector3<f64>, h: Vector3<f64>) -> f64 {
+    // 垂直入射での反射量
+    // 真空屈折率
+    let eta_v = 1.0;
+    // 物体屈折率
+    let eta = self.ior;
+    // n1 - n2
+    let nnn = eta_v - eta;
+    // n1 + n2
+    let nnp = eta + eta_v;
+    let f_0 = (nnn * nnn) / (nnp * nnp);
+    // Fresnelの式(Schlickの近似)より
+    // 反射率
+    f_0 + (1.0 - f_0) * (1.0 - v.dot(h)).powi(5)
+  }
+}
+
+impl Material for CookTorranceMaterial {
+  fn emission(&self) -> Vector3<f64> {
+    Vector3::new(0.0, 0.0, 0.0)
+  }
+
+  fn rr_weight(&self) -> f64 {
+    // 吸収係数のうち最大のものをつかう
+    self.absorptance.x.max(self.absorptance.y).max(self.absorptance.z)
+  }
+
+  fn brdf(&self, l: Vector3<f64>, v: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {
+    let l_v = l + v;
+    let h = l_v / l_v.norm();
+    (self.ndf(h, n) * self.geometry(l, v, n) * self.fresnel(v, h)) / (4 * l.dot(n) * v.dot(n))
+  }
+
+  fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3<f64>, f64) {
+    let normal = self.orienting_normal(in_ray.direction, i.normal);
+    // 反射点での法線方向を基準にした正規直交基底を生成
+    let w = normal;
+    let (u, v) = normal.orthonormal_basis();
+    // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
+    // (cosにしたがって重点的にサンプル)
+    let sample = Sampler::hemisphere_cos_importance();
+    let d = u * sample.x + v * sample.y + w * sample.z;
+    // 新しいレイを作る
+    let new_ray = Ray { direction: d, origin: i.position };
+    // cos項
+    let cos_term = d.dot(normal);
+    // 確率密度関数
+    // (cosにしたがって重点的にサンプル) cosθ / π
+    let pdf = cos_term / PI;
+    let brdf = i.material.brdf(in_ray.direction, new_ray.direction, normal);
+    (
+      Sample {
+        value: new_ray,
+        pdf: pdf,
+      },
+      brdf,
+      cos_term
+    )
   }
 }
