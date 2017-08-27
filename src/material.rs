@@ -200,15 +200,15 @@ impl Material for IdealRefractionMaterial {
   }
 }
 
-struct CookTorranceMaterial {
+pub struct CookTorranceMaterial {
   // 鏡面反射率
-  reflectance: Vector3<f64>,
+  pub reflectance: Vector3<f64>,
   // 吸収係数
-  absorptance: Vector3<f64>,
+  pub absorptance: Vector3<f64>,
   // 屈折率
-  ior: f64,
+  pub ior: f64,
   // ラフネス
-  roughness: f64,
+  pub roughness: f64,
 }
 
 impl CookTorranceMaterial {
@@ -236,9 +236,9 @@ impl CookTorranceMaterial {
   }
 
   // 幾何減衰項 (Masking-Shadowing Fucntion)
-  fn geometry(&self, l: Vector3<f64>, x: Vector3<f64>, n: Vector3<f64>) -> f64 {
+  fn geometry(&self, l: Vector3<f64>, v: Vector3<f64>, n: Vector3<f64>) -> f64 {
     // Height-Correlated Masking and Shadowing (Smith Joint Masking-Shadowing Function)
-    1.0 / (1.0 + gamma_ggx(l, n) + gamma_ggx(v, n))
+    1.0 / (1.0 + self.gamma_ggx(l, n) + self.gamma_ggx(v, n))
   }
 
   fn gamma_ggx(&self, x: Vector3<f64>, n: Vector3<f64>) -> f64 {

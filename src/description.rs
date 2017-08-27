@@ -14,21 +14,19 @@ use sky::*;
 pub fn camera() -> Arc<Camera + Send + Sync> {
   let w = Img::width() as f64;
   let h = Img::height() as f64;
-  let cam_pos = Vector3::new(-11.5, 1.0, 13.0);
-  let screen_dir = Vector3::new(8.18, -2.0, -9.0);
   Arc::new(LensCamera::new(
     // sensor position
-    cam_pos - screen_dir,
+    Vector3::new(0.0, 1.9, 8.0),
     // aperture position
-    cam_pos,
+    Vector3::new(0.0, 2.0, 7.0),
     // sensor size
-    Vector2::new(10.0 * w / h, 10.0),
+    Vector2::new(1.1 * w / h, 1.1),
     // sensor resolution
     Vector2::new(Img::width(), Img::height()),
     // aperture radius
     0.05,
     // focus_distance
-    3.0 + screen_dir.len(),
+    7.0,
   ))
 }
 
@@ -66,10 +64,10 @@ pub fn scene() -> Arc<Scene> {
     ior: INF, // sin(0) = 1.0 / ior
   });
   let spheres = vec![
-    Sphere { radius: 1.8, position: Vector3::new(-4.0, -3.2, 0.5), material: glass_mat.clone() },
-    Sphere { radius: 1.8, position: Vector3::new(0.8, -3.2, -0.5), material: white_mat.clone() },
-    Sphere { radius: 1.8, position: Vector3::new(2.0, -3.2, 4.0), material: mirror_mat.clone() },
-    Sphere { radius: 1e5, position: Vector3::new(0.0, -1e5 - 5.0, 0.0), material: white_mat.clone() },
+    Sphere { radius: 3.0, position: Vector3::new(0.0, 2.0, 0.0), material: rough_mat.clone() },
+    Sphere { radius: 1.0, position: Vector3::new(-4.0, 0.0, 0.0), material: mirror_mat.clone() },
+    Sphere { radius: 1.0, position: Vector3::new(4.0, 0.0, 0.0), material: glass_mat.clone() },
+    Sphere { radius: 1e5, position: Vector3::new(0.0, -1e5 - 1.0, 0.0), material: white_mat.clone() },
   ];
   let objects = Objects {
     objects: spheres,
