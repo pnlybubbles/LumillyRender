@@ -57,14 +57,20 @@ impl IBLSky {
 
 impl Sky for IBLSky {
   fn radiance(&self, ray: &Ray) -> Vector3<f64> {
+    let interval = 0.04;
     let theta = (ray.direction.y).acos();
     let phi_pr = (ray.direction.z / ray.direction.x).atan();
     let phi = if ray.direction.x < 0.0 { phi_pr + PI } else { phi_pr } + PI / 2.0;
-    let x = (self.height as f64 * phi / PI).round() as usize + self.longitude_offset;
-    let y = (self.height as f64 * theta / PI).round() as usize;
-    let index = y * self.height * 2 + if x > self.height * 2 { x % (self.height * 2) } else { x };
-    let color = self.hdr_image[index];
-    return Vector3::new(color.data[0] as f64, color.data[1] as f64, color.data[2] as f64);
+    let u_ = phi / (2.0 * PI);
+    let v_ = theta / PI;
+    if u_ < 0.0 || u_ > 1.0 || v_ < 0.0 || v_ > 1.0 {
+      println!("{:?} {:?}", u_, v_);
+      panic!("oh! no!");
+    }
+    let u = (phi / (2.0 * PI) / interval * 2.0).floor();
+    let v = (theta / PI / interval).floor();
+    let p = (u + v) % 2.0;
+    return Vector3::new(0.1, 0.1, 0.1) + Vector3::new(0.9, 0.9, 0.9) * (1.0 - p);
   }
 }
 
