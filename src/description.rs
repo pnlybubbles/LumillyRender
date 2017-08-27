@@ -58,12 +58,12 @@ pub fn scene() -> Arc<Scene> {
     absorptance: Vector3::new(0.75, 0.75, 0.75),
     reflectance: Vector3::new(0.75, 0.75, 0.75),
     ior: 1.5,
+    roughness: 0.5,
   });
   let mirror_mat = Arc::new(IdealRefractionMaterial {
     albedo: Vector3::new(0.99, 0.99, 0.99),
     emission: Vector3::new(0.0, 0.0, 0.0),
     ior: INF, // sin(0) = 1.0 / ior
-    roughness:
   });
   let spheres = vec![
     Sphere { radius: 1.8, position: Vector3::new(-4.0, -3.2, 0.5), material: glass_mat.clone() },

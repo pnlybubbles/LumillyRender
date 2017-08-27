@@ -212,12 +212,21 @@ struct CookTorranceMaterial {
 }
 
 impl CookTorranceMaterial {
-  fn alpha() {
+  pub fn orienting_normal(&self, in_: Vector3<f64>, normal: Vector3<f64>) -> Vector3<f64> {
+    // 物体の内外を考慮した法線方向から拡散反射面としての法線方向を求める
+    if normal.dot(in_) > 0.0 {
+      normal * -1.0
+    } else {
+      normal
+    }
+  }
+
+  fn alpha(&self) -> f64 {
     self.roughness * self.roughness
   }
 
   // マイクロファセット分布関数 (Microfacet Distribution Functions)
-  fn ndf(h: Vector3<f64>, n: Vector3<f64>) -> f64 {
+  fn ndf(&self, h: Vector3<f64>, n: Vector3<f64>) -> f64 {
     // GGX
     let a = self.alpha();
     let a2 = a * a;
@@ -227,12 +236,12 @@ impl CookTorranceMaterial {
   }
 
   // 幾何減衰項 (Masking-Shadowing Fucntion)
-  fn geometry(l: Vector3<f64>, x: Vector3<f64>, n: Vector3<f64>) -> f64 {
+  fn geometry(&self, l: Vector3<f64>, x: Vector3<f64>, n: Vector3<f64>) -> f64 {
     // Height-Correlated Masking and Shadowing (Smith Joint Masking-Shadowing Function)
     1.0 / (1.0 + gamma_ggx(l, n) + gamma_ggx(v, n))
   }
 
-  fn gamma_ggx(x: Vector3<f64>, n: Vector3<f64>) -> f64 {
+  fn gamma_ggx(&self, x: Vector3<f64>, n: Vector3<f64>) -> f64 {
     let a = self.alpha();
     let a2 = a * a;
     let x_dot_n = x.dot(n);
@@ -240,7 +249,7 @@ impl CookTorranceMaterial {
   }
 
   // フレネル項
-  fn fresnel(v: Vector3<f64>, h: Vector3<f64>) -> f64 {
+  fn fresnel(&self, v: Vector3<f64>, h: Vector3<f64>) -> f64 {
     // 垂直入射での反射量
     // 真空屈折率
     let eta_v = 1.0;
@@ -270,7 +279,7 @@ impl Material for CookTorranceMaterial {
   fn brdf(&self, l: Vector3<f64>, v: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {
     let l_v = l + v;
     let h = l_v / l_v.norm();
-    (self.ndf(h, n) * self.geometry(l, v, n) * self.fresnel(v, h)) / (4 * l.dot(n) * v.dot(n))
+    self.reflectance * (self.ndf(h, n) * self.geometry(l, v, n) * self.fresnel(v, h)) / (4.0 * l.dot(n) * v.dot(n))
   }
 
   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3<f64>, f64) {
