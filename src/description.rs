@@ -16,9 +16,9 @@ pub fn camera() -> Arc<Camera + Send + Sync> {
   let h = Img::height() as f64;
   Arc::new(LensCamera::new(
     // sensor position
-    Vector3::new(0.0, 1.9, 8.0),
+    Vector3::new(0.0, 2.5, 9.0),
     // aperture position
-    Vector3::new(0.0, 2.0, 7.0),
+    Vector3::new(0.0, 2.4, 8.0),
     // sensor size
     Vector2::new(1.1 * w / h, 1.1),
     // sensor resolution
@@ -54,7 +54,7 @@ pub fn scene() -> Arc<Scene> {
   });
   let rough_mat = Arc::new(CookTorranceMaterial {
     absorptance: Vector3::new(0.75, 0.75, 0.75),
-    reflectance: Vector3::new(0.75, 0.75, 0.75),
+    reflectance: Vector3::new(1.0, 1.0, 1.0),
     ior: 1.5,
     roughness: 0.5,
   });
@@ -64,9 +64,9 @@ pub fn scene() -> Arc<Scene> {
     ior: INF, // sin(0) = 1.0 / ior
   });
   let spheres = vec![
-    Sphere { radius: 3.0, position: Vector3::new(0.0, 2.0, 0.0), material: rough_mat.clone() },
-    Sphere { radius: 1.0, position: Vector3::new(-4.0, 0.0, 0.0), material: mirror_mat.clone() },
-    Sphere { radius: 1.0, position: Vector3::new(4.0, 0.0, 0.0), material: glass_mat.clone() },
+    Sphere { radius: 1.9, position: Vector3::new(4.1, 1.0, 0.0), material: mirror_mat.clone() },
+    Sphere { radius: 1.9, position: Vector3::new(0.0, 1.0, 0.0), material: rough_mat.clone() },
+    Sphere { radius: 1.9, position: Vector3::new(-4.1, 1.0, 0.0), material: white_mat.clone() },
     Sphere { radius: 1e5, position: Vector3::new(0.0, -1e5 - 1.0, 0.0), material: white_mat.clone() },
   ];
   let objects = Objects {
