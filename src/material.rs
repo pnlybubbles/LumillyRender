@@ -279,7 +279,10 @@ impl Material for CookTorranceMaterial {
   fn brdf(&self, l: Vector3<f64>, v: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {
     let l_v = l + v;
     let h = l_v / l_v.norm();
-    self.reflectance * (self.ndf(h, n) * self.geometry(l, v, n) * self.fresnel(v, h)) / (4.0 * l.dot(n) * v.dot(n))
+    // self.absorptance / PI + self.reflectance * (self.ndf(h, n) * self.geometry(l, v, n) * self.fresnel(v, h)) / (4.0 * l.dot(n) * v.dot(n))
+
+    // Implicit geometric shadowing term
+    self.absorptance / PI + self.reflectance * (self.ndf(h, n) * self.fresnel(v, h)) / (4.0 * l.dot(n))
   }
 
   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3<f64>, f64) {
