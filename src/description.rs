@@ -52,9 +52,23 @@ pub fn scene() -> Arc<Scene> {
     emission: Vector3::new(0.0, 0.0, 0.0),
     ior: 1.5,
   });
-  let rough_mat = Arc::new(PhongMaterial {
+  let rough_mat = Arc::new(CookTorranceMaterial {
     reflectance: Vector3::new(0.75, 0.75, 0.75),
+    absorptance: Vector3::new(0.75, 0.75, 0.75),
+    ior: 1.5,
+    roughness: 0.1,
+  });
+  let rough_mat_1 = Arc::new(CookTorranceMaterial {
+    reflectance: Vector3::new(0.75, 0.75, 0.75),
+    absorptance: Vector3::new(0.75, 0.75, 0.75),
+    ior: 1.5,
     roughness: 0.5,
+  });
+  let rough_mat_2 = Arc::new(CookTorranceMaterial {
+    reflectance: Vector3::new(0.75, 0.75, 0.75),
+    absorptance: Vector3::new(0.75, 0.75, 0.75),
+    ior: 1.5,
+    roughness: 0.9,
   });
   let mirror_mat = Arc::new(IdealRefractionMaterial {
     albedo: Vector3::new(0.99, 0.99, 0.99),
@@ -62,9 +76,9 @@ pub fn scene() -> Arc<Scene> {
     ior: INF, // sin(0) = 1.0 / ior
   });
   let spheres = vec![
-    Sphere { radius: 1.9, position: Vector3::new(4.1, 1.0, 0.0), material: mirror_mat.clone() },
-    Sphere { radius: 1.9, position: Vector3::new(0.0, 1.0, 0.0), material: rough_mat.clone() },
-    Sphere { radius: 1.9, position: Vector3::new(-4.1, 1.0, 0.0), material: white_mat.clone() },
+    Sphere { radius: 1.9, position: Vector3::new(4.1, 1.0, 0.0), material: rough_mat.clone() },
+    Sphere { radius: 1.9, position: Vector3::new(0.0, 1.0, 0.0), material: rough_mat_1.clone() },
+    Sphere { radius: 1.9, position: Vector3::new(-4.1, 1.0, 0.0), material: rough_mat_2.clone() },
     Sphere { radius: 1e5, position: Vector3::new(0.0, -1e5 - 1.0, 0.0), material: white_mat.clone() },
   ];
   let objects = Objects {

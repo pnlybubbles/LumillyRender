@@ -276,16 +276,17 @@ impl Material for CookTorranceMaterial {
     self.absorptance.x.max(self.absorptance.y).max(self.absorptance.z)
   }
 
-  fn brdf(&self, l: Vector3<f64>, v_i: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {
+  fn brdf(&self, v_i: Vector3<f64>, l: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {
     let v = - v_i;
-    let l_v = l + v;
-    let h = l_v / l_v.norm();
+    let h = (l + v).norm();
     // fr = kd * f_lambert + ks * f_cooktorrance
     // f_cooktorrance = DFG / 4(v . n)(l . n)
-    // self.absorptance / PI + self.reflectance * (self.ndf(h, n) * self.geometry(l, v, n) * self.fresnel(v, h)) / (4.0 * l.dot(n) * v.dot(n))
-
+    let fr = self.fresnel(v, h);
+    let diffuse = self.absorptance / PI;
+    let specular = self.reflectance * (self.ndf(h, n) * self.geometry(l, v, n) * fr) / (4.0 * l.dot(n) * v.dot(n));
     // Implicit geometric shadowing term
-    self.absorptance / PI + self.reflectance * (self.ndf(h, n) * self.fresnel(v, h)) / (4.0 * l.dot(n))
+    // let specular = self.reflectance * (self.ndf(h, n) * fr) / (4.0 * l.dot(n));
+    diffuse * (1.0 - fr) + specular
   }
 
   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3<f64>, f64) {
@@ -334,7 +335,7 @@ impl PhongMaterial {
   }
 
   pub fn alpha(&self) -> f64 {
-    2.0 / self.roughness.powi(4) - 2.0
+    self.roughness
   }
 }
 
