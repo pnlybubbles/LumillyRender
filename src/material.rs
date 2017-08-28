@@ -276,9 +276,12 @@ impl Material for CookTorranceMaterial {
     self.absorptance.x.max(self.absorptance.y).max(self.absorptance.z)
   }
 
-  fn brdf(&self, l: Vector3<f64>, v: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {
+  fn brdf(&self, l: Vector3<f64>, v_i: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {
+    let v = - v_i;
     let l_v = l + v;
     let h = l_v / l_v.norm();
+    // fr = kd * f_lambert + ks * f_cooktorrance
+    // f_cooktorrance = DFG / 4(v . n)(l . n)
     // self.absorptance / PI + self.reflectance * (self.ndf(h, n) * self.geometry(l, v, n) * self.fresnel(v, h)) / (4.0 * l.dot(n) * v.dot(n))
 
     // Implicit geometric shadowing term
@@ -301,6 +304,83 @@ impl Material for CookTorranceMaterial {
     // 確率密度関数
     // (cosにしたがって重点的にサンプル) cosθ / π
     let pdf = cos_term / PI;
+    let brdf = i.material.brdf(in_ray.direction, new_ray.direction, normal);
+    (
+      Sample {
+        value: new_ray,
+        pdf: pdf,
+      },
+      brdf,
+      cos_term
+    )
+  }
+}
+
+pub struct PhongMaterial {
+  // 反射率
+  pub reflectance: Vector3<f64>,
+  // ラフネス
+  pub roughness: f64,
+}
+
+impl PhongMaterial {
+  pub fn orienting_normal(&self, in_: Vector3<f64>, normal: Vector3<f64>) -> Vector3<f64> {
+    // 物体の内外を考慮した法線方向から拡散反射面としての法線方向を求める
+    if normal.dot(in_) > 0.0 {
+      normal * -1.0
+    } else {
+      normal
+    }
+  }
+
+  pub fn alpha(&self) -> f64 {
+    2.0 / self.roughness.powi(4) - 2.0
+  }
+}
+
+impl Material for PhongMaterial {
+  fn emission(&self) -> Vector3<f64> {
+    Vector3::new(0.0, 0.0, 0.0)
+  }
+
+  fn rr_weight(&self) -> f64 {
+    // 反射率のうち最大のものをつかう
+    self.reflectance.x.max(self.reflectance.y).max(self.reflectance.z)
+  }
+
+  fn brdf(&self, v_i: Vector3<f64>, l: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {
+    let v = - v_i;
+    let r = v.reflect(n);
+    let cos = r.dot(l);
+    let a = self.alpha();
+    // modified phong
+    self.reflectance * ((a + 2.0) / (2.0 * PI) * cos.powf(a))
+  }
+
+  fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3<f64>, f64) {
+    let normal = self.orienting_normal(in_ray.direction, i.normal);
+    let a = self.alpha();
+    // 反射点での法線方向を基準にした正規直交基底を生成
+    let w = normal;
+    let (u, v) = normal.orthonormal_basis();
+    // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
+    // (brdfの分布にしたがって重点的にサンプル)
+    let r1 = 2.0 * PI * rand::random::<f64>();
+    let r2 = rand::random::<f64>();
+    let t = r2.powf(2.0 / (a + 1.0));
+    let ts = (1.0 - t).sqrt();
+
+    let d = u * r1.cos() * ts + v * r1.sin() * ts + w * t.sqrt();
+    // 新しいレイを作る
+    let new_ray = Ray { direction: d, origin: i.position };
+    // cos項
+    let cos_term = d.dot(normal);
+    // 確率密度関数
+    // (brdfの分布にしたがって重点的にサンプル)
+    let v = - in_ray.direction;
+    let r = v.reflect(normal);
+    let cos = r.dot(new_ray.direction);
+    let pdf = (a + 2.0) / (2.0 * PI) * cos.powf(a);
     let brdf = i.material.brdf(in_ray.direction, new_ray.direction, normal);
     (
       Sample {
