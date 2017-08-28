@@ -52,10 +52,8 @@ pub fn scene() -> Arc<Scene> {
     emission: Vector3::new(0.0, 0.0, 0.0),
     ior: 1.5,
   });
-  let rough_mat = Arc::new(CookTorranceMaterial {
-    absorptance: Vector3::new(0.75, 0.75, 0.75),
-    reflectance: Vector3::new(1.0, 1.0, 1.0),
-    ior: 1.5,
+  let rough_mat = Arc::new(PhongMaterial {
+    reflectance: Vector3::new(0.75, 0.75, 0.75),
     roughness: 0.5,
   });
   let mirror_mat = Arc::new(IdealRefractionMaterial {
