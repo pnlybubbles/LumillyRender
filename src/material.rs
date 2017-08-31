@@ -228,24 +228,24 @@ impl CookTorranceMaterial {
   // マイクロファセット分布関数 (Microfacet Distribution Functions)
   fn ndf(&self, h: Vector3<f64>, n: Vector3<f64>) -> f64 {
     // GGX
+    let n_dot_h = n.dot(h);
     let a = self.alpha();
     let a2 = a * a;
-    let n_dot_h = n.dot(h);
-    let b = 1.0 - (1.0 - a2) * n_dot_h * n_dot_h;
+    let b = (a2 - 1.0) * n_dot_h * n_dot_h + 1.0;
     a2 / (PI * b * b)
   }
 
   // 幾何減衰項 (Masking-Shadowing Fucntion)
-  fn geometry(&self, l: Vector3<f64>, v: Vector3<f64>, n: Vector3<f64>) -> f64 {
+  fn geometry(&self, i: Vector3<f64>, o: Vector3<f64>, h: Vector3<f64>, n: Vector3<f64>) -> f64 {
     // Height-Correlated Masking and Shadowing (Smith Joint Masking-Shadowing Function)
-    1.0 / (1.0 + self.gamma_ggx(l, n) + self.gamma_ggx(v, n))
+    self.g1(i, h, n) * self.g1(o, h, n)
   }
 
-  fn gamma_ggx(&self, x: Vector3<f64>, n: Vector3<f64>) -> f64 {
+  fn g1(&self, x: Vector3<f64>, h: Vector3<f64>, n: Vector3<f64>) -> f64 {
     let a = self.alpha();
     let a2 = a * a;
     let x_dot_n = x.dot(n);
-    (-1.0 + (1.0 + a2 * (1.0 / x_dot_n + x_dot_n - 1.0)).sqrt()) / 2.0
+    2.0 * x.dot(n) / (x.dot(n) * (a2 + (1.0 - a2) * x_dot_n * x_dot_n).sqrt())
   }
 
   // フレネル項
@@ -272,21 +272,16 @@ impl Material for CookTorranceMaterial {
   }
 
   fn rr_weight(&self) -> f64 {
-    // 吸収係数のうち最大のものをつかう
-    self.absorptance.x.max(self.absorptance.y).max(self.absorptance.z)
+    // 反射率のうち最大のものをつかう
+    self.reflectance.x.max(self.reflectance.y).max(self.reflectance.z)
   }
 
-  fn brdf(&self, v_i: Vector3<f64>, l: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {
-    let v = - v_i;
-    let h = (l + v).norm();
-    // fr = kd * f_lambert + ks * f_cooktorrance
-    // f_cooktorrance = DFG / 4(v . n)(l . n)
-    let fr = self.fresnel(v, h);
-    let diffuse = self.absorptance / PI;
-    let specular = self.reflectance * (self.ndf(h, n) * self.geometry(l, v, n) * fr) / (4.0 * l.dot(n) * v.dot(n));
-    // Implicit geometric shadowing term
-    // let specular = self.reflectance * (self.ndf(h, n) * fr) / (4.0 * l.dot(n));
-    diffuse * (1.0 - fr) + specular
+  fn brdf(&self, i: Vector3<f64>, o: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {
+    let h = (o + i).norm();
+    // Torrance-Sparrow model (PBRT p.546)
+    // fr = FGD / 4(i.n)(o.n)
+    let fr = self.fresnel(i, h, n) * self.geometry(i, o, n) * self.ndf(h) / (4.0 * i.dot(n) * o.dot(n));
+    self.reflectance * fr;
   }
 
   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3<f64>, f64) {
@@ -305,7 +300,7 @@ impl Material for CookTorranceMaterial {
     // 確率密度関数
     // (cosにしたがって重点的にサンプル) cosθ / π
     let pdf = cos_term / PI;
-    let brdf = i.material.brdf(in_ray.direction, new_ray.direction, normal);
+    let brdf = i.material.brdf(-in_ray.direction, new_ray.direction, normal);
     (
       Sample {
         value: new_ray,
