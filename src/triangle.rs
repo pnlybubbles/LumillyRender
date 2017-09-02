@@ -6,6 +6,7 @@ use ray::Ray;
 use material::Material;
 use vector3::Vector3;
 use vector::*;
+use aabb::AABB;
 
 pub struct Triangle {
   pub p0: Vector3<f64>,
@@ -29,6 +30,7 @@ impl Triangle {
 
 impl Shape for Triangle {
   fn intersect(&self, ray: &Ray) -> Option<Intersection> {
+    // Möller–Trumbore intersection algorithm
     let e1 = self.p1 - self.p0;
     let e2 = self.p2 - self.p0;
     let q = ray.direction.cross(e2);
@@ -54,5 +56,20 @@ impl Shape for Triangle {
       position: p,
       material: self.material.clone(),
     })
+  }
+
+  fn aabb(&self) -> AABB {
+    AABB {
+      min: Vector3::new(
+        self.p0.x.min(self.p1.x).min(self.p2.x),
+        self.p0.y.min(self.p1.y).min(self.p2.y),
+        self.p0.z.min(self.p1.z).min(self.p2.z),
+      ),
+      max: Vector3::new(
+        self.p0.x.max(self.p1.x).max(self.p2.x),
+        self.p0.y.max(self.p1.y).max(self.p2.y),
+        self.p0.z.max(self.p1.z).max(self.p2.z),
+      ),
+    }
   }
 }

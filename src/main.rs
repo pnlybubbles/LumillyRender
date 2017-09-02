@@ -23,6 +23,7 @@ mod sky;
 mod description;
 mod util;
 mod shape;
+mod aabb;
 
 use std::io::{self, Write};
 use threadpool::ThreadPool;

@@ -6,6 +6,7 @@ use material::Material;
 use intersection::Intersection;
 use constant::*;
 use shape::Shape;
+use aabb::AABB;
 
 pub struct Sphere {
   pub radius: f64,
@@ -35,5 +36,13 @@ impl Shape for Sphere {
       normal: outer_normal,
       material: self.material.clone(),
     })
+  }
+
+  fn aabb(&self) -> AABB {
+    let r = Vector3::new(self.radius, self.radius, self.radius);
+    AABB {
+      min: self.position - r,
+      max: self.position + r,
+    }
   }
 }
