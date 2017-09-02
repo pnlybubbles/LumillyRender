@@ -10,6 +10,7 @@ use sample::Sample;
 pub trait Camera {
   fn sample(&self, x: usize, y: usize) -> (Sample<Ray>, f64);
   fn sensor_sensitivity(&self) -> f64;
+  fn info(&self);
 }
 
 #[derive(Debug, Default)]
@@ -141,6 +142,10 @@ impl Camera for PinholeCamera {
 
   fn sensor_sensitivity(&self) -> f64 {
     self.sensor_sensitivity
+  }
+
+  fn info(&self) {
+    unimplemented!();
   }
 }
 
@@ -280,5 +285,15 @@ impl Camera for LensCamera {
 
   fn sensor_sensitivity(&self) -> f64 {
     self.sensor_sensitivity
+  }
+
+  fn info(&self) {
+    // 焦点距離
+    let focal_length = 1.0 / (1.0 / self.aperture_sensor_distance + 1.0 / self.focus_distance);
+    // FoV
+    let fov = 2.0 * ((self.sensor_size.len() / 2.0) / (2.0 * focal_length)).atan() * 180.0 / PI;
+    // F値
+    let f_number = focal_length / self.aperture_radius;
+    println!("Focal length: {:?}  FoV: {:?}  F-number: {:?}", focal_length, fov, f_number);
   }
 }

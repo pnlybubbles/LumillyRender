@@ -43,6 +43,7 @@ fn main() {
   let mut output: Img = Default::default();
   let cam = description::camera();
   let scene = description::scene();
+  cam.info();
   if MODE == 0 {
     println!("spp: {}", SPP);
     let (tx, rx): (Sender<(usize, usize, Color)>, Receiver<(usize, usize, Color)>) = channel();
