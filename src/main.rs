@@ -17,10 +17,12 @@ mod intersection;
 mod material;
 mod scene;
 mod sphere;
+mod triangle;
 mod objects;
 mod sky;
 mod description;
 mod util;
+mod shape;
 
 use std::io::{self, Write};
 use threadpool::ThreadPool;

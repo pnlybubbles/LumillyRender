@@ -241,6 +241,7 @@ impl CookTorranceMaterial {
     self.g1(i, h, n) * self.g1(o, h, n)
   }
 
+  #[allow(unused_variables)]
   fn g1(&self, x: Vector3<f64>, h: Vector3<f64>, n: Vector3<f64>) -> f64 {
     let a = self.alpha();
     let a2 = a * a;
@@ -249,7 +250,7 @@ impl CookTorranceMaterial {
   }
 
   // フレネル項
-  fn fresnel(&self, v: Vector3<f64>, h: Vector3<f64>) -> f64 {
+  fn fresnel(&self, i: Vector3<f64>, h: Vector3<f64>) -> f64 {
     // 垂直入射での反射量
     // 真空屈折率
     let eta_v = 1.0;
@@ -262,7 +263,7 @@ impl CookTorranceMaterial {
     let f_0 = (nnn * nnn) / (nnp * nnp);
     // Fresnelの式(Schlickの近似)より
     // 反射率
-    f_0 + (1.0 - f_0) * (1.0 - v.dot(h)).powi(5)
+    f_0 + (1.0 - f_0) * (1.0 - i.dot(h)).powi(5)
   }
 }
 
@@ -280,8 +281,8 @@ impl Material for CookTorranceMaterial {
     let h = (o + i).norm();
     // Torrance-Sparrow model (PBRT p.546)
     // fr = FGD / 4(i.n)(o.n)
-    let fr = self.fresnel(i, h, n) * self.geometry(i, o, n) * self.ndf(h) / (4.0 * i.dot(n) * o.dot(n));
-    self.reflectance * fr;
+    let fr = self.fresnel(i, h) * self.geometry(i, o, h, n) * self.ndf(h, n) / (4.0 * i.dot(n) * o.dot(n));
+    self.reflectance * fr
   }
 
   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3<f64>, f64) {
@@ -300,6 +301,7 @@ impl Material for CookTorranceMaterial {
     // 確率密度関数
     // (cosにしたがって重点的にサンプル) cosθ / π
     let pdf = cos_term / PI;
+    // in = view, out = light
     let brdf = i.material.brdf(-in_ray.direction, new_ray.direction, normal);
     (
       Sample {

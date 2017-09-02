@@ -5,6 +5,7 @@ use ray::Ray;
 use material::Material;
 use intersection::Intersection;
 use constant::*;
+use shape::Shape;
 
 pub struct Sphere {
   pub radius: f64,
@@ -12,8 +13,8 @@ pub struct Sphere {
   pub material: Arc<Material + Send + Sync>,
 }
 
-impl Sphere {
-  pub fn intersect(&self, ray: &Ray) -> Option<Intersection> {
+impl Shape for Sphere {
+  fn intersect(&self, ray: &Ray) -> Option<Intersection> {
     let co = ray.origin - self.position;
     let cod = co.dot(ray.direction);
     let det = cod * cod - co.sqr_len() + self.radius * self.radius;

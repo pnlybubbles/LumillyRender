@@ -1,9 +1,10 @@
-use sphere::Sphere;
 use ray::Ray;
 use intersection::Intersection;
+use shape::Shape;
+use std::sync::Arc;
 
 pub struct Objects {
-  pub objects: Vec<Sphere>,
+  pub objects: Vec<Arc<Shape + Send + Sync>>,
 }
 
 impl Objects {
