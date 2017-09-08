@@ -59,17 +59,20 @@ impl Shape for Triangle {
   }
 
   fn aabb(&self) -> AABB {
+    let min = Vector3::new(
+      self.p0.x.min(self.p1.x).min(self.p2.x),
+      self.p0.y.min(self.p1.y).min(self.p2.y),
+      self.p0.z.min(self.p1.z).min(self.p2.z),
+    );
+    let max = Vector3::new(
+      self.p0.x.max(self.p1.x).max(self.p2.x),
+      self.p0.y.max(self.p1.y).max(self.p2.y),
+      self.p0.z.max(self.p1.z).max(self.p2.z),
+    );
     AABB {
-      min: Vector3::new(
-        self.p0.x.min(self.p1.x).min(self.p2.x),
-        self.p0.y.min(self.p1.y).min(self.p2.y),
-        self.p0.z.min(self.p1.z).min(self.p2.z),
-      ),
-      max: Vector3::new(
-        self.p0.x.max(self.p1.x).max(self.p2.x),
-        self.p0.y.max(self.p1.y).max(self.p2.y),
-        self.p0.z.max(self.p1.z).max(self.p2.z),
-      ),
+      min: min,
+      max: max,
+      center: (max + min) / 2.0,
     }
   }
 }

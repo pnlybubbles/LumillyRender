@@ -1,4 +1,5 @@
 #![feature(box_syntax)]
+#![feature(sort_unstable)]
 #![allow(dead_code)]
 
 extern crate time;
@@ -24,6 +25,7 @@ mod description;
 mod util;
 mod shape;
 mod aabb;
+// mod bvh;
 
 use std::io::{self, Write};
 use threadpool::ThreadPool;
@@ -71,6 +73,11 @@ fn main() {
         });
       });
     }
+
+    let mut next_save_time = SAVE_IMAGE_INTERVAL - SAVE_IMAGE_INTERVAL_ERROR;
+    let time_limit_with_error = TIME_LIMIT - SAVE_IMAGE_INTERVAL_ERROR;
+    let mut count = 0;
+
     for s in 0..SPP {
       print!("\rprocessing... ({:.0}/{:.0} : {:.0}%) ", s, SPP, s as f64 / SPP as f64 * 100.0);
       io::stdout().flush().ok();
@@ -83,16 +90,20 @@ fn main() {
           }
         });
       });
-    }
-    let file_name = &format!("image_{}_{}.png", time::now().strftime("%Y%m%d%H%M%S").unwrap(), SPP);
-    output.save(file_name, |pixel| {
-      let mut color = [0u8; 3];
-      for (c, p) in color.iter_mut().zip(pixel.iter()) {
-        // サンプル数で割って期待値を計算
-        *c = ((p / SPP as f64).min(1.0).max(0.0).powf(1.0 / 2.2) * 255.0) as u8
+      let save_time = time::now();
+      let elapse_time = (save_time - start_time).num_seconds() as f64;
+      if elapse_time > next_save_time {
+        save(&output, s, count);
+        println!("save: {}s", elapse_time);
+        count += 1;
+        next_save_time += SAVE_IMAGE_INTERVAL;
       }
-      color
-    });
+      if elapse_time > time_limit_with_error {
+        save(&output, s, count);
+        println!("exceeded the time limit: {}s", elapse_time);
+        std::process::exit(0);
+      }
+    }
   } else if MODE == 1 || MODE == 3 {
     Img::each( |x, y| {
       let (ray, _) = cam.sample(x, y);
@@ -129,6 +140,19 @@ fn main() {
   }
 
   let end_time = time::now();
+  println!("");
   println!("end: {}", end_time.strftime("%+").unwrap());
   println!("elapse: {}s", (end_time - start_time).num_milliseconds() as f64 / 1000.0);
+}
+
+fn save(output: &Img, s: usize, count: usize) {
+  let file_name = &format!("image_{}_{}_{}.png", count, time::now().strftime("%Y%m%d%H%M%S").unwrap(), s);
+  output.save(file_name, |pixel| {
+    let mut color = [0u8; 3];
+    for (c, p) in color.iter_mut().zip(pixel.iter()) {
+      // サンプル数で割って期待値を計算
+      *c = ((p / s as f64).min(1.0).max(0.0).powf(1.0 / 2.2) * 255.0) as u8
+    }
+    color
+  });
 }

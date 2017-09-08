@@ -43,6 +43,7 @@ impl Shape for Sphere {
     AABB {
       min: self.position - r,
       max: self.position + r,
+      center: self.position,
     }
   }
 }
