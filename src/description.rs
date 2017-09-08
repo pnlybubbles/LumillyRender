@@ -29,7 +29,7 @@ pub fn camera() -> Arc<Camera + Send + Sync> {
     // aperture radius
     0.5,
     // focus_distance
-    3.0 + screen_dir.len(),
+    3.0 + screen_dir.len() - screen_dir.len() * 0.3,
   ))
 }
 
@@ -58,7 +58,7 @@ pub fn scene() -> Arc<Scene> {
   // });
   let rough_mat = Arc::new(PhongMaterial {
     reflectance: Vector3::new(0.75, 0.75, 0.75),
-    roughness: 100.0,
+    roughness: 10.0,
   });
   let objects = Objects::new(vec![
     Arc::new(Sphere { radius: 2.0, position: Vector3::new(2.0, -3.0, 2.0), material: glass_mat.clone() }),
