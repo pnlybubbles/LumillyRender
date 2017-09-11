@@ -1,27 +1,55 @@
 extern crate image;
-extern crate time;
 
+use constant::*;
 use std::fs::File;
 use std::path::Path;
-use vector::Vector;
-use constant::*;
-use util::*;
 
-#[derive(Debug)]
+pub type Color = [f64; 3];
+
 pub struct Img {
+  data: Box<[[Color; HEIGHT]; WIDTH]>,
+}
+
+impl Default for Img {
+  fn default() -> Img {
+    Img {
+      data: box [[Default::default(); HEIGHT]; WIDTH],
+    }
+  }
 }
 
 impl Img {
-  pub fn save_png(output: &Box<[[Vector; WIDTH]; HEIGHT]>, samples: usize) {
-    println!("\nwriting image...");
+  pub fn width() -> usize {
+    WIDTH
+  }
 
-    let mut imgbuf = image::ImageBuffer::new(WIDTH as u32, HEIGHT as u32);
-    for (x, y, pixel) in imgbuf.enumerate_pixels_mut() {
-      let j = x as usize;
-      let i = y as usize;
-      *pixel = image::Rgb([to_int(clamp(output[i][WIDTH - j - 1].x / samples as f64)), to_int(clamp(output[i][WIDTH - j - 1].y / samples as f64)), to_int(clamp(output[i][WIDTH - j - 1].z / samples as f64))]);
+  pub fn height() -> usize {
+    HEIGHT
+  }
+
+  pub fn get(&self, x: usize, y: usize) -> &Color {
+    &self.data[x][y]
+  }
+
+  pub fn apply<F>(&mut self, x: usize, y: usize, mut f: F) where F: FnMut(&mut Color) {
+    f(&mut self.data[x][y])
+  }
+
+  pub fn each<F>(mut f: F) where F: FnMut(usize, usize) {
+    for x in 0..WIDTH {
+      for y in 0..HEIGHT {
+        f(x, y)
+      }
     }
-    let ref mut f = File::create(&Path::new(&format!("image_{}_{}.png", time::now().strftime("%Y%m%d%H%M%S").unwrap(), samples))).unwrap();
-    let _ = image::ImageRgb8(imgbuf).save(f, image::PNG);
+  }
+
+  pub fn save<F>(&self, file_name: &String, mut f: F) where F: FnMut(&Color) -> [u8; 3] {
+    let mut buf = image::ImageBuffer::new(WIDTH as u32, HEIGHT as u32);
+    for (x, y, pixel) in buf.enumerate_pixels_mut() {
+      let output_pixel = self.get(x as usize, y as usize);
+      *pixel = image::Rgb(f(output_pixel));
+    }
+    let ref mut f = File::create(&Path::new(file_name)).unwrap();
+    let _ = image::ImageRgb8(buf).save(f, image::PNG);
   }
 }

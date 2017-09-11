@@ -1,12 +1,11 @@
-use vector::Vector;
-// use ray::Ray;
+use std::sync::Arc;
+use vector3::Vector3;
 use material::Material;
 
-#[derive(Debug, Copy, Clone, Default)]
 pub struct Intersection {
-  pub is_intersect: bool,
+  pub position: Vector3<f64>,
   pub distance: f64,
-  pub position: Vector,
-  pub normal: Vector,
-  pub material: Material,
+  pub normal: Vector3<f64>,
+  pub material: Arc<Material + Send + Sync>,
 }
+

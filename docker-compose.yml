@@ -1,0 +1,8 @@
+version: '3'
+services:
+  main:
+    build: .
+    volumes:
+      - .:/main
+    command: bash -c 'cargo build --release'
+

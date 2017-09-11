@@ -1,6 +1,8 @@
-use ray::Ray;
 use intersection::Intersection;
+use ray::Ray;
+use aabb::AABB;
 
 pub trait Shape {
-  fn intersect(self, r: Ray) -> Intersection;
+  fn intersect(&self, ray: &Ray) -> Option<Intersection>;
+  fn aabb(&self) -> AABB;
 }

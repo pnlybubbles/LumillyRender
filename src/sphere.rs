@@ -1,53 +1,49 @@
-use vector::Vector;
+use std::sync::Arc;
+use vector::{Vector, VectorFloat};
+use vector3::Vector3;
 use ray::Ray;
 use material::Material;
 use intersection::Intersection;
-use shape::Shape;
 use constant::*;
+use shape::Shape;
+use aabb::AABB;
 
-#[derive(Debug, Copy, Clone, Default)]
 pub struct Sphere {
   pub radius: f64,
-  pub position: Vector,
-  pub material: Material,
-}
-
-impl Sphere {
-  pub fn new(position: Vector, radius: f64, material: Material) -> Sphere {
-    Sphere {
-      radius: radius,
-      position: position,
-      material: material,
-    }
-  }
+  pub position: Vector3<f64>,
+  pub material: Arc<Material + Send + Sync>,
 }
 
 impl Shape for Sphere {
-  fn intersect(self, ray: Ray) -> Intersection {
-    let mut i: Intersection = Default::default();
+  fn intersect(&self, ray: &Ray) -> Option<Intersection> {
     let co = ray.origin - self.position;
     let cod = co.dot(ray.direction);
-    let det = cod * cod - co.dot(co) + self.radius * self.radius;
-
+    let det = cod * cod - co.sqr_len() + self.radius * self.radius;
     if det < 0.0 {
-      i.is_intersect = false;
-      return i;
+      return None;
     }
     let t1 = -cod - det.sqrt();
     let t2 = -cod + det.sqrt();
     if t1 < EPS && t2 < EPS {
-      i.is_intersect = false;
-      return i;
+      return None;
     }
-    if t1 > EPS {
-      i.distance = t1;
-    } else {
-      i.distance = t2;
+    let distance = if t1 > EPS { t1 } else { t2 };
+    let position = ray.origin + ray.direction * distance;
+    let outer_normal = (position - self.position).norm();
+    Some(Intersection {
+      distance: distance,
+      position: position,
+      normal: outer_normal,
+      material: self.material.clone(),
+    })
+  }
+
+  fn aabb(&self) -> AABB {
+    let r = Vector3::new(self.radius, self.radius, self.radius);
+    AABB {
+      min: self.position - r,
+      max: self.position + r,
+      center: self.position,
     }
-    i.is_intersect = true;
-    i.position = ray.origin + ray.direction * i.distance;
-    i.normal = (i.position - self.position).norm();
-    i.material = self.material;
-    return i;
   }
 }

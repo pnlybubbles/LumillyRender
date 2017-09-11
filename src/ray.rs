@@ -1,7 +1,6 @@
-use vector::Vector;
+use vector3::Vector3;
 
-#[derive(Debug, Copy, Clone, Default)]
 pub struct Ray {
-  pub origin: Vector,
-  pub direction: Vector
+  pub origin: Vector3<f64>,
+  pub direction: Vector3<f64>,
 }
