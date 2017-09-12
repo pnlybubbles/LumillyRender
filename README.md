@@ -1,7 +1,7 @@
-# Ray Tracing
+# Lumilly Render
 
-Monte Carlo ray-trace implementaion on Rust
+Monte Carlo path tracing implementation on Rust
 
 ![image](sample.png)
 
-512x512 10000 samples per pixel
+1920x1080 10000 samples per pixel
