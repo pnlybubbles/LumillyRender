@@ -33,7 +33,7 @@ impl<T: Copy> Img<T> {
 
   pub fn each_pixel<F>(&self, f: F)
   where
-    F: Fn(usize, usize, usize)
+    F: Fn(usize, usize, usize),
   {
     for x in 0..self.width {
       for y in 0..self.height {
@@ -44,7 +44,7 @@ impl<T: Copy> Img<T> {
 
   pub fn save<F>(&self, path: &Path, f: F)
   where
-    F: Fn(T) -> [u8; 3]
+    F: Fn(T) -> [u8; 3],
   {
     let mut buf = image::ImageBuffer::new(WIDTH as u32, HEIGHT as u32);
     for (x, y, pixel) in buf.enumerate_pixels_mut() {

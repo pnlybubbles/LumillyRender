@@ -17,7 +17,12 @@ pub struct Triangle {
 }
 
 impl Triangle {
-  pub fn new(p0: Vector, p1: Vector, p2: Vector, material: Arc<Material + Send + Sync>) -> Triangle {
+  pub fn new(
+    p0: Vector,
+    p1: Vector,
+    p2: Vector,
+    material: Arc<Material + Send + Sync>,
+  ) -> Triangle {
     Triangle {
       p0: p0,
       p1: p1,

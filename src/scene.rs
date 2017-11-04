@@ -35,7 +35,7 @@ impl Scene {
         } else {
           i.normal
         }
-      },
+      }
     }
   }
 

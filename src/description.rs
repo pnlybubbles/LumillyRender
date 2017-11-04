@@ -58,12 +58,38 @@ pub fn scene() -> Scene {
     roughness: 10.0,
   });
   let objects = Objects::new(vec![
-    box Sphere { radius: 2.0, position: Vector::new(2.0, -3.0, 2.0), material: glass_mat.clone() },
-    box Sphere { radius: 2.0, position: Vector::new(2.0, -3.0, -2.0), material: blue_mat.clone() },
-    box Sphere { radius: 2.0, position: Vector::new(-2.0, -3.0, 2.0), material: red_mat.clone() },
-    box Sphere { radius: 2.0, position: Vector::new(-2.0, -3.0, -2.0), material: rough_mat.clone() },
-    box Triangle::new(Vector::new(-8.0, -5.0, -8.0), Vector::new(-8.0, -5.0, 8.0), Vector::new(8.0, -5.0, -8.0), white_mat.clone()),
-    box Triangle::new(Vector::new(-8.0, -5.0, 8.0), Vector::new(8.0, -5.0, 8.0), Vector::new(8.0, -5.0, -8.0), white_mat.clone()),
+    box Sphere {
+      radius: 2.0,
+      position: Vector::new(2.0, -3.0, 2.0),
+      material: glass_mat.clone(),
+    },
+    box Sphere {
+      radius: 2.0,
+      position: Vector::new(2.0, -3.0, -2.0),
+      material: blue_mat.clone(),
+    },
+    box Sphere {
+      radius: 2.0,
+      position: Vector::new(-2.0, -3.0, 2.0),
+      material: red_mat.clone(),
+    },
+    box Sphere {
+      radius: 2.0,
+      position: Vector::new(-2.0, -3.0, -2.0),
+      material: rough_mat.clone(),
+    },
+    box Triangle::new(
+      Vector::new(-8.0, -5.0, -8.0),
+      Vector::new(-8.0, -5.0, 8.0),
+      Vector::new(8.0, -5.0, -8.0),
+      white_mat.clone()
+    ),
+    box Triangle::new(
+      Vector::new(-8.0, -5.0, 8.0),
+      Vector::new(8.0, -5.0, 8.0),
+      Vector::new(8.0, -5.0, -8.0),
+      white_mat.clone()
+    ),
   ]);
   let sky = box IBLSky::new("ibl.hdr", 1500);
   Scene {

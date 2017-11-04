@@ -62,7 +62,10 @@ impl Material for LambertianMaterial {
     let sample = Sampler::hemisphere_cos_importance();
     let d = u * sample.x + v * sample.y + w * sample.z;
     // 新しいレイを作る
-    let new_ray = Ray { direction: d, origin: i.position };
+    let new_ray = Ray {
+      direction: d,
+      origin: i.position,
+    };
     // cos項
     let cos_term = d.dot(normal);
     // 確率密度関数
@@ -75,7 +78,7 @@ impl Material for LambertianMaterial {
         pdf: pdf,
       },
       brdf,
-      cos_term
+      cos_term,
     )
   }
 }
@@ -131,7 +134,10 @@ impl Material for IdealRefractionMaterial {
       n = n * (-1.0);
     }
     // 鏡面反射レイ
-    let reflection_ray = Ray {direction: in_ray.direction - i.normal * (2.0 * in_ray.direction.dot(i.normal)), origin: i.position};
+    let reflection_ray = Ray {
+      direction: in_ray.direction - i.normal * (2.0 * in_ray.direction.dot(i.normal)),
+      origin: i.position,
+    };
     // 判別式(全半射)
     let det = 1.0 - nn * nn * (1.0 - dn * dn);
     if det < 0.0 {
@@ -148,7 +154,10 @@ impl Material for IdealRefractionMaterial {
       );
     }
     // 屈折レイ
-    let refraction_ray = Ray {direction: in_ray.direction * (nn) - n * (nn * dn + det.sqrt()), origin: i.position};
+    let refraction_ray = Ray {
+      direction: in_ray.direction * (nn) - n * (nn * dn + det.sqrt()),
+      origin: i.position,
+    };
     // 垂直入射での反射量
     // n1 - n2
     let nnn;
@@ -276,14 +285,17 @@ impl Material for CookTorranceMaterial {
 
   fn rr_weight(&self) -> f64 {
     // 反射率のうち最大のものをつかう
-    self.reflectance.x.max(self.reflectance.y).max(self.reflectance.z)
+    self.reflectance.x.max(self.reflectance.y).max(
+      self.reflectance.z,
+    )
   }
 
   fn brdf(&self, i: Vector, o: Vector, n: Vector) -> Vector {
     let h = (o + i).normalize();
     // Torrance-Sparrow model (PBRT p.546)
     // fr = FGD / 4(i.n)(o.n)
-    let fr = self.fresnel(i, h) * self.geometry(i, o, h, n) * self.ndf(h, n) / (4.0 * i.dot(n) * o.dot(n));
+    let fr = self.fresnel(i, h) * self.geometry(i, o, h, n) * self.ndf(h, n) /
+      (4.0 * i.dot(n) * o.dot(n));
     self.reflectance * fr
   }
 
@@ -297,21 +309,28 @@ impl Material for CookTorranceMaterial {
     let sample = Sampler::hemisphere_cos_importance();
     let d = u * sample.x + v * sample.y + w * sample.z;
     // 新しいレイを作る
-    let new_ray = Ray { direction: d, origin: i.position };
+    let new_ray = Ray {
+      direction: d,
+      origin: i.position,
+    };
     // cos項
     let cos_term = d.dot(normal);
     // 確率密度関数
     // (cosにしたがって重点的にサンプル) cosθ / π
     let pdf = cos_term / PI;
     // in = view, out = light
-    let brdf = i.material.brdf(-in_ray.direction, new_ray.direction, normal);
+    let brdf = i.material.brdf(
+      -in_ray.direction,
+      new_ray.direction,
+      normal,
+    );
     (
       Sample {
         value: new_ray,
         pdf: pdf,
       },
       brdf,
-      cos_term
+      cos_term,
     )
   }
 }
@@ -346,11 +365,13 @@ impl Material for PhongMaterial {
 
   fn rr_weight(&self) -> f64 {
     // 反射率のうち最大のものをつかう
-    self.reflectance.x.max(self.reflectance.y).max(self.reflectance.z)
+    self.reflectance.x.max(self.reflectance.y).max(
+      self.reflectance.z,
+    )
   }
 
   fn brdf(&self, v_i: Vector, l: Vector, n: Vector) -> Vector {
-    let v = - v_i;
+    let v = -v_i;
     let r = v.reflect(n);
     let cos = r.dot(l);
     let a = self.alpha();
@@ -373,12 +394,15 @@ impl Material for PhongMaterial {
 
     let d = u * r1.cos() * ts + v * r1.sin() * ts + w * t.sqrt();
     // 新しいレイを作る
-    let new_ray = Ray { direction: d, origin: i.position };
+    let new_ray = Ray {
+      direction: d,
+      origin: i.position,
+    };
     // cos項
     let cos_term = d.dot(normal);
     // 確率密度関数
     // (brdfの分布にしたがって重点的にサンプル)
-    let v = - in_ray.direction;
+    let v = -in_ray.direction;
     let r = v.reflect(normal);
     let cos = r.dot(new_ray.direction);
     let pdf = (a + 2.0) / (2.0 * PI) * cos.powf(a);
@@ -389,7 +413,7 @@ impl Material for PhongMaterial {
         pdf: pdf,
       },
       brdf,
-      cos_term
+      cos_term,
     )
   }
 }

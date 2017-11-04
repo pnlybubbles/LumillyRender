@@ -23,7 +23,7 @@ impl Sky for UniformSky {
 
 pub struct SimpleSky {
   pub meridian: Vector,
-  pub horizon: Vector
+  pub horizon: Vector,
 }
 
 impl Sky for SimpleSky {
@@ -59,12 +59,24 @@ impl Sky for IBLSky {
   fn radiance(&self, ray: &Ray) -> Vector {
     let theta = (ray.direction.y).acos();
     let phi_pr = (ray.direction.z / ray.direction.x).atan();
-    let phi = if ray.direction.x < 0.0 { phi_pr + PI } else { phi_pr } + PI / 2.0;
+    let phi = if ray.direction.x < 0.0 {
+      phi_pr + PI
+    } else {
+      phi_pr
+    } + PI / 2.0;
     let x = (self.height as f64 * phi / PI).round() as usize + self.longitude_offset;
     let y = (self.height as f64 * theta / PI).round() as usize;
-    let index = y * self.height * 2 + if x > self.height * 2 { x % (self.height * 2) } else { x };
+    let index = y * self.height * 2 +
+      if x > self.height * 2 {
+        x % (self.height * 2)
+      } else {
+        x
+      };
     let color = self.hdr_image[index];
-    return Vector::new(color.data[0] as f64, color.data[1] as f64, color.data[2] as f64);
+    return Vector::new(
+      color.data[0] as f64,
+      color.data[1] as f64,
+      color.data[2] as f64,
+    );
   }
 }
-

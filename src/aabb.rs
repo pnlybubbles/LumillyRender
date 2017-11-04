@@ -13,14 +13,14 @@ pub struct AABB {
 impl AABB {
   pub fn merge(bb_list: &Vec<&AABB>) -> AABB {
     let min = Vector::new(
-      *bb_list.iter().map( |v| OrderedFloat(v.max.x) ).max().unwrap(),
-      *bb_list.iter().map( |v| OrderedFloat(v.max.y) ).max().unwrap(),
-      *bb_list.iter().map( |v| OrderedFloat(v.max.z) ).max().unwrap(),
+      *bb_list.iter().map(|v| OrderedFloat(v.max.x)).max().unwrap(),
+      *bb_list.iter().map(|v| OrderedFloat(v.max.y)).max().unwrap(),
+      *bb_list.iter().map(|v| OrderedFloat(v.max.z)).max().unwrap(),
     );
     let max = Vector::new(
-      *bb_list.iter().map( |v| OrderedFloat(v.min.x) ).min().unwrap(),
-      *bb_list.iter().map( |v| OrderedFloat(v.min.y) ).min().unwrap(),
-      *bb_list.iter().map( |v| OrderedFloat(v.min.z) ).min().unwrap(),
+      *bb_list.iter().map(|v| OrderedFloat(v.min.x)).min().unwrap(),
+      *bb_list.iter().map(|v| OrderedFloat(v.min.y)).min().unwrap(),
+      *bb_list.iter().map(|v| OrderedFloat(v.min.z)).min().unwrap(),
     );
     AABB {
       min: min,

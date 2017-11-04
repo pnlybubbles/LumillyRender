@@ -4,7 +4,7 @@ use vector::Vector;
 use vector::*;
 use constant::*;
 
-pub trait OrthonormalBasis : Sized {
+pub trait OrthonormalBasis: Sized {
   fn orthonormal_basis(&self) -> (Self, Self);
 }
 
@@ -15,7 +15,8 @@ impl OrthonormalBasis for Vector {
       Vector::new(0.0, 1.0, 0.0)
     } else {
       Vector::new(1.0, 0.0, 0.0)
-    }.cross(*self).normalize();
+    }.cross(*self)
+      .normalize();
     let bionrmal = self.cross(tangent);
     (tangent, bionrmal)
   }
@@ -45,4 +46,3 @@ impl Sampler {
     Vector::new(r1.cos() * r2s, r1.sin() * r2s, (1.0 - r2).sqrt())
   }
 }
-

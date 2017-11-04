@@ -49,16 +49,20 @@ impl PinholeCamera {
     let aperture_sensor_distance = direction.norm();
     // カメラの入射の方向を基準(forward)に正規直交基底
     let forward = direction.normalize();
-    let right = forward.cross(if forward.y.abs() < 1.0 - EPS {
-      Vector::new(0.0, 1.0, 0.0)
-    } else {
-      Vector::new(1.0, 0.0, 0.0)
-    }).normalize();
+    let right = forward
+      .cross(if forward.y.abs() < 1.0 - EPS {
+        Vector::new(0.0, 1.0, 0.0)
+      } else {
+        Vector::new(1.0, 0.0, 0.0)
+      })
+      .normalize();
     let up = right.cross(forward);
     // 1画素の面積 = センサーの面積 / センサーの画素数
-    let sensor_pixel_area = (sensor_size[0] * sensor_size[1]) as f64 / (resolution[0] * resolution[1]) as f64;
+    let sensor_pixel_area = (sensor_size[0] * sensor_size[1]) as f64 /
+      (resolution[0] * resolution[1]) as f64;
     // センサー感度はpdfを打ち消すように設定(m^2 m^-2 m^-2)
-    let sensor_sensitivity = aperture_sensor_distance * aperture_sensor_distance / (sensor_pixel_area * PI * aperture_radius * aperture_radius);
+    let sensor_sensitivity = aperture_sensor_distance * aperture_sensor_distance /
+      (sensor_pixel_area * PI * aperture_radius * aperture_radius);
     PinholeCamera {
       forward: forward,
       right: right,
@@ -188,16 +192,20 @@ impl LensCamera {
     let aperture_sensor_distance = direction.norm();
     // カメラの入射の方向を基準(forward)に正規直交基底
     let forward = direction.normalize();
-    let right = forward.cross(if forward.y.abs() < 1.0 - EPS {
-      Vector::new(0.0, 1.0, 0.0)
-    } else {
-      Vector::new(1.0, 0.0, 0.0)
-    }).normalize();
+    let right = forward
+      .cross(if forward.y.abs() < 1.0 - EPS {
+        Vector::new(0.0, 1.0, 0.0)
+      } else {
+        Vector::new(1.0, 0.0, 0.0)
+      })
+      .normalize();
     let up = right.cross(forward);
     // 1画素の面積 = センサーの面積 / センサーの画素数
-    let sensor_pixel_area = (sensor_size[0] * sensor_size[1]) as f64 / (resolution[0] * resolution[1]) as f64;
+    let sensor_pixel_area = (sensor_size[0] * sensor_size[1]) as f64 /
+      (resolution[0] * resolution[1]) as f64;
     // センサー感度はpdfを打ち消すように設定(m^2 m^-2 m^-[1]
-    let sensor_sensitivity = aperture_sensor_distance * aperture_sensor_distance / (sensor_pixel_area * PI * aperture_radius * aperture_radius);
+    let sensor_sensitivity = aperture_sensor_distance * aperture_sensor_distance /
+      (sensor_pixel_area * PI * aperture_radius * aperture_radius);
     LensCamera {
       forward: forward,
       right: right,

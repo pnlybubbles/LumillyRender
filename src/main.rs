@@ -70,7 +70,12 @@ fn main() {
 
   for i in 0..HEIGHT * WIDTH {
     let all = HEIGHT * WIDTH;
-    print!("\rprocessing... ({}/{} : {:.0}%) ", i, all, i as f64 / all as f64 * 100.0);
+    print!(
+      "\rprocessing... ({}/{} : {:.0}%) ",
+      i,
+      all,
+      i as f64 / all as f64 * 100.0
+    );
     let (x, y, pixel) = rx.recv().unwrap();
     output.set(x, y, pixel);
   }
@@ -81,11 +86,18 @@ fn main() {
 
   let end_time = time::now();
   println!("end: {}", end_time.strftime("%+").unwrap());
-  println!("elapse: {}s", (end_time - start_time).num_milliseconds() as f64 / 1000.0);
+  println!(
+    "elapse: {}s",
+    (end_time - start_time).num_milliseconds() as f64 / 1000.0
+  );
 }
 
 fn save(output: &Img<Vector>, spp: usize) {
-  let file_name = &format!("image_{}_{}.png", time::now().strftime("%Y%m%d%H%M%S").unwrap(), spp);
+  let file_name = &format!(
+    "image_{}_{}.png",
+    time::now().strftime("%Y%m%d%H%M%S").unwrap(),
+    spp
+  );
   output.save(&Path::new(file_name), |pixel| {
     [to_color(pixel.x), to_color(pixel.y), to_color(pixel.z)]
   });
