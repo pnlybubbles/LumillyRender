@@ -1,6 +1,5 @@
 use std::sync::Arc;
-use vector::{Vector, VectorFloat};
-use vector3::Vector3;
+use vector::*;
 use ray::Ray;
 use material::Material;
 use intersection::Intersection;
@@ -10,7 +9,7 @@ use aabb::AABB;
 
 pub struct Sphere {
   pub radius: f64,
-  pub position: Vector3<f64>,
+  pub position: Vector,
   pub material: Arc<Material + Send + Sync>,
 }
 
@@ -18,7 +17,7 @@ impl Shape for Sphere {
   fn intersect(&self, ray: &Ray) -> Option<Intersection> {
     let co = ray.origin - self.position;
     let cod = co.dot(ray.direction);
-    let det = cod * cod - co.sqr_len() + self.radius * self.radius;
+    let det = cod * cod - co.sqr_norm() + self.radius * self.radius;
     if det < 0.0 {
       return None;
     }
@@ -29,7 +28,7 @@ impl Shape for Sphere {
     }
     let distance = if t1 > EPS { t1 } else { t2 };
     let position = ray.origin + ray.direction * distance;
-    let outer_normal = (position - self.position).norm();
+    let outer_normal = (position - self.position).normalize();
     Some(Intersection {
       distance: distance,
       position: position,
@@ -39,7 +38,7 @@ impl Shape for Sphere {
   }
 
   fn aabb(&self) -> AABB {
-    let r = Vector3::new(self.radius, self.radius, self.radius);
+    let r = Vector::new(self.radius, self.radius, self.radius);
     AABB {
       min: self.position - r,
       max: self.position + r,

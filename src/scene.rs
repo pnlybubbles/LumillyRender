@@ -1,8 +1,7 @@
 extern crate rand;
 
-use std::sync::Arc;
 use vector::*;
-use vector3::Vector3;
+use vector::Vector;
 use sky::Sky;
 use ray::Ray;
 use objects::Objects;
@@ -12,11 +11,11 @@ pub struct Scene {
   pub objects: Objects,
   pub depth: usize,
   pub depth_limit: usize,
-  pub sky: Arc<Sky + Send + Sync>,
+  pub sky: Box<Sky + Send + Sync>,
 }
 
 impl Scene {
-  pub fn radiance(&self, ray: &Ray, depth: usize) -> Vector3<f64> {
+  pub fn radiance(&self, ray: &Ray, depth: usize) -> Vector {
     // すべてのオブジェクトと当たり判定を行う
     let maybe_intersect = self.objects.get_intersect(&ray);
     // 当たらなかった場合は背景色を返す
@@ -26,10 +25,10 @@ impl Scene {
     }
   }
 
-  pub fn normal(&self, ray: &Ray) -> Vector3<f64> {
+  pub fn normal(&self, ray: &Ray) -> Vector {
     let maybe_intersect = self.objects.get_intersect(&ray);
     match maybe_intersect {
-      None => Vector3::new(0.0, 0.0, 0.0),
+      None => Vector::zero(),
       Some(i) => {
         if i.normal.dot(ray.direction) > 0.0 {
           i.normal * -1.0
@@ -48,7 +47,7 @@ impl Scene {
     }
   }
 
-  fn intersect_radiance(&self, i: Intersection, ray: &Ray, depth: usize) -> Vector3<f64> {
+  fn intersect_radiance(&self, i: Intersection, ray: &Ray, depth: usize) -> Vector {
     // 放射
     let l_e = i.material.emission();
     // 再帰抑制用のロシアンルーレットの確率を決定する

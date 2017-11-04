@@ -8,9 +8,9 @@ pub const INF: f64 = 1e5;
 // pub const HEIGHT: usize = 270 * 2;
 // pub const WIDTH: usize = 256;
 // pub const HEIGHT: usize = 256;
-pub const WIDTH: usize = 480 * 4;
-pub const HEIGHT: usize = 270 * 4;
-pub const SPP: usize = 10000;
+pub const WIDTH: usize = 480 * 1;
+pub const HEIGHT: usize = 270 * 1;
+pub const SPP: usize = 100;
 
 // pub const WIDTH: usize = 320 * 2;
 // pub const HEIGHT: usize = 240 * 2;

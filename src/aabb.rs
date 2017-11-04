@@ -1,23 +1,23 @@
 extern crate ordered_float;
 
-use vector3::Vector3;
+use vector::Vector;
 use self::ordered_float::OrderedFloat;
 
 #[derive(Debug)]
 pub struct AABB {
-  pub min: Vector3<f64>,
-  pub max: Vector3<f64>,
-  pub center: Vector3<f64>,
+  pub min: Vector,
+  pub max: Vector,
+  pub center: Vector,
 }
 
 impl AABB {
   pub fn merge(bb_list: &Vec<&AABB>) -> AABB {
-    let min = Vector3::new(
+    let min = Vector::new(
       *bb_list.iter().map( |v| OrderedFloat(v.max.x) ).max().unwrap(),
       *bb_list.iter().map( |v| OrderedFloat(v.max.y) ).max().unwrap(),
       *bb_list.iter().map( |v| OrderedFloat(v.max.z) ).max().unwrap(),
     );
-    let max = Vector3::new(
+    let max = Vector::new(
       *bb_list.iter().map( |v| OrderedFloat(v.min.x) ).min().unwrap(),
       *bb_list.iter().map( |v| OrderedFloat(v.min.y) ).min().unwrap(),
       *bb_list.iter().map( |v| OrderedFloat(v.min.z) ).min().unwrap(),
@@ -29,7 +29,7 @@ impl AABB {
     }
   }
 
-  pub fn side(&self) -> Vector3<f64> {
+  pub fn side(&self) -> Vector {
     self.max - self.min
   }
 }

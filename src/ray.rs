@@ -1,6 +1,6 @@
-use vector3::Vector3;
+use vector::Vector;
 
 pub struct Ray {
-  pub origin: Vector3<f64>,
-  pub direction: Vector3<f64>,
+  pub origin: Vector,
+  pub direction: Vector,
 }

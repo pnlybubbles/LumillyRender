@@ -1,16 +1,15 @@
 use ray::Ray;
 use intersection::Intersection;
 use shape::Shape;
-use std::sync::Arc;
 // use bvh::BVH;
 
 pub struct Objects {
-  pub objects: Vec<Arc<Shape + Send + Sync>>,
+  pub objects: Vec<Box<Shape + Send + Sync>>,
   // pub bvh: BVH,
 }
 
 impl Objects {
-  pub fn new(objects: Vec<Arc<Shape + Send + Sync>>) -> Objects {
+  pub fn new(objects: Vec<Box<Shape + Send + Sync>>) -> Objects {
     // let aabb = (&objects)
     //   .into_iter()
     //   .map(|v| { v.aabb() })

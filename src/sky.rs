@@ -2,33 +2,33 @@ extern crate image;
 
 use ray::Ray;
 use vector::*;
-use vector3::Vector3;
+use vector::Vector;
 use constant::*;
 use std::fs::File;
 use std::io::BufReader;
 
 pub trait Sky {
-  fn radiance(&self, &Ray) -> Vector3<f64>;
+  fn radiance(&self, &Ray) -> Vector;
 }
 
 pub struct UniformSky {
-  pub emission: Vector3<f64>,
+  pub emission: Vector,
 }
 
 impl Sky for UniformSky {
-  fn radiance(&self, _: &Ray) -> Vector3<f64> {
+  fn radiance(&self, _: &Ray) -> Vector {
     self.emission
   }
 }
 
 pub struct SimpleSky {
-  pub meridian: Vector3<f64>,
-  pub horizon: Vector3<f64>
+  pub meridian: Vector,
+  pub horizon: Vector
 }
 
 impl Sky for SimpleSky {
-  fn radiance(&self, ray: &Ray) -> Vector3<f64> {
-    let weight = ray.direction.dot(Vector3::new(0.0, 1.0, 0.0)).abs();
+  fn radiance(&self, ray: &Ray) -> Vector {
+    let weight = ray.direction.dot(Vector::new(0.0, 1.0, 0.0)).abs();
     self.meridian * weight + self.horizon * (1.0 - weight)
   }
 }
@@ -56,7 +56,7 @@ impl IBLSky {
 }
 
 impl Sky for IBLSky {
-  fn radiance(&self, ray: &Ray) -> Vector3<f64> {
+  fn radiance(&self, ray: &Ray) -> Vector {
     let theta = (ray.direction.y).acos();
     let phi_pr = (ray.direction.z / ray.direction.x).atan();
     let phi = if ray.direction.x < 0.0 { phi_pr + PI } else { phi_pr } + PI / 2.0;
@@ -64,7 +64,7 @@ impl Sky for IBLSky {
     let y = (self.height as f64 * theta / PI).round() as usize;
     let index = y * self.height * 2 + if x > self.height * 2 { x % (self.height * 2) } else { x };
     let color = self.hdr_image[index];
-    return Vector3::new(color.data[0] as f64, color.data[1] as f64, color.data[2] as f64);
+    return Vector::new(color.data[0] as f64, color.data[1] as f64, color.data[2] as f64);
   }
 }
 

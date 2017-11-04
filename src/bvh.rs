@@ -4,7 +4,7 @@ use std::sync::Arc;
 use aabb::AABB;
 use intersection::Intersection;
 use ray::Ray;
-use vector3::Vector3;
+use vector::Vector;
 use self::ordered_float::OrderedFloat;
 
 pub struct BVH {

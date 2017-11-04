@@ -1,28 +1,28 @@
+use std::sync::Arc;
 use intersection::Intersection;
 use shape::Shape;
-use std::sync::Arc;
 use constant::*;
 use ray::Ray;
 use material::Material;
-use vector3::Vector3;
+use vector::Vector;
 use vector::*;
 use aabb::AABB;
 
 pub struct Triangle {
-  pub p0: Vector3<f64>,
-  pub p1: Vector3<f64>,
-  pub p2: Vector3<f64>,
-  pub normal: Vector3<f64>,
+  pub p0: Vector,
+  pub p1: Vector,
+  pub p2: Vector,
+  pub normal: Vector,
   pub material: Arc<Material + Send + Sync>,
 }
 
 impl Triangle {
-  pub fn new(p0: Vector3<f64>, p1: Vector3<f64>, p2: Vector3<f64>, material: Arc<Material + Send + Sync>) -> Triangle {
+  pub fn new(p0: Vector, p1: Vector, p2: Vector, material: Arc<Material + Send + Sync>) -> Triangle {
     Triangle {
       p0: p0,
       p1: p1,
       p2: p2,
-      normal: (p1 - p0).cross(p2 - p0).norm(),
+      normal: (p1 - p0).cross(p2 - p0).normalize(),
       material: material,
     }
   }
@@ -59,12 +59,12 @@ impl Shape for Triangle {
   }
 
   fn aabb(&self) -> AABB {
-    let min = Vector3::new(
+    let min = Vector::new(
       self.p0.x.min(self.p1.x).min(self.p2.x),
       self.p0.y.min(self.p1.y).min(self.p2.y),
       self.p0.z.min(self.p1.z).min(self.p2.z),
     );
-    let max = Vector3::new(
+    let max = Vector::new(
       self.p0.x.max(self.p1.x).max(self.p2.x),
       self.p0.y.max(self.p1.y).max(self.p2.y),
       self.p0.z.max(self.p1.z).max(self.p2.z),

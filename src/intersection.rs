@@ -1,11 +1,10 @@
 use std::sync::Arc;
-use vector3::Vector3;
+use vector::Vector;
 use material::Material;
 
 pub struct Intersection {
-  pub position: Vector3<f64>,
+  pub position: Vector,
   pub distance: f64,
-  pub normal: Vector3<f64>,
+  pub normal: Vector,
   pub material: Arc<Material + Send + Sync>,
 }
-
