@@ -2,6 +2,7 @@ use std::sync::Arc;
 use camera::*;
 use vector::*;
 use material::*;
+use constant::*;
 use scene::Scene;
 use sphere::Sphere;
 use triangle::Triangle;
@@ -11,8 +12,8 @@ use sky::*;
 pub fn camera(width: usize, height: usize) -> Box<Camera + Send + Sync> {
   let w = width as f64;
   let h = height as f64;
-  let cam_pos = Vector::new(-11.5, 1.0, 13.0);
-  let screen_dir = Vector::new(8.18, -2.0, -9.0);
+  let cam_pos = Vector::new(-10.5, 1.0, 13.5);
+  let screen_dir = Vector::new(7.18, -2.0, -9.0);
   box LensCamera::new(
     // sensor position
     cam_pos - screen_dir + screen_dir * 0.3,
@@ -25,7 +26,7 @@ pub fn camera(width: usize, height: usize) -> Box<Camera + Send + Sync> {
     // aperture radius
     0.5,
     // focus_distance
-    3.0 + screen_dir.norm() - screen_dir.norm() * 0.3,
+    (cam_pos + screen_dir * 0.3).norm(),
   )
 }
 
@@ -47,11 +48,11 @@ pub fn scene() -> Scene {
     albedo: Vector::new(0.75, 0.25, 0.25),
     emission: Vector::zero(),
   });
-  // let mirror_mat = Arc::new(IdealRefractionMaterial {
-  //   albedo: Vector::new(0.99, 0.99, 0.99),
-  //   emission: Vector::zero(),
-  //   ior: INF, // sin(0) = 1.0 / ior
-  // });
+  let mirror_mat = Arc::new(IdealRefractionMaterial {
+    albedo: Vector::new(0.99, 0.99, 0.99),
+    emission: Vector::zero(),
+    ior: INF, // sin(0) = 1.0 / ior
+  });
   let rough_mat = Arc::new(PhongMaterial {
     reflectance: Vector::new(0.75, 0.75, 0.75),
     roughness: 10.0,
@@ -59,22 +60,32 @@ pub fn scene() -> Scene {
   let objects = Objects::new(vec![
     box Sphere {
       radius: 2.0,
-      position: Vector::new(2.0, -3.0, 2.0),
+      position: Vector::new(2.5, -3.0, 2.5),
+      material: glass_mat.clone(),
+    },
+    box Sphere {
+      radius: 1.5,
+      position: Vector::new(2.0, -3.5, -2.0),
+      material: blue_mat.clone(),
+    },
+    box Sphere {
+      radius: 1.0,
+      position: Vector::new(-2.0, -4.0, 2.0),
+      material: red_mat.clone(),
+    },
+    box Sphere {
+      radius: 1.5,
+      position: Vector::new(2.0, -0.5, -2.0),
+      material: mirror_mat.clone(),
+    },
+    box Sphere {
+      radius: 1.0,
+      position: Vector::new(-2.0, -2.0, 2.0),
       material: glass_mat.clone(),
     },
     box Sphere {
       radius: 2.0,
-      position: Vector::new(2.0, -3.0, -2.0),
-      material: blue_mat.clone(),
-    },
-    box Sphere {
-      radius: 2.0,
-      position: Vector::new(-2.0, -3.0, 2.0),
-      material: red_mat.clone(),
-    },
-    box Sphere {
-      radius: 2.0,
-      position: Vector::new(-2.0, -3.0, -2.0),
+      position: Vector::new(-2.5, -3.0, -2.5),
       material: rough_mat.clone(),
     },
     box Triangle::new(
