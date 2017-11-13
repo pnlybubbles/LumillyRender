@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use camera::*;
-use constant::*;
 use vector::*;
 use material::*;
 use scene::Scene;
@@ -9,9 +8,9 @@ use triangle::Triangle;
 use objects::Objects;
 use sky::*;
 
-pub fn camera() -> Box<Camera + Send + Sync> {
-  let w = WIDTH as f64;
-  let h = HEIGHT as f64;
+pub fn camera(width: usize, height: usize) -> Box<Camera + Send + Sync> {
+  let w = width as f64;
+  let h = height as f64;
   let cam_pos = Vector::new(-11.5, 1.0, 13.0);
   let screen_dir = Vector::new(8.18, -2.0, -9.0);
   box LensCamera::new(
@@ -22,7 +21,7 @@ pub fn camera() -> Box<Camera + Send + Sync> {
     // sensor size
     [10.0 * w / h, 10.0],
     // sensor resolution
-    [WIDTH, HEIGHT],
+    [width, height],
     // aperture radius
     0.5,
     // focus_distance

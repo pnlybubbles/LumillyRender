@@ -38,7 +38,7 @@ fn main() {
   println!("start: {}", start_time.strftime("%+").unwrap());
 
   let mut output = Img::new(Vector::zero(), WIDTH, HEIGHT);
-  let cam = Arc::new(description::camera());
+  let cam = Arc::new(description::camera(WIDTH, HEIGHT));
   let scene = Arc::new(description::scene());
   println!("{:?}", cam.info());
   println!("spp: {}", SPP);
@@ -68,8 +68,9 @@ fn main() {
     });
   });
 
-  for i in 0..HEIGHT * WIDTH {
-    let all = HEIGHT * WIDTH;
+  let all = HEIGHT * WIDTH;
+
+  for i in 0..all {
     print!(
       "\rprocessing... ({}/{} : {:.0}%) ",
       i,
