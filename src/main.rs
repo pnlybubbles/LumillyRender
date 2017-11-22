@@ -23,7 +23,7 @@ mod description;
 mod util;
 mod shape;
 mod aabb;
-// mod bvh;
+mod bvh;
 
 use threadpool::ThreadPool;
 use std::sync::mpsc::{channel, Sender, Receiver};
@@ -58,6 +58,8 @@ fn main() {
         let (ray, g_term) = cam.sample(x, y);
         // 開口部に入射する放射輝度 (W sr^-1 m^-2)
         let l_into_sensor = scene.radiance(&ray.value, 0);
+        // let l_into_sensor = scene.normal(&ray.value);
+        // let l_into_sensor = scene.shade(&ray.value, Vector::new(1.0, 0.8, 0.7).normalize());
         // センサーに入射する放射照度
         let e_into_sensor = l_into_sensor * g_term;
         // 今回のサンプリングでの放射照度の推定値

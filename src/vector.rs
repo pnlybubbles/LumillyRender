@@ -15,6 +15,14 @@ impl Vector {
   pub fn zero() -> Vector {
     Vector::new(0.0, 0.0, 0.0)
   }
+
+  pub fn to_array(&self) -> [f64; 3] {
+    [self.x, self.y, self.z]
+  }
+
+  pub fn from_index<F>(f: F) -> Vector where F: Fn(usize) -> f64 {
+    Vector::new(f(0), f(1), f(2))
+  }
 }
 
 pub trait Dot: Sized + Copy + Div<f64, Output = Self> {

@@ -1,37 +1,35 @@
 use ray::Ray;
 use intersection::Intersection;
 use shape::Shape;
-// use bvh::BVH;
+use bvh::BVH;
 
 pub struct Objects {
-  pub objects: Vec<Box<Shape + Send + Sync>>,
-  // pub bvh: BVH,
+  bvh: BVH,
+  // objects: Vec<Box<Shape + Send + Sync>>,
 }
 
 impl Objects {
   pub fn new(objects: Vec<Box<Shape + Send + Sync>>) -> Objects {
-    // let aabb = (&objects)
-    //   .into_iter()
-    //   .map(|v| { v.aabb() })
-    //   .collect();
-    // let bvh = BVH::new(aabb);
     Objects {
-      objects: objects,
-      // bvh: bvh,
+      bvh: BVH::new(objects),
     }
   }
 
-  pub fn get_intersect(&self, r: &Ray) -> Option<Intersection> {
-    self.objects.iter().fold(None, |maybe_intersect, obj| {
-      match obj.intersect(r) {
-        None => maybe_intersect,
-        Some(i) => {
-          Some(match maybe_intersect {
-            None => i,
-            Some(i_) => if i.distance < i_.distance { i } else { i_ },
-          })
-        }
-      }
-    })
+  // pub fn new(objects: Vec<Box<Shape + Send + Sync>>) -> Objects {
+  //   Objects {
+  //     objects: objects,
+  //   }
+  // }
+
+  pub fn get_intersect(&self, ray: &Ray) -> Option<Intersection> {
+    self.bvh.intersect(&ray)
   }
+
+  // pub fn get_intersect(&self, ray: &Ray) -> Option<Intersection> {
+  //   self.objects.iter().flat_map(|v| v.intersect(&ray)).min_by(
+  //     |a, b| {
+  //       a.distance.partial_cmp(&b.distance).unwrap()
+  //     },
+  //   )
+  // }
 }

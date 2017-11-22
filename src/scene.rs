@@ -1,7 +1,6 @@
 extern crate rand;
 
 use vector::*;
-use vector::Vector;
 use sky::Sky;
 use ray::Ray;
 use objects::Objects;
@@ -29,13 +28,15 @@ impl Scene {
     let maybe_intersect = self.objects.get_intersect(&ray);
     match maybe_intersect {
       None => Vector::zero(),
-      Some(i) => {
-        if i.normal.dot(ray.direction) > 0.0 {
-          i.normal * -1.0
-        } else {
-          i.normal
-        }
-      }
+      Some(i) => i.normal / 2.0 + Vector::new(0.5, 0.5, 0.5),
+    }
+  }
+
+  pub fn shade(&self, ray: &Ray, light: Vector) -> Vector {
+    let maybe_intersect = self.objects.get_intersect(&ray);
+    match maybe_intersect {
+      None => Vector::zero(),
+      Some(i) => (i.normal.dot(light) / 2.0 + 0.5) * i.material.color() + i.material.emission(),
     }
   }
 
@@ -73,5 +74,6 @@ impl Scene {
     let l_i = self.radiance(&sample_ray.value, depth + 1);
     let pdf = sample_ray.pdf / continue_rr_prob;
     return l_e + (brdf * l_i * cos_term / pdf);
+    // return i.normal / 2.0 + Vector::new(0.5, 0.5, 0.5);
   }
 }
