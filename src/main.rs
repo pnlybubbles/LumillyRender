@@ -1,5 +1,6 @@
 #![feature(box_syntax)]
 #![feature(sort_unstable)]
+#![feature(test)]
 #![allow(dead_code)]
 
 extern crate time;
@@ -32,6 +33,7 @@ use img::Img;
 use vector::*;
 use std::path::Path;
 use std::sync::Arc;
+use std::io::{self, Write};
 
 fn main() {
   let start_time = time::now();
@@ -79,6 +81,7 @@ fn main() {
       all,
       i as f64 / all as f64 * 100.0
     );
+    io::stdout().flush().ok();
     let (x, y, pixel) = rx.recv().unwrap();
     output.set(x, y, pixel);
   }

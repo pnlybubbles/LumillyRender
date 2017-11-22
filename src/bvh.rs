@@ -2,7 +2,6 @@ extern crate ordered_float;
 
 use aabb::AABB;
 use shape::Shape;
-use vector::Vector;
 use ray::Ray;
 use intersection::Intersection;
 use std::sync::Arc;

@@ -28,7 +28,7 @@ pub fn camera(width: usize, height: usize) -> Box<Camera + Send + Sync> {
     // sensor resolution
     [width, height],
     // aperture radius
-    0.5e-5,
+    1e-8,
     // focus_distance
     pos.norm(),
   )
@@ -98,15 +98,15 @@ pub fn scene() -> Scene {
     //   material: white_mat.clone(),
     // },
     // box Triangle::new(
-    //   Vector::new(-8.0, -5.0, -8.0),
-    //   Vector::new(-8.0, -5.0, 8.0),
-    //   Vector::new(8.0, -5.0, -8.0),
+    //   Vector::new(0.0, 10.0, 0.0),
+    //   Vector::new(0.0, 10.0, 400.0),
+    //   Vector::new(400.0, 10.0, 0.0),
     //   white_mat.clone()
     // ),
     // box Triangle::new(
-    //   Vector::new(-8.0, -5.0, 8.0),
-    //   Vector::new(8.0, -5.0, 8.0),
-    //   Vector::new(8.0, -5.0, -8.0),
+    //   Vector::new(0.0, 10.0, 400.0),
+    //   Vector::new(400.0, 10.0, 400.0),
+    //   Vector::new(400.0, 10.0, 0.0),
     //   white_mat.clone()
     // ),
   ];
@@ -151,7 +151,8 @@ pub fn scene() -> Scene {
       objects.push(box Triangle::new(polygon[0], polygon[1], polygon[2], mat.clone()));
     }
   }
-  let sky = box IBLSky::new("ibl.hdr", 1500);
+  // let sky = box IBLSky::new("ibl.hdr", 1500);
+  let sky = box UniformSky { emission: Vector::zero() };
   Scene {
     depth: 5,
     depth_limit: 64,

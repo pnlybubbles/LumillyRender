@@ -1,3 +1,5 @@
+extern crate test;
+
 use std::sync::Arc;
 use intersection::Intersection;
 use shape::Shape;
@@ -31,29 +33,58 @@ impl Triangle {
       material: material,
     }
   }
-}
 
-impl Shape for Triangle {
-  fn intersect(&self, ray: &Ray) -> Option<Intersection> {
+  fn intersect_3c(&self, ray: &Ray) -> Option<Intersection> {
+    let dn = ray.direction.dot(self.normal);
+    let t = (self.p0 - ray.origin).dot(self.normal) / dn;
+    if t < EPS {
+      return None;
+    }
+    let p = ray.origin + ray.direction * t;
+    let c0 = (self.p1 - self.p0).cross(p - self.p0);
+    if c0.dot(self.normal) < 0.0 {
+      return None;
+    }
+    let c1 = (self.p2 - self.p1).cross(p - self.p1);
+    if c1.dot(self.normal) < 0.0 {
+      return None;
+    }
+    let c2 = (self.p0 - self.p2).cross(p - self.p2);
+    if c2.dot(self.normal) < 0.0 {
+      return None;
+    }
+    Some(Intersection {
+      distance: t,
+      normal: self.normal,
+      position: p,
+      material: self.material.clone(),
+    })
+  }
+
+  fn intersect_mt(&self, ray: &Ray) -> Option<Intersection> {
     // Möller–Trumbore intersection algorithm
     let e1 = self.p1 - self.p0;
     let e2 = self.p2 - self.p0;
-    let q = ray.direction.cross(e2);
-    let det = q.dot(e1); // クラメルの分母
+    let pv = ray.direction.cross(e2);
+    let det = e1.dot(pv); // クラメルの分母
     if det.abs() < EPS {
       return None;
     }
-    let s = ray.origin - self.p0;
-    let v = q.dot(s);
-    if v < 0.0 || v > det {
+    let invdet = 1.0 / det;
+    let tv = ray.origin - self.p0;
+    let u = tv.dot(pv) * invdet;
+    if u < 0.0 || u > 1.0 {
       return None;
     }
-    let r = s.cross(e1);
-    let u = r.dot(ray.direction);
-    if u < 0.0 || u + v > det {
+    let qv = tv.cross(e1);
+    let v = ray.direction.dot(qv) * invdet;
+    if v < 0.0 || u + v > 1.0 {
       return None;
     }
-    let t = r.dot(e2) / det;
+    let t = e2.dot(qv) * invdet;
+    if t < EPS {
+      return None;
+    }
     let p = ray.origin + ray.direction * t;
     Some(Intersection {
       distance: t,
@@ -61,6 +92,12 @@ impl Shape for Triangle {
       position: p,
       material: self.material.clone(),
     })
+  }
+}
+
+impl Shape for Triangle {
+  fn intersect(&self, ray: &Ray) -> Option<Intersection> {
+    self.intersect_mt(&ray)
   }
 
   fn aabb(&self) -> AABB {
@@ -79,5 +116,91 @@ impl Shape for Triangle {
       max: max,
       center: (max + min) / 2.0,
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use material::*;
+
+  #[test]
+  fn intersect_mt_front() {
+    let t = Triangle::new(
+      Vector::new(5.0, 0.0, 0.0),
+      Vector::new(0.0, 0.0, 0.0),
+      Vector::new(0.0, 0.0, 5.0),
+      Arc::new(LambertianMaterial { emission: Vector::zero(), albedo: Vector::zero() }),
+    );
+    let ray = Ray {
+      origin: Vector::new(1.0, 5.0, 1.0),
+      direction: Vector::new(0.0, -1.0, 0.0).normalize(),
+    };
+    let i1 = t.intersect_3c(&ray).unwrap();
+    let i2 = t.intersect_mt(&ray).unwrap();
+    assert!((i1.normal - i2.normal).norm() < 1e-3);
+    assert!((i1.position - i2.position).norm() < 1e-3);
+    assert!((i1.distance - i2.distance).abs() < 1e-3);
+  }
+
+  #[test]
+  fn intersect_mt_back() {
+    let t = Triangle::new(
+      Vector::new(5.0, 0.0, 0.0),
+      Vector::new(0.0, 0.0, 0.0),
+      Vector::new(0.0, 0.0, 5.0),
+      Arc::new(LambertianMaterial { emission: Vector::zero(), albedo: Vector::zero() }),
+    );
+    let ray = Ray {
+      origin: Vector::new(1.0, -5.0, 1.0),
+      direction: Vector::new(0.0, 1.0, 0.0).normalize(),
+    };
+    let i1 = t.intersect_3c(&ray).unwrap();
+    let i2 = t.intersect_mt(&ray).unwrap();
+    assert!((i1.normal - i2.normal).norm() < 1e-3);
+    assert!((i1.position - i2.position).norm() < 1e-3);
+    assert!((i1.distance - i2.distance).abs() < 1e-3);
+  }
+
+  #[test]
+  fn intersect_3c_near() {
+    let t = Triangle::new(
+      Vector::new(5.0, 0.0, 0.0),
+      Vector::new(0.0, 0.0, 0.0),
+      Vector::new(0.0, 0.0, 5.0),
+      Arc::new(LambertianMaterial { emission: Vector::zero(), albedo: Vector::zero() }),
+    );
+    let ray = Ray {
+      origin: Vector::new(1.0, 5.0, 1.0),
+      direction: Vector::new(0.0, -1.0, 0.0).normalize(),
+    };
+    let i1 = t.intersect_3c(&ray).unwrap();
+    let near_ray = Ray {
+      origin: i1.position,
+      direction: Vector::new(0.0, 1.0, 0.0),
+    };
+    let i2 = t.intersect_3c(&near_ray);
+    assert!(i2.is_none());
+  }
+
+  #[test]
+  fn intersect_mt_near() {
+    let t = Triangle::new(
+      Vector::new(5.0, 0.0, 0.0),
+      Vector::new(0.0, 0.0, 0.0),
+      Vector::new(0.0, 0.0, 5.0),
+      Arc::new(LambertianMaterial { emission: Vector::zero(), albedo: Vector::zero() }),
+    );
+    let ray = Ray {
+      origin: Vector::new(1.0, 5.0, 1.0),
+      direction: Vector::new(0.0, -1.0, 0.0).normalize(),
+    };
+    let i1 = t.intersect_mt(&ray).unwrap();
+    let near_ray = Ray {
+      origin: i1.position,
+      direction: Vector::new(0.0, 1.0, 0.0),
+    };
+    let i2 = t.intersect_mt(&near_ray);
+    assert!(i2.is_none());
   }
 }
