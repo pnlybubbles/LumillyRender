@@ -2,7 +2,7 @@ extern crate test;
 
 use std::sync::Arc;
 use intersection::Intersection;
-use shape::Shape;
+use shape::*;
 use constant::*;
 use ray::Ray;
 use material::Material;
@@ -116,6 +116,12 @@ impl Shape for Triangle {
       max: max,
       center: (max + min) / 2.0,
     }
+  }
+}
+
+impl Surface for Triangle {
+  fn emission(&self) -> Vector {
+    self.material.emission()
   }
 }
 
