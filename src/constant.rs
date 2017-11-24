@@ -13,7 +13,7 @@ pub const HEIGHT: usize = 512;
 // 2L
 // pub const WIDTH: usize = 2102;
 // pub const HEIGHT: usize = 1500;
-pub const SPP: usize = 1000;
+pub const SPP: usize = 64;
 
 // pub const WIDTH: usize = 320 * 2;
 // pub const HEIGHT: usize = 240 * 2;

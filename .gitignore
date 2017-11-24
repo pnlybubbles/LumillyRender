@@ -5,9 +5,11 @@
 
 Cargo.lock
 
+diff*.png
 image*.png
 image*.ppm
 *.hdr
+*.exr
 image/
 dist/
 src_/

@@ -41,7 +41,10 @@ pub fn scene() -> Scene {
   });
   let mut objects: Vec<Arc<SurfaceShape + Send + Sync>> = Vec::new();
   let models = vec![
-    Path::new("models/simple/cornell_box.obj"),
+    Path::new("models/simple/cbox.obj"),
+    Path::new("models/simple/cbox_smallbox.obj"),
+    Path::new("models/simple/cbox_largebox.obj"),
+    Path::new("models/simple/cbox_luminaire.obj"),
     // Path::new("models/bunny/cornell_box-bunny.obj"),
   ];
   for path in models {
