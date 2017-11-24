@@ -79,8 +79,8 @@ pub fn scene() -> Scene {
       }
     }
   }
-  let sky = box IBLSky::new("ibl.hdr", 1500);
-  // let sky = box UniformSky { emission: Vector::zero() };
+  // let sky = box IBLSky::new("ibl.hdr", 1500);
+  let sky = box UniformSky { emission: Vector::zero() };
   Scene {
     depth: 5,
     depth_limit: 64,
