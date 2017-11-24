@@ -42,7 +42,7 @@ pub fn scene() -> Scene {
   let mut objects: Vec<Box<Shape + Send + Sync>> = Vec::new();
   let models = vec![
     Path::new("models/simple/cornell_box.obj"),
-    Path::new("models/teapot/cornell_box-teapot.obj"),
+    Path::new("models/bunny/cornell_box-bunny.obj"),
   ];
   for path in models {
     let obj = tobj::load_obj(path);
