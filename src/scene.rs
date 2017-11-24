@@ -51,10 +51,10 @@ impl Scene {
 
   fn intersect_radiance(&self, i: Intersection, ray: &Ray, depth: usize, no_emission: bool) -> Vector {
     // 放射
-    let l_e = if no_emission {
-      Vector::zero()
-    } else {
+    let l_e = if !no_emission && (-ray.direction).dot(i.normal) > 0.0 {
       i.material.emission()
+    } else {
+      Vector::zero()
     };
     // 再帰抑制用のロシアンルーレットの確率を決定する
     let mut continue_rr_prob = i.material.rr_weight();
@@ -71,7 +71,7 @@ impl Scene {
       return i.material.emission();
     }
     // 直接光をサンプリング
-    let direct_radiance = if self.objects.has_emission() {
+    let direct_radiance = if i.material.emission().sqr_norm() == 0.0 && self.objects.has_emission() {
       // 光源上から1点をサンプリング (確率密度は面積測度)
       let direct_sample = self.objects.sample_emission();
       // 交差した座標と光源上の1点を結ぶパスを生成
@@ -84,14 +84,20 @@ impl Scene {
       // 直接光のみのサンプリングなので可視の場合のみ寄与
       match self.objects.intersect(&direct_ray) {
         Some(direct_i) => {
-          // ジオメトリターム (測度の変換)
-          let g_term = direct_ray.direction.dot(i.normal)
-            * (-direct_ray.direction).dot(direct_i.normal)
-            / direct_path.sqr_norm();
-          let brdf = i.material.brdf(ray.direction, direct_ray.direction, i.normal);
-          let l_i = direct_i.material.emission();
-          let pdf = direct_sample.pdf;
-          brdf * l_i * g_term / pdf
+          let cos_emission = (-direct_ray.direction).dot(direct_i.normal);
+          if cos_emission > 0.0 {
+            // 光源は表面のみ寄与あり
+            let cos_surface = direct_ray.direction.dot(i.normal);
+            // ジオメトリターム (測度の変換)
+            let g_term = cos_surface * cos_emission / direct_path.sqr_norm();
+            let brdf = i.material.brdf(ray.direction, direct_ray.direction, i.normal);
+            let l_i = direct_i.material.emission();
+            let pdf = direct_sample.pdf;
+            brdf * l_i * g_term / pdf
+          } else {
+            // 光源の裏面は寄与なし
+            Vector::zero()
+          }
         },
         None => Vector::zero(),
       }

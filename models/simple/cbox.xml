@@ -25,8 +25,14 @@
 		</film>
 	</sensor>
 
+	<bsdf type="diffuse" id="light">
+		<rgb name="reflectance" value="1.0, 1.0, 1.0"/>
+	</bsdf>
+
 	<shape type="obj">
 		<string name="filename" value="cbox_luminaire.obj"/>
+
+		<ref id="light"/>
 
 		<emitter type="area">
 			<rgb name="radiance" value="20.0, 20.0, 20.0"/>
