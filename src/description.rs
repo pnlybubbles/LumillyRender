@@ -4,10 +4,10 @@ use std::sync::Arc;
 use camera::*;
 use vector::*;
 use material::*;
-use constant::*;
+// use constant::*;
 use scene::Scene;
 // use sphere::Sphere;
-use shape::Shape;
+use shape::SurfaceShape;
 use triangle::Triangle;
 use objects::Objects;
 use std::path::Path;
@@ -39,10 +39,10 @@ pub fn scene() -> Scene {
     albedo: Vector::new(0.75, 0.75, 0.75),
     emission: Vector::zero(),
   });
-  let mut objects: Vec<Box<Shape + Send + Sync>> = Vec::new();
+  let mut objects: Vec<Arc<SurfaceShape + Send + Sync>> = Vec::new();
   let models = vec![
     Path::new("models/simple/cornell_box.obj"),
-    Path::new("models/bunny/cornell_box-bunny.obj"),
+    // Path::new("models/bunny/cornell_box-bunny.obj"),
   ];
   for path in models {
     let obj = tobj::load_obj(path);
@@ -75,7 +75,7 @@ pub fn scene() -> Scene {
             mesh.positions[mesh.indices[index] as usize * 3 + 2] as f64,
           );
         }
-        objects.push(box Triangle::new(polygon[0], polygon[1], polygon[2], mat.clone()));
+        objects.push(Arc::new(Triangle::new(polygon[0], polygon[1], polygon[2], mat.clone())));
       }
     }
   }

@@ -1,10 +1,15 @@
+use std::sync::Arc;
 use intersection::Intersection;
 use ray::Ray;
 use aabb::AABB;
+use material::Material;
 use vector::Vector;
+use sample::Sample;
 
-pub trait Surface {
-  fn emission(&self) -> Vector;
+pub trait SurfaceShape: Shape {
+  fn material(&self) -> Arc<Material>;
+  fn area(&self) -> f64;
+  fn sample(&self) -> Sample<Vector>;
 }
 
 pub trait Shape {

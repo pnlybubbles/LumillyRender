@@ -1,7 +1,7 @@
 extern crate ordered_float;
 
 use aabb::AABB;
-use shape::Shape;
+use shape::*;
 use ray::Ray;
 use intersection::Intersection;
 use std::sync::Arc;
@@ -33,7 +33,7 @@ impl Shape for Node {
 pub struct Leaf {
   aabb: AABB,
   id: usize,
-  object: Box<Shape + Send + Sync>,
+  object: Arc<SurfaceShape + Send + Sync>,
 }
 
 impl Shape for Leaf {
@@ -67,7 +67,7 @@ impl Shape for BVH {
 type Axis = Vec<Vec<Arc<Leaf>>>;
 
 impl BVH {
-  pub fn new(objects: Vec<Box<Shape + Send + Sync>>) -> BVH {
+  pub fn new(objects: Vec<Arc<SurfaceShape + Send + Sync>>) -> BVH {
     // 実体
     let instance = objects.into_iter().enumerate().map( |(i, s)|
       Arc::new(Leaf {

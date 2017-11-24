@@ -1,4 +1,5 @@
 extern crate test;
+extern crate rand;
 
 use std::sync::Arc;
 use intersection::Intersection;
@@ -9,12 +10,14 @@ use material::Material;
 use vector::Vector;
 use vector::*;
 use aabb::AABB;
+use sample::Sample;
 
 pub struct Triangle {
   pub p0: Vector,
   pub p1: Vector,
   pub p2: Vector,
   pub normal: Vector,
+  pub area: f64,
   pub material: Arc<Material + Send + Sync>,
 }
 
@@ -30,6 +33,7 @@ impl Triangle {
       p1: p1,
       p2: p2,
       normal: (p1 - p0).cross(p2 - p0).normalize(),
+      area: (p1 - p0).cross(p2 - p0).norm() * 0.5,
       material: material,
     }
   }
@@ -119,9 +123,24 @@ impl Shape for Triangle {
   }
 }
 
-impl Surface for Triangle {
-  fn emission(&self) -> Vector {
-    self.material.emission()
+impl SurfaceShape for Triangle {
+  fn material(&self) -> Arc<Material> {
+    self.material.clone()
+  }
+
+  fn area(&self) -> f64 {
+    self.area
+  }
+
+  fn sample(&self) -> Sample<Vector> {
+    let u = rand::random::<f64>();
+    let v = rand::random::<f64>();
+    let min = u.min(v);
+    let max = u.max(v);
+    Sample {
+      value: self.p0 * min + self.p1 * (1.0 - max) + self.p2 * (max - min),
+      pdf: 1.0 / self.area,
+    }
   }
 }
 
