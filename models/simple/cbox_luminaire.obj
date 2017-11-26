@@ -1,9 +1,0 @@
-mtllib cbox.mtl
-
-o luminaire
-usemtl light
-v  343.0 548.3 227.0
-v  343.0 548.3 332.0
-v  213.0 548.3 332.0
-v  213.0 548.3 227.0
-f 1 2 3 4

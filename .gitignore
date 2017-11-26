@@ -7,10 +7,10 @@ Cargo.lock
 
 diff*.png
 image*.png
+reference*.png
 image*.ppm
 *.hdr
 *.exr
-image/
+images
 dist/
-src_/
-src__/
+models
