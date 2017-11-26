@@ -99,12 +99,12 @@ fn main() {
 }
 
 fn save(output: &Img<Vector>, spp: usize) {
-  let file_name = &format!(
-    "image_{}_{}.png",
+  let file_path = &format!(
+    "images/image_{}_{}.png",
     time::now().strftime("%Y%m%d%H%M%S").unwrap(),
     spp
   );
-  output.save(&Path::new(file_name), |pixel| {
+  output.save(&Path::new(file_path), |pixel| {
     [to_color(pixel.x), to_color(pixel.y), to_color(pixel.z)]
   });
 }

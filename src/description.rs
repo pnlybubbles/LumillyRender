@@ -43,12 +43,10 @@ pub fn scene() -> Scene {
   let mut objects: Vec<Arc<SurfaceShape + Send + Sync>> = Vec::new();
   let models = vec![
     Path::new("models/simple/cbox.obj"),
-    Path::new("models/simple/cbox_smallbox.obj"),
-    Path::new("models/simple/cbox_largebox.obj"),
+    // Path::new("models/simple/cbox_smallbox.obj"),
+    // Path::new("models/simple/cbox_largebox.obj"),
     Path::new("models/simple/cbox_luminaire.obj"),
-    // Path::new("models/bunny/cornell_box-bunny.obj"),
-    // Path::new("models/bunny/bunny.obj"),
-    // Path::new("models/teapot/teapot.obj"),
+    Path::new("models/happy_vrip/cbox_happy_vrip.obj"),
   ];
   for path in models {
     let obj = tobj::load_obj(path);
