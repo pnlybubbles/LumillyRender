@@ -1,4 +1,5 @@
-use std::ops::{Neg, Add, Sub, Mul, Div};
+use std::fmt;
+use std::ops::{Neg, Add, Sub, Mul, Div, Index};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vector {
@@ -20,8 +21,27 @@ impl Vector {
     [self.x, self.y, self.z]
   }
 
-  pub fn from_index<F>(f: F) -> Vector where F: Fn(usize) -> f64 {
+  pub fn from_index<F>(mut f: F) -> Vector where F: FnMut(usize) -> f64 {
     Vector::new(f(0), f(1), f(2))
+  }
+}
+
+impl fmt::Display for Vector {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "({}, {}, {})", self.x, self.y, self.z)
+  }
+}
+
+impl Index<usize> for Vector {
+  type Output = f64;
+
+  fn index(&self, i: usize) -> &f64 {
+    match i {
+      0 => &self.x,
+      1 => &self.y,
+      2 => &self.z,
+      _ => panic!("Out of range. Vector component size is 3."),
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 extern crate tobj;
+extern crate time;
 
 use std::sync::Arc;
 use camera::*;
@@ -42,29 +43,26 @@ pub fn scene() -> Scene {
   let mut objects: Vec<Arc<SurfaceShape + Send + Sync>> = Vec::new();
   let models = vec![
     Path::new("models/simple/cbox.obj"),
-    // Path::new("models/simple/cbox_smallbox.obj"),
-    // Path::new("models/simple/cbox_largebox.obj"),
+    Path::new("models/simple/cbox_smallbox.obj"),
+    Path::new("models/simple/cbox_largebox.obj"),
     Path::new("models/simple/cbox_luminaire.obj"),
-    Path::new("models/bunny/cornell_box-bunny.obj"),
+    // Path::new("models/bunny/cornell_box-bunny.obj"),
+    // Path::new("models/bunny/bunny.obj"),
+    // Path::new("models/teapot/teapot.obj"),
   ];
   for path in models {
     let obj = tobj::load_obj(path);
     assert!(obj.is_ok());
     let (models, materials) = obj.unwrap();
-    println!("# of models: {}", models.len());
-    println!("# of materials: {}", materials.len());
     let material = materials.iter().map( |v|
       Arc::new(LambertianMaterial {
         emission: Vector::from_index( |i| v.ambient[i] as f64 ),
         albedo: Vector::from_index( |i| v.diffuse[i] as f64 ),
       })
     ).collect::<Vec<_>>();
-    for (i, m) in models.iter().enumerate() {
+    for m in models {
       let mesh = &m.mesh;
-      println!("model[{}].name = \'{}\'", i, m.name);
-      println!("model[{}].mesh.material_id = {:?}", i, mesh.material_id);
-      println!("Size of model[{}].indices: {}", i, mesh.indices.len());
-      println!("model[{}].vertices: {}", i, mesh.positions.len() / 3);
+      println!("{}: {} ploygon", m.name, mesh.indices.len() / 3);
       let mat = mesh.material_id.map( |v|
         material[v].clone()
       ).unwrap_or(white_mat.clone());
@@ -84,10 +82,17 @@ pub fn scene() -> Scene {
   }
   // let sky = box IBLSky::new("ibl.hdr", 1500);
   let sky = box UniformSky { emission: Vector::zero() };
-  Scene {
+  let start_time = time::now();
+  let s = Scene {
     depth: 5,
     depth_limit: 64,
     sky: sky,
     objects: Objects::new(objects),
-  }
+  };
+  let end_time = time::now();
+  println!(
+    "bvh construction: {}s",
+    (end_time - start_time).num_milliseconds() as f64 / 1000.0
+  );
+  s
 }
