@@ -40,13 +40,13 @@ pub fn scene() -> Scene {
     albedo: Vector::new(0.75, 0.75, 0.75),
     emission: Vector::zero(),
   });
-  let mut objects: Vec<Arc<SurfaceShape + Send + Sync>> = Vec::new();
+  let mut instances: Vec<Arc<SurfaceShape + Send + Sync>> = Vec::new();
   let models = vec![
     Path::new("models/simple/cbox.obj"),
-    // Path::new("models/simple/cbox_smallbox.obj"),
-    // Path::new("models/simple/cbox_largebox.obj"),
+    Path::new("models/simple/cbox_smallbox.obj"),
+    Path::new("models/simple/cbox_largebox.obj"),
     Path::new("models/simple/cbox_luminaire.obj"),
-    Path::new("models/happy_vrip/cbox_happy_vrip.obj"),
+    // Path::new("models/happy_vrip/cbox_happy_vrip.obj"),
   ];
   for path in models {
     let obj = tobj::load_obj(path);
@@ -74,23 +74,23 @@ pub fn scene() -> Scene {
             mesh.positions[mesh.indices[index] as usize * 3 + 2] as f64,
           );
         }
-        objects.push(Arc::new(Triangle::new(polygon[0], polygon[1], polygon[2], mat.clone())));
+        instances.push(Arc::new(Triangle::new(polygon[0], polygon[1], polygon[2], mat.clone())));
       }
     }
   }
   // let sky = box IBLSky::new("ibl.hdr", 1500);
   let sky = box UniformSky { emission: Vector::zero() };
   let start_time = time::now();
-  let s = Scene {
-    depth: 5,
-    depth_limit: 64,
-    sky: sky,
-    objects: Objects::new(objects),
-  };
+  let objects = Objects::new(instances);
   let end_time = time::now();
   println!(
     "bvh construction: {}s",
     (end_time - start_time).num_milliseconds() as f64 / 1000.0
   );
-  s
+  Scene {
+    depth: 5,
+    depth_limit: 64,
+    sky: sky,
+    objects: objects,
+  }
 }

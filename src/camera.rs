@@ -298,13 +298,15 @@ impl Camera for LensCamera {
     let focal_length = 1.0 / (1.0 / self.aperture_sensor_distance + 1.0 / self.focus_distance);
     // FoV
     let sensor_diagonal = (self.sensor_size[0].powi(2) + self.sensor_size[1].powi(2)).sqrt();
-    let fov = 2.0 * ((sensor_diagonal / 2.0) / (2.0 * focal_length)).atan() * 180.0 / PI;
+    let fov = 2.0 * (sensor_diagonal / 2.0 / self.aperture_sensor_distance).atan() * 180.0 / PI;
+    let xfov = 2.0 * (self.sensor_size[0] / 2.0 / self.aperture_sensor_distance).atan() * 180.0 / PI;
     // F値
     let f_number = focal_length / self.aperture_radius;
     CameraInfo {
       focal_length: focal_length,
       sensor_diagonal: sensor_diagonal,
       fov: fov,
+      xfov: xfov,
       f_number: f_number,
     }
   }
@@ -315,5 +317,6 @@ pub struct CameraInfo {
   pub focal_length: f64,
   pub sensor_diagonal: f64,
   pub fov: f64,
+  pub xfov: f64,
   pub f_number: f64,
 }
