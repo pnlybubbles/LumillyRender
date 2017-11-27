@@ -15,13 +15,23 @@ pub struct Scene {
 }
 
 impl Scene {
-  pub fn radiance(&self, ray: &Ray, depth: usize, no_emission: bool) -> Vector {
+  pub fn radiance(&self, ray: &Ray, depth: usize) -> Vector {
     // すべてのオブジェクトと当たり判定を行う
     let maybe_intersect = self.objects.intersect(&ray);
     // 当たらなかった場合は背景色を返す
     match maybe_intersect {
       None => self.sky.radiance(&ray),
-      Some(i) => self.intersect_radiance(i, &ray, depth, no_emission),
+      Some(i) => self.intersect_radiance(i, &ray, depth),
+    }
+  }
+  
+  pub fn radiance_nee(&self, ray: &Ray, depth: usize, no_emission: bool) -> Vector {
+    // すべてのオブジェクトと当たり判定を行う
+    let maybe_intersect = self.objects.intersect(&ray);
+    // 当たらなかった場合は背景色を返す
+    match maybe_intersect {
+      None => self.sky.radiance(&ray),
+      Some(i) => self.intersect_radiance_nee(i, &ray, depth, no_emission),
     }
   }
 
@@ -49,7 +59,40 @@ impl Scene {
     }
   }
 
-  fn intersect_radiance(&self, i: Intersection, ray: &Ray, depth: usize, no_emission: bool) -> Vector {
+  fn intersect_radiance(&self, i: Intersection, ray: &Ray, depth: usize) -> Vector {
+    // 放射
+    let l_e = if (-ray.direction).dot(i.normal) > 0.0 {
+      i.material.emission()
+    } else {
+      Vector::zero()
+    };
+    // 再帰抑制用のロシアンルーレットの確率を決定する
+    let mut continue_rr_prob = i.material.rr_weight();
+    // スタックオーバーフロー対策のために反射回数の限界値を超えたら極端に確率を下げる
+    if depth > self.depth_limit {
+      continue_rr_prob *= (0.5f64).powi((depth - self.depth_limit) as i32);
+    }
+    // 最初の数回の反射では必ず次のパスをトレースするようにする
+    if depth <= self.depth && continue_rr_prob > 0.0 {
+      continue_rr_prob = 1.0;
+    }
+    // ロシアンルーレットで再帰を抑制
+    if continue_rr_prob != 1.0 && rand::random::<f64>() >= continue_rr_prob {
+      return l_e;
+    }
+    // レンダリング方程式にしたがって放射輝度を計算する
+    // マテリアル
+    // 新しいRayのサンプリング
+    let (sample_ray, brdf, cos_term) = i.material.sample(&ray, &i);
+    // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (再帰抑制用)
+    // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
+    let l_i = self.radiance(&sample_ray.value, depth + 1);
+    let pdf = sample_ray.pdf;
+    return l_e + (brdf * l_i * cos_term / pdf) / continue_rr_prob;
+    // return i.normal / 2.0 + Vector::new(0.5, 0.5, 0.5);
+  }
+
+  fn intersect_radiance_nee(&self, i: Intersection, ray: &Ray, depth: usize, no_emission: bool) -> Vector {
     // 放射
     let l_e = if !no_emission && (-ray.direction).dot(i.normal) > 0.0 {
       i.material.emission()
@@ -63,12 +106,12 @@ impl Scene {
       continue_rr_prob *= (0.5f64).powi((depth - self.depth_limit) as i32);
     }
     // 最初の数回の反射では必ず次のパスをトレースするようにする
-    if depth <= self.depth {
+    if depth <= self.depth && continue_rr_prob > 0.0 {
       continue_rr_prob = 1.0;
     }
     // ロシアンルーレットで再帰を抑制
     if continue_rr_prob != 1.0 && rand::random::<f64>() >= continue_rr_prob {
-      return i.material.emission();
+      return l_e;
     }
     // 直接光をサンプリング
     let direct_radiance = if i.material.emission().sqr_norm() == 0.0 && self.objects.has_emission() {
@@ -110,7 +153,7 @@ impl Scene {
     let (sample_ray, brdf, cos_term) = i.material.sample(&ray, &i);
     // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (再帰抑制用)
     // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
-    let l_i = self.radiance(&sample_ray.value, depth + 1, true);
+    let l_i = self.radiance_nee(&sample_ray.value, depth + 1, true);
     let pdf = sample_ray.pdf;
     return l_e + (direct_radiance + brdf * l_i * cos_term / pdf) / continue_rr_prob;
     // return i.normal / 2.0 + Vector::new(0.5, 0.5, 0.5);
