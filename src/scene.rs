@@ -15,23 +15,23 @@ pub struct Scene {
 }
 
 impl Scene {
-  pub fn radiance(&self, ray: &Ray, depth: usize) -> Vector {
+  pub fn radiance(&self, ray: &Ray, depth: usize, no_direct_emitter: bool) -> Vector {
     // すべてのオブジェクトと当たり判定を行う
     let maybe_intersect = self.objects.intersect(&ray);
     // 当たらなかった場合は背景色を返す
     match maybe_intersect {
       None => self.sky.radiance(&ray),
-      Some(i) => self.intersect_radiance(i, &ray, depth),
+      Some(i) => self.intersect_radiance(i, &ray, depth, no_direct_emitter),
     }
   }
   
-  pub fn radiance_nee(&self, ray: &Ray, depth: usize, no_emission: bool) -> Vector {
+  pub fn radiance_nee(&self, ray: &Ray, depth: usize, no_emission: bool, no_direct_emitter: bool) -> Vector {
     // すべてのオブジェクトと当たり判定を行う
     let maybe_intersect = self.objects.intersect(&ray);
     // 当たらなかった場合は背景色を返す
     match maybe_intersect {
       None => self.sky.radiance(&ray),
-      Some(i) => self.intersect_radiance_nee(i, &ray, depth, no_emission),
+      Some(i) => self.intersect_radiance_nee(i, &ray, depth, no_emission, no_direct_emitter),
     }
   }
 
@@ -59,9 +59,9 @@ impl Scene {
     }
   }
 
-  fn intersect_radiance(&self, i: Intersection, ray: &Ray, depth: usize) -> Vector {
+  fn intersect_radiance(&self, i: Intersection, ray: &Ray, depth: usize, no_direct_emitter: bool) -> Vector {
     // 放射
-    let l_e = if (-ray.direction).dot(i.normal) > 0.0 {
+    let l_e = if !no_direct_emitter && (-ray.direction).dot(i.normal) > 0.0 {
       i.material.emission()
     } else {
       Vector::zero()
@@ -86,15 +86,15 @@ impl Scene {
     let (sample_ray, brdf, cos_term) = i.material.sample(&ray, &i);
     // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (再帰抑制用)
     // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
-    let l_i = self.radiance(&sample_ray.value, depth + 1);
+    let l_i = self.radiance(&sample_ray.value, depth + 1, false);
     let pdf = sample_ray.pdf;
     return l_e + (brdf * l_i * cos_term / pdf) / continue_rr_prob;
     // return i.normal / 2.0 + Vector::new(0.5, 0.5, 0.5);
   }
 
-  fn intersect_radiance_nee(&self, i: Intersection, ray: &Ray, depth: usize, no_emission: bool) -> Vector {
+  fn intersect_radiance_nee(&self, i: Intersection, ray: &Ray, depth: usize, no_emission: bool, no_direct_emitter: bool) -> Vector {
     // 放射
-    let l_e = if !no_emission && (-ray.direction).dot(i.normal) > 0.0 {
+    let l_e = if !no_direct_emitter && !no_emission && (-ray.direction).dot(i.normal) > 0.0 {
       i.material.emission()
     } else {
       Vector::zero()
@@ -153,7 +153,7 @@ impl Scene {
     let (sample_ray, brdf, cos_term) = i.material.sample(&ray, &i);
     // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (再帰抑制用)
     // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
-    let l_i = self.radiance_nee(&sample_ray.value, depth + 1, true);
+    let l_i = self.radiance_nee(&sample_ray.value, depth + 1, true, false);
     let pdf = sample_ray.pdf;
     return l_e + (direct_radiance + brdf * l_i * cos_term / pdf) / continue_rr_prob;
     // return i.normal / 2.0 + Vector::new(0.5, 0.5, 0.5);
