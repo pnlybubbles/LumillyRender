@@ -41,14 +41,14 @@ pub fn scene() -> Scene {
     emission: Vector::new(20.0, 20.0, 20.0),
   });
   let mut instances: Vec<Arc<SurfaceShape + Send + Sync>> = Vec::new();
-  // instances.push(Arc::new(Sphere {
-  //   radius: 100.0,
-  //   position: Vector::new(0.0, 300.0, 0.0),
-  //   material: light_mat.clone(),
-  // }));
+  instances.push(Arc::new(Sphere::new(
+    Vector::new(0.0, 100.0, 0.0),
+    20.0,
+    light_mat.clone(),
+  )));
   let models = vec![
     Path::new("models/debug/quad.obj"),
-    Path::new("models/debug/light.obj"),
+    // Path::new("models/debug/light.obj"),
     // Path::new("models/simple/cbox.obj"),
     // Path::new("models/simple/cbox_smallbox.obj"),
     // Path::new("models/simple/cbox_largebox.obj"),

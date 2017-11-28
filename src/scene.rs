@@ -6,6 +6,7 @@ use ray::Ray;
 use objects::Objects;
 use shape::Shape;
 use intersection::Intersection;
+use constant::*;
 
 pub struct Scene {
   pub objects: Objects,
@@ -117,7 +118,7 @@ impl Scene {
     let direct_radiance = if i.material.emission().sqr_norm() == 0.0 && self.objects.has_emission() {
       // 光源上から1点をサンプリング (確率密度は面積測度)
       let direct_sample = self.objects.sample_emission();
-      // 交差した座標と光源上の1点を結ぶパスを生成
+      // 交差した座標と光源上の1点のパスを接続
       let direct_path = direct_sample.value - i.position;
       // 可視関数のテストレイを生成
       let direct_ray = Ray {
@@ -127,18 +128,22 @@ impl Scene {
       // 直接光のみのサンプリングなので可視の場合のみ寄与
       match self.objects.intersect(&direct_ray) {
         Some(direct_i) => {
-          let cos_emission = (-direct_ray.direction).dot(direct_i.normal);
-          if cos_emission > 0.0 {
-            // 光源は表面のみ寄与あり
-            let cos_surface = direct_ray.direction.dot(i.normal);
-            // ジオメトリターム (測度の変換)
-            let g_term = cos_surface * cos_emission / direct_path.sqr_norm();
-            let brdf = i.material.brdf(ray.direction, direct_ray.direction, i.normal);
-            let l_i = direct_i.material.emission();
-            let pdf = direct_sample.pdf;
-            brdf * l_i * g_term / pdf
+          if (direct_i.distance - direct_path.norm()).abs() < EPS {
+            let cos_emission = (-direct_ray.direction).dot(direct_i.normal);
+            if cos_emission > 0.0 {
+              // 光源は表面のみ寄与あり
+              let cos_surface = direct_ray.direction.dot(i.normal);
+              // ジオメトリターム (測度の変換)
+              let g_term = cos_surface * cos_emission / direct_path.sqr_norm();
+              let brdf = i.material.brdf(ray.direction, direct_ray.direction, i.normal);
+              let l_i = direct_i.material.emission();
+              let pdf = direct_sample.pdf;
+              brdf * l_i * g_term / pdf
+            } else {
+              // 光源の裏面は寄与なし
+              Vector::zero()
+            }
           } else {
-            // 光源の裏面は寄与なし
             Vector::zero()
           }
         },

@@ -45,4 +45,24 @@ impl Sampler {
     // (cosにしたがって重点的にサンプル)
     Vector::new(r1.cos() * r2s, r1.sin() * r2s, (1.0 - r2).sqrt())
   }
+
+  pub fn hemisphere_uniform() -> Vector {
+    // 乱数を生成
+    let r1 = 2.0 * PI * rand::random::<f64>();
+    let r2 = rand::random::<f64>();
+    let r2s = (1.0 - r2 * r2).sqrt();
+    // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
+    // (一様サンプル)
+    Vector::new(r1.cos() * r2s, r1.sin() * r2s, r2.sqrt())
+  }
+
+  pub fn sphere_uniform() -> Vector {
+    // 乱数を生成
+    let r1 = 2.0 * PI * rand::random::<f64>();
+    let r2 = rand::random::<f64>() * 2.0 - 1.0;
+    let r2s = (1.0 - r2 * r2).sqrt();
+    // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
+    // (一様サンプル)
+    Vector::new(r1.cos() * r2s, r1.sin() * r2s, r2)
+  }
 }

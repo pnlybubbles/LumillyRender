@@ -4,13 +4,27 @@ use ray::Ray;
 use material::Material;
 use intersection::Intersection;
 use constant::*;
-use shape::Shape;
+use shape::*;
 use aabb::AABB;
+use sample::Sample;
+use util::*;
 
 pub struct Sphere {
   pub radius: f64,
   pub position: Vector,
   pub material: Arc<Material + Send + Sync>,
+  area: f64,
+}
+
+impl Sphere {
+  pub fn new(position: Vector, radius: f64, material: Arc<Material + Send + Sync>) -> Sphere {
+    Sphere {
+      position: position,
+      radius: radius,
+      area: 4.0 * PI * radius.powi(2),
+      material: material,
+    }
+  }
 }
 
 impl Shape for Sphere {
@@ -43,6 +57,23 @@ impl Shape for Sphere {
       min: self.position - r,
       max: self.position + r,
       center: self.position,
+    }
+  }
+}
+
+impl SurfaceShape for Sphere {
+  fn material(&self) -> Arc<Material> {
+    self.material.clone()
+  }
+
+  fn area(&self) -> f64 {
+    self.area
+  }
+
+  fn sample(&self) -> Sample<Vector> {
+    Sample {
+      value: self.position + self.radius * Sampler::sphere_uniform(),
+      pdf: 1.0 / self.area,
     }
   }
 }

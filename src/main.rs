@@ -59,6 +59,7 @@ fn main() {
         // カメラから出射されるレイをサンプリング
         let (ray, g_term) = cam.sample(x, y);
         // 開口部に入射する放射輝度 (W sr^-1 m^-2)
+        // let l_into_sensor = scene.radiance(&ray.value, 0, true);
         let l_into_sensor = scene.radiance_nee(&ray.value, 0, false, true);
         // let l_into_sensor = scene.normal(&ray.value);
         // let l_into_sensor = scene.shade(&ray.value, Vector::new(1.0, 0.8, 0.7).normalize());
