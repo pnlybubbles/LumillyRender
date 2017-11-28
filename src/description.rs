@@ -7,7 +7,7 @@ use vector::*;
 use material::*;
 // use constant::*;
 use scene::Scene;
-// use sphere::Sphere;
+use sphere::Sphere;
 use shape::SurfaceShape;
 use triangle::Triangle;
 use objects::Objects;
@@ -17,9 +17,9 @@ use sky::*;
 pub fn camera(width: usize, height: usize) -> Box<Camera + Send + Sync> {
   let w = width as f64;
   let h = height as f64;
-  let pos = Vector::new(278.0, 273.0, -800.0);
+  let pos = Vector::new(0.0, 75.0, -500.0);
   let dir = Vector::new(0.0, 0.0, 0.035);
-  box LensCamera::new(
+  box IdealPinholeCamera::new(
     // sensor position
     pos - dir,
     // aperture position
@@ -28,24 +28,31 @@ pub fn camera(width: usize, height: usize) -> Box<Camera + Send + Sync> {
     [0.025 * w / h, 0.025],
     // sensor resolution
     [width, height],
-    // aperture radius
-    1e-8,
-    // focus_distance
-    pos.norm(),
   )
 }
 
 pub fn scene() -> Scene {
   let white_mat = Arc::new(LambertianMaterial {
-    albedo: Vector::new(0.75, 0.75, 0.75),
+    albedo: Vector::new(1.0, 1.0, 1.0),
     emission: Vector::zero(),
   });
+  let light_mat = Arc::new(LambertianMaterial {
+    albedo: Vector::zero(),
+    emission: Vector::new(20.0, 20.0, 20.0),
+  });
   let mut instances: Vec<Arc<SurfaceShape + Send + Sync>> = Vec::new();
+  // instances.push(Arc::new(Sphere {
+  //   radius: 100.0,
+  //   position: Vector::new(0.0, 300.0, 0.0),
+  //   material: light_mat.clone(),
+  // }));
   let models = vec![
-    Path::new("models/simple/cbox.obj"),
-    Path::new("models/simple/cbox_smallbox.obj"),
-    Path::new("models/simple/cbox_largebox.obj"),
-    Path::new("models/simple/cbox_luminaire.obj"),
+    Path::new("models/debug/quad.obj"),
+    Path::new("models/debug/light.obj"),
+    // Path::new("models/simple/cbox.obj"),
+    // Path::new("models/simple/cbox_smallbox.obj"),
+    // Path::new("models/simple/cbox_largebox.obj"),
+    // Path::new("models/simple/cbox_luminaire.obj"),
     // Path::new("models/happy_vrip/cbox_happy_vrip.obj"),
   ];
   for path in models {

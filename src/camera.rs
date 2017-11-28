@@ -12,6 +12,129 @@ pub trait Camera {
 }
 
 #[derive(Debug)]
+pub struct IdealPinholeCamera {
+  // カメラの方向を基準とした正規直交基底
+  pub forward: Vector,
+  pub right: Vector,
+  pub up: Vector,
+  // センサーの中心座標(m)
+  pub position: Vector,
+  // センサーの解像度
+  pub resolution: [usize; 2],
+  // センサーの物理的な大きさ(m)
+  pub sensor_size: [f64; 2],
+  // 入射口の中心座標(m)
+  pub aperture_position: Vector,
+  // 入射口とセンサー間の距離(m)
+  pub aperture_sensor_distance: f64,
+}
+
+impl IdealPinholeCamera {
+  pub fn new(
+    position: Vector,
+    aperture_position: Vector,
+    sensor_size: [f64; 2],
+    resolution: [usize; 2],
+  ) -> IdealPinholeCamera {
+    // レンズの方向(m)
+    let direction = aperture_position - position;
+    // 入射口とセンサー間の距離(m)
+    let aperture_sensor_distance = direction.norm();
+    // カメラの入射の方向を基準(forward)に正規直交基底
+    let forward = direction.normalize();
+    let right = forward
+      .cross(if forward.y.abs() < 1.0 - EPS {
+        Vector::new(0.0, 1.0, 0.0)
+      } else {
+        Vector::new(1.0, 0.0, 0.0)
+      })
+      .normalize();
+    let up = right.cross(forward);
+    IdealPinholeCamera {
+      forward: forward,
+      right: right,
+      up: up,
+      position: position,
+      resolution: resolution,
+      sensor_size: sensor_size,
+      aperture_position: aperture_position,
+      aperture_sensor_distance: aperture_sensor_distance,
+    }
+  }
+
+  fn sample_sensor(&self, left: usize, top: usize) -> Sample<Vector> {
+    // イメージセンサー1画素内の点の座標を取得(一様分布)
+    // 原点はセンサーの中心
+    // 画素内の1点を一様分布でサンプリング(0~1の乱数)
+    let u = rand::random::<f64>();
+    let v = rand::random::<f64>();
+    // センサー中心を基準とした平面座標でのサンプリング点の座標(m)
+    let px = (((left as f64 + u) / self.resolution[0] as f64) - 0.5) * self.sensor_size[0];
+    let py = (((top as f64 + v) / self.resolution[1] as f64) - 0.5) * self.sensor_size[1];
+    // 空間でのサンプリング点の座標(m)
+    let point = self.position - self.right * px + self.up * py;
+    // 画素内の1点を一様分布でサンプリングした時の確率密度(m^-2)
+    let pdf = 1.0;
+    Sample {
+      value: point,
+      pdf: pdf,
+    }
+  }
+
+  fn sample_aperture(&self) -> Sample<Vector> {
+    // 空間でのサンプリング点の座標(m)
+    let point = self.aperture_position;
+    // 入射口内の1点を一様分布でサンプリングした時の確率密度(m^-2)
+    let pdf = 1.0;
+    Sample {
+      value: point,
+      pdf: pdf,
+    }
+  }
+
+  fn geometry_term(&self, _direction: Vector) -> f64 {
+    1.0
+  }
+}
+
+impl Camera for IdealPinholeCamera {
+  fn sample(&self, x: usize, y: usize) -> (Sample<Ray>, f64) {
+    let sensor_sample = self.sample_sensor(x, y);
+    let aperture_sample = self.sample_aperture();
+    let ray = Ray {
+      origin: aperture_sample.value,
+      direction: (aperture_sample.value - sensor_sample.value).normalize(),
+    };
+    let direction_to_sensor = ray.direction;
+    (
+      Sample {
+        value: ray,
+        pdf: sensor_sample.pdf * aperture_sample.pdf,
+      },
+      self.geometry_term(direction_to_sensor),
+    )
+  }
+
+  fn sensor_sensitivity(&self) -> f64 {
+    1.0
+  }
+
+  fn info(&self) -> CameraInfo {
+    // FoV
+    let sensor_diagonal = (self.sensor_size[0].powi(2) + self.sensor_size[1].powi(2)).sqrt();
+    let fov = 2.0 * (sensor_diagonal / 2.0 / self.aperture_sensor_distance).atan() * 180.0 / PI;
+    let xfov = 2.0 * (self.sensor_size[0] / 2.0 / self.aperture_sensor_distance).atan() * 180.0 / PI;
+    CameraInfo {
+      focal_length: self.aperture_sensor_distance,
+      sensor_diagonal: sensor_diagonal,
+      fov: fov,
+      xfov: xfov,
+      f_number: 1.0 / 0.0,
+    }
+  }
+}
+
+#[derive(Debug)]
 pub struct PinholeCamera {
   // カメラの方向を基準とした正規直交基底
   pub forward: Vector,
