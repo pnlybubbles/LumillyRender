@@ -7,25 +7,24 @@ use shape::*;
 use constant::*;
 use ray::Ray;
 use material::Material;
-use vector::Vector;
-use vector::*;
+use math::vector::*;
 use aabb::AABB;
 use sample::Sample;
 
 pub struct Triangle {
-  pub p0: Vector,
-  pub p1: Vector,
-  pub p2: Vector,
-  pub normal: Vector,
+  pub p0: Vector3,
+  pub p1: Vector3,
+  pub p2: Vector3,
+  pub normal: Vector3,
   pub area: f32,
   pub material: Arc<Material + Send + Sync>,
 }
 
 impl Triangle {
   pub fn new(
-    p0: Vector,
-    p1: Vector,
-    p2: Vector,
+    p0: Vector3,
+    p1: Vector3,
+    p2: Vector3,
     material: Arc<Material + Send + Sync>,
   ) -> Triangle {
     Triangle {
@@ -105,12 +104,12 @@ impl Shape for Triangle {
   }
 
   fn aabb(&self) -> AABB {
-    let min = Vector::new(
+    let min = Vector3::new(
       self.p0.x.min(self.p1.x).min(self.p2.x),
       self.p0.y.min(self.p1.y).min(self.p2.y),
       self.p0.z.min(self.p1.z).min(self.p2.z),
     );
-    let max = Vector::new(
+    let max = Vector3::new(
       self.p0.x.max(self.p1.x).max(self.p2.x),
       self.p0.y.max(self.p1.y).max(self.p2.y),
       self.p0.z.max(self.p1.z).max(self.p2.z),
@@ -132,7 +131,7 @@ impl SurfaceShape for Triangle {
     self.area
   }
 
-  fn sample(&self) -> Sample<Vector> {
+  fn sample(&self) -> Sample<Vector3> {
     let u = rand::random::<f32>();
     let v = rand::random::<f32>();
     let min = u.min(v);
@@ -152,14 +151,14 @@ mod tests {
   #[test]
   fn intersect_mt_front() {
     let t = Triangle::new(
-      Vector::new(5.0, 0.0, 0.0),
-      Vector::new(0.0, 0.0, 0.0),
-      Vector::new(0.0, 0.0, 5.0),
-      Arc::new(LambertianMaterial { emission: Vector::zero(), albedo: Vector::zero() }),
+      Vector3::new(5.0, 0.0, 0.0),
+      Vector3::new(0.0, 0.0, 0.0),
+      Vector3::new(0.0, 0.0, 5.0),
+      Arc::new(LambertianMaterial { emission: Vector3::zero(), albedo: Vector3::zero() }),
     );
     let ray = Ray {
-      origin: Vector::new(1.0, 5.0, 1.0),
-      direction: Vector::new(0.0, -1.0, 0.0).normalize(),
+      origin: Vector3::new(1.0, 5.0, 1.0),
+      direction: Vector3::new(0.0, -1.0, 0.0).normalize(),
     };
     let i1 = t.intersect_3c(&ray).unwrap();
     let i2 = t.intersect_mt(&ray).unwrap();
@@ -171,14 +170,14 @@ mod tests {
   #[test]
   fn intersect_mt_back() {
     let t = Triangle::new(
-      Vector::new(5.0, 0.0, 0.0),
-      Vector::new(0.0, 0.0, 0.0),
-      Vector::new(0.0, 0.0, 5.0),
-      Arc::new(LambertianMaterial { emission: Vector::zero(), albedo: Vector::zero() }),
+      Vector3::new(5.0, 0.0, 0.0),
+      Vector3::new(0.0, 0.0, 0.0),
+      Vector3::new(0.0, 0.0, 5.0),
+      Arc::new(LambertianMaterial { emission: Vector3::zero(), albedo: Vector3::zero() }),
     );
     let ray = Ray {
-      origin: Vector::new(1.0, -5.0, 1.0),
-      direction: Vector::new(0.0, 1.0, 0.0).normalize(),
+      origin: Vector3::new(1.0, -5.0, 1.0),
+      direction: Vector3::new(0.0, 1.0, 0.0).normalize(),
     };
     let i1 = t.intersect_3c(&ray).unwrap();
     let i2 = t.intersect_mt(&ray).unwrap();
@@ -190,19 +189,19 @@ mod tests {
   #[test]
   fn intersect_3c_near() {
     let t = Triangle::new(
-      Vector::new(5.0, 0.0, 0.0),
-      Vector::new(0.0, 0.0, 0.0),
-      Vector::new(0.0, 0.0, 5.0),
-      Arc::new(LambertianMaterial { emission: Vector::zero(), albedo: Vector::zero() }),
+      Vector3::new(5.0, 0.0, 0.0),
+      Vector3::new(0.0, 0.0, 0.0),
+      Vector3::new(0.0, 0.0, 5.0),
+      Arc::new(LambertianMaterial { emission: Vector3::zero(), albedo: Vector3::zero() }),
     );
     let ray = Ray {
-      origin: Vector::new(1.0, 5.0, 1.0),
-      direction: Vector::new(0.0, -1.0, 0.0).normalize(),
+      origin: Vector3::new(1.0, 5.0, 1.0),
+      direction: Vector3::new(0.0, -1.0, 0.0).normalize(),
     };
     let i1 = t.intersect_3c(&ray).unwrap();
     let near_ray = Ray {
       origin: i1.position,
-      direction: Vector::new(0.0, 1.0, 0.0),
+      direction: Vector3::new(0.0, 1.0, 0.0),
     };
     let i2 = t.intersect_3c(&near_ray);
     assert!(i2.is_none());
@@ -211,19 +210,19 @@ mod tests {
   #[test]
   fn intersect_mt_near() {
     let t = Triangle::new(
-      Vector::new(5.0, 0.0, 0.0),
-      Vector::new(0.0, 0.0, 0.0),
-      Vector::new(0.0, 0.0, 5.0),
-      Arc::new(LambertianMaterial { emission: Vector::zero(), albedo: Vector::zero() }),
+      Vector3::new(5.0, 0.0, 0.0),
+      Vector3::new(0.0, 0.0, 0.0),
+      Vector3::new(0.0, 0.0, 5.0),
+      Arc::new(LambertianMaterial { emission: Vector3::zero(), albedo: Vector3::zero() }),
     );
     let ray = Ray {
-      origin: Vector::new(1.0, 5.0, 1.0),
-      direction: Vector::new(0.0, -1.0, 0.0).normalize(),
+      origin: Vector3::new(1.0, 5.0, 1.0),
+      direction: Vector3::new(0.0, -1.0, 0.0).normalize(),
     };
     let i1 = t.intersect_mt(&ray).unwrap();
     let near_ray = Ray {
       origin: i1.position,
-      direction: Vector::new(0.0, 1.0, 0.0),
+      direction: Vector3::new(0.0, 1.0, 0.0),
     };
     let i2 = t.intersect_mt(&near_ray);
     assert!(i2.is_none());

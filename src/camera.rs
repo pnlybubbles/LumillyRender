@@ -1,7 +1,7 @@
 extern crate rand;
 
 use constant::*;
-use vector::*;
+use math::vector::*;
 use ray::Ray;
 use sample::Sample;
 
@@ -14,25 +14,25 @@ pub trait Camera {
 #[derive(Debug)]
 pub struct IdealPinholeCamera {
   // カメラの方向を基準とした正規直交基底
-  pub forward: Vector,
-  pub right: Vector,
-  pub up: Vector,
+  pub forward: Vector3,
+  pub right: Vector3,
+  pub up: Vector3,
   // センサーの中心座標(m)
-  pub position: Vector,
+  pub position: Vector3,
   // センサーの解像度
   pub resolution: [usize; 2],
   // センサーの物理的な大きさ(m)
   pub sensor_size: [f32; 2],
   // 入射口の中心座標(m)
-  pub aperture_position: Vector,
+  pub aperture_position: Vector3,
   // 入射口とセンサー間の距離(m)
   pub aperture_sensor_distance: f32,
 }
 
 impl IdealPinholeCamera {
   pub fn new(
-    position: Vector,
-    aperture_position: Vector,
+    position: Vector3,
+    aperture_position: Vector3,
     sensor_size: [f32; 2],
     resolution: [usize; 2],
   ) -> IdealPinholeCamera {
@@ -44,9 +44,9 @@ impl IdealPinholeCamera {
     let forward = direction.normalize();
     let right = forward
       .cross(if forward.y.abs() < 1.0 - EPS {
-        Vector::new(0.0, 1.0, 0.0)
+        Vector3::new(0.0, 1.0, 0.0)
       } else {
-        Vector::new(1.0, 0.0, 0.0)
+        Vector3::new(1.0, 0.0, 0.0)
       })
       .normalize();
     let up = right.cross(forward);
@@ -62,7 +62,7 @@ impl IdealPinholeCamera {
     }
   }
 
-  fn sample_sensor(&self, left: usize, top: usize) -> Sample<Vector> {
+  fn sample_sensor(&self, left: usize, top: usize) -> Sample<Vector3> {
     // イメージセンサー1画素内の点の座標を取得(一様分布)
     // 原点はセンサーの中心
     // 画素内の1点を一様分布でサンプリング(0~1の乱数)
@@ -81,7 +81,7 @@ impl IdealPinholeCamera {
     }
   }
 
-  fn sample_aperture(&self) -> Sample<Vector> {
+  fn sample_aperture(&self) -> Sample<Vector3> {
     // 空間でのサンプリング点の座標(m)
     let point = self.aperture_position;
     // 入射口内の1点を一様分布でサンプリングした時の確率密度(m^-2)
@@ -92,7 +92,7 @@ impl IdealPinholeCamera {
     }
   }
 
-  fn geometry_term(&self, _direction: Vector) -> f32 {
+  fn geometry_term(&self, _direction: Vector3) -> f32 {
     1.0
   }
 }
@@ -137,17 +137,17 @@ impl Camera for IdealPinholeCamera {
 #[derive(Debug)]
 pub struct PinholeCamera {
   // カメラの方向を基準とした正規直交基底
-  pub forward: Vector,
-  pub right: Vector,
-  pub up: Vector,
+  pub forward: Vector3,
+  pub right: Vector3,
+  pub up: Vector3,
   // センサーの中心座標(m)
-  pub position: Vector,
+  pub position: Vector3,
   // センサーの解像度
   pub resolution: [usize; 2],
   // センサーの物理的な大きさ(m)
   pub sensor_size: [f32; 2],
   // 入射口の中心座標(m)
-  pub aperture_position: Vector,
+  pub aperture_position: Vector3,
   // 入射口の半径(m)
   pub aperture_radius: f32,
   // 入射口とセンサー間の距離(m)
@@ -160,8 +160,8 @@ pub struct PinholeCamera {
 
 impl PinholeCamera {
   pub fn new(
-    position: Vector,
-    aperture_position: Vector,
+    position: Vector3,
+    aperture_position: Vector3,
     sensor_size: [f32; 2],
     resolution: [usize; 2],
     aperture_radius: f32,
@@ -174,9 +174,9 @@ impl PinholeCamera {
     let forward = direction.normalize();
     let right = forward
       .cross(if forward.y.abs() < 1.0 - EPS {
-        Vector::new(0.0, 1.0, 0.0)
+        Vector3::new(0.0, 1.0, 0.0)
       } else {
-        Vector::new(1.0, 0.0, 0.0)
+        Vector3::new(1.0, 0.0, 0.0)
       })
       .normalize();
     let up = right.cross(forward);
@@ -201,7 +201,7 @@ impl PinholeCamera {
     }
   }
 
-  fn sample_sensor(&self, left: usize, top: usize) -> Sample<Vector> {
+  fn sample_sensor(&self, left: usize, top: usize) -> Sample<Vector3> {
     // イメージセンサー1画素内の点の座標を取得(一様分布)
     // 原点はセンサーの中心
     // 画素内の1点を一様分布でサンプリング(0~1の乱数)
@@ -220,7 +220,7 @@ impl PinholeCamera {
     }
   }
 
-  fn sample_aperture(&self) -> Sample<Vector> {
+  fn sample_aperture(&self) -> Sample<Vector3> {
     // 光が入射してくる入射口内の点の座標を取得(一様分布)
     let u = 2.0 * PI * rand::random::<f32>();
     let v = rand::random::<f32>().sqrt() * self.aperture_radius;
@@ -237,7 +237,7 @@ impl PinholeCamera {
     }
   }
 
-  fn geometry_term(&self, direction: Vector) -> f32 {
+  fn geometry_term(&self, direction: Vector3) -> f32 {
     // cos項
     let cos_term = direction.dot(self.forward);
     // センサー面と開口部それぞれのサンプリング点同士の距離
@@ -277,17 +277,17 @@ impl Camera for PinholeCamera {
 #[derive(Debug)]
 pub struct LensCamera {
   // カメラの方向を基準とした正規直交基底
-  pub forward: Vector,
-  pub right: Vector,
-  pub up: Vector,
+  pub forward: Vector3,
+  pub right: Vector3,
+  pub up: Vector3,
   // センサーの中心座標(m)
-  pub position: Vector,
+  pub position: Vector3,
   // センサーの解像度
   pub resolution: [usize; 2],
   // センサーの物理的な大きさ(m)
   pub sensor_size: [f32; 2],
   // 入射口の中心座標(m)
-  pub aperture_position: Vector,
+  pub aperture_position: Vector3,
   // 入射口の半径(m)
   pub aperture_radius: f32,
   // 入射口とセンサー間の距離(m)
@@ -302,8 +302,8 @@ pub struct LensCamera {
 
 impl LensCamera {
   pub fn new(
-    position: Vector,
-    aperture_position: Vector,
+    position: Vector3,
+    aperture_position: Vector3,
     sensor_size: [f32; 2],
     resolution: [usize; 2],
     aperture_radius: f32,
@@ -317,9 +317,9 @@ impl LensCamera {
     let forward = direction.normalize();
     let right = forward
       .cross(if forward.y.abs() < 1.0 - EPS {
-        Vector::new(0.0, 1.0, 0.0)
+        Vector3::new(0.0, 1.0, 0.0)
       } else {
-        Vector::new(1.0, 0.0, 0.0)
+        Vector3::new(1.0, 0.0, 0.0)
       })
       .normalize();
     let up = right.cross(forward);
@@ -345,7 +345,7 @@ impl LensCamera {
     }
   }
 
-  fn sample_sensor(&self, left: usize, top: usize) -> Sample<Vector> {
+  fn sample_sensor(&self, left: usize, top: usize) -> Sample<Vector3> {
     // イメージセンサー1画素内の点の座標を取得(一様分布)
     // 原点はセンサーの中心
     // 画素内の1点を一様分布でサンプリング(0~1の乱数)
@@ -364,7 +364,7 @@ impl LensCamera {
     }
   }
 
-  fn sample_aperture(&self) -> Sample<Vector> {
+  fn sample_aperture(&self) -> Sample<Vector3> {
     // 光が入射してくる入射口内の点の座標を取得(一様分布)
     let u = 2.0 * PI * rand::random::<f32>();
     let v = rand::random::<f32>().sqrt() * self.aperture_radius;
@@ -381,7 +381,7 @@ impl LensCamera {
     }
   }
 
-  fn geometry_term(&self, direction: Vector) -> f32 {
+  fn geometry_term(&self, direction: Vector3) -> f32 {
     // cos項
     let cos_term = direction.dot(self.forward);
     // センサー面と開口部それぞれのサンプリング点同士の距離

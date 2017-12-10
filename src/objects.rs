@@ -5,7 +5,7 @@ use ray::Ray;
 use intersection::Intersection;
 use shape::*;
 use bvh::BVH;
-use vector::*;
+use math::vector::*;
 use sample::Sample;
 use aabb::AABB;
 
@@ -37,7 +37,7 @@ impl Objects {
   //   }
   // }
 
-  pub fn sample_emission(&self) -> Sample<Vector> {
+  pub fn sample_emission(&self) -> Sample<Vector3> {
     let roulette = self.emission_area * rand::random::<f32>();
     let mut area = 0.0;
     for obj in &self.emission {

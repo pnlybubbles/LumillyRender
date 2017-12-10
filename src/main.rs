@@ -9,7 +9,7 @@ extern crate num_cpus;
 
 mod constant;
 mod img;
-mod vector;
+mod math;
 mod ray;
 mod sample;
 mod camera;
@@ -30,7 +30,7 @@ use threadpool::ThreadPool;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use constant::*;
 use img::Img;
-use vector::*;
+use math::vector::*;
 use std::path::Path;
 use std::sync::Arc;
 use std::io::{self, Write};
@@ -39,12 +39,12 @@ fn main() {
   let start_time = time::now();
   println!("start: {}", start_time.strftime("%+").unwrap());
 
-  let mut output = Img::new(Vector::zero(), WIDTH, HEIGHT);
+  let mut output = Img::new(Vector3::zero(), WIDTH, HEIGHT);
   let cam = Arc::new(description::camera(WIDTH, HEIGHT));
   let scene = Arc::new(description::scene());
   println!("{:?}", cam.info());
   println!("spp: {}", SPP);
-  let (tx, rx): (Sender<(usize, usize, Vector)>, Receiver<(usize, usize, Vector)>) = channel();
+  let (tx, rx): (Sender<(usize, usize, Vector3)>, Receiver<(usize, usize, Vector3)>) = channel();
   let cpu_count = num_cpus::get();
   println!("cpu: {}", cpu_count);
   let pool = ThreadPool::new(cpu_count);
@@ -54,7 +54,7 @@ fn main() {
     let cam = cam.clone();
     let scene = scene.clone();
     pool.execute(move || {
-      let estimated_sum = (0..SPP).fold(Vector::zero(), |sum, _| {
+      let estimated_sum = (0..SPP).fold(Vector3::zero(), |sum, _| {
         // センサーの1画素に入射する放射輝度を立体角測度でモンテカルロ積分し放射照度を得る
         // カメラから出射されるレイをサンプリング
         let (ray, g_term) = cam.sample(x, y);
@@ -62,7 +62,7 @@ fn main() {
         // let l_into_sensor = scene.radiance(&ray.value, 0, true);
         let l_into_sensor = scene.radiance_nee(&ray.value, 0, false, true);
         // let l_into_sensor = scene.normal(&ray.value);
-        // let l_into_sensor = scene.shade(&ray.value, Vector::new(1.0, 0.8, 0.7).normalize());
+        // let l_into_sensor = scene.shade(&ray.value, Vector3::new(1.0, 0.8, 0.7).normalize());
         // センサーに入射する放射照度
         let e_into_sensor = l_into_sensor * g_term;
         // 今回のサンプリングでの放射照度の推定値
@@ -99,7 +99,7 @@ fn main() {
   );
 }
 
-fn save(output: &Img<Vector>, spp: usize) {
+fn save(output: &Img<Vector3>, spp: usize) {
   let file_path = &format!(
     "images/image_{}_{}.png",
     time::now().strftime("%Y%m%d%H%M%S").unwrap(),

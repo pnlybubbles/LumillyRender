@@ -90,7 +90,8 @@ impl BVH {
     let aabb = AABB::merge(&list.iter().map( |v| &v.aabb ).collect());
     // 最大のAABBの辺を基準にして分割する
     // 最大のAABBの辺のインデックスを取得
-    let max_side_index = aabb.side().to_array().to_vec().iter()
+    let side_array: [f32; 3] = aabb.side().into();
+    let max_side_index = side_array.iter()
       .enumerate().max_by_key( |&(_, v)| OrderedFloat(*v) )
       .map( |(i, _)| i ).unwrap_or(0);
     // 基準の軸でソート

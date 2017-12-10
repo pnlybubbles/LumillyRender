@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use vector::*;
+use math::vector::*;
 use ray::Ray;
 use material::Material;
 use intersection::Intersection;
@@ -11,13 +11,13 @@ use util::*;
 
 pub struct Sphere {
   pub radius: f32,
-  pub position: Vector,
+  pub position: Vector3,
   pub material: Arc<Material + Send + Sync>,
   area: f32,
 }
 
 impl Sphere {
-  pub fn new(position: Vector, radius: f32, material: Arc<Material + Send + Sync>) -> Sphere {
+  pub fn new(position: Vector3, radius: f32, material: Arc<Material + Send + Sync>) -> Sphere {
     Sphere {
       position: position,
       radius: radius,
@@ -52,7 +52,7 @@ impl Shape for Sphere {
   }
 
   fn aabb(&self) -> AABB {
-    let r = Vector::new(self.radius, self.radius, self.radius);
+    let r = Vector3::new(self.radius, self.radius, self.radius);
     AABB {
       min: self.position - r,
       max: self.position + r,
@@ -70,7 +70,7 @@ impl SurfaceShape for Sphere {
     self.area
   }
 
-  fn sample(&self) -> Sample<Vector> {
+  fn sample(&self) -> Sample<Vector3> {
     Sample {
       value: self.position + self.radius * Sampler::sphere_uniform(),
       pdf: 1.0 / self.area,

@@ -1,6 +1,6 @@
-use vector::Vector;
+use math::vector::Vector3;
 
 pub struct Ray {
-  pub origin: Vector,
-  pub direction: Vector,
+  pub origin: Vector3,
+  pub direction: Vector3,
 }

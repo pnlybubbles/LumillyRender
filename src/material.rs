@@ -1,6 +1,6 @@
 extern crate rand;
 
-use vector::*;
+use math::vector::*;
 use ray::Ray;
 use sample::Sample;
 use constant::*;
@@ -8,26 +8,26 @@ use intersection::Intersection;
 use util::*;
 
 pub trait Material {
-  fn color(&self) -> Vector;
+  fn color(&self) -> Vector3;
   // 物体自体の放射成分
-  fn emission(&self) -> Vector;
+  fn emission(&self) -> Vector3;
   // 入射ベクトル, 出射ベクトル, 法線ベクトル
-  fn brdf(&self, Vector, Vector, Vector) -> Vector;
+  fn brdf(&self, Vector3, Vector3, Vector3) -> Vector3;
   // -> サンプルしたレイ, brdfの値, cos項
-  fn sample(&self, &Ray, &Intersection) -> (Sample<Ray>, Vector, f32);
+  fn sample(&self, &Ray, &Intersection) -> (Sample<Ray>, Vector3, f32);
   // 再帰継続用ロシアンルーレットの重み
   fn rr_weight(&self) -> f32;
 }
 
 #[derive(Clone)]
 pub struct LambertianMaterial {
-  pub emission: Vector,
+  pub emission: Vector3,
   // 拡散反射率
-  pub albedo: Vector,
+  pub albedo: Vector3,
 }
 
 impl LambertianMaterial {
-  pub fn orienting_normal(&self, in_: Vector, normal: Vector) -> Vector {
+  pub fn orienting_normal(&self, in_: Vector3, normal: Vector3) -> Vector3 {
     // 物体の内外を考慮した法線方向から拡散反射面としての法線方向を求める
     if normal.dot(in_) > 0.0 {
       normal * -1.0
@@ -38,11 +38,11 @@ impl LambertianMaterial {
 }
 
 impl Material for LambertianMaterial {
-  fn color(&self) -> Vector {
+  fn color(&self) -> Vector3 {
     self.albedo
   }
 
-  fn emission(&self) -> Vector {
+  fn emission(&self) -> Vector3 {
     self.emission
   }
 
@@ -51,12 +51,12 @@ impl Material for LambertianMaterial {
     self.albedo.x.max(self.albedo.y).max(self.albedo.z)
   }
 
-  fn brdf(&self, _: Vector, _: Vector, _: Vector) -> Vector {
+  fn brdf(&self, _: Vector3, _: Vector3, _: Vector3) -> Vector3 {
     // BRDFは半球全体に一様に散乱するDiffuse面を考えると ρ / π
     self.albedo / PI
   }
 
-  fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f32) {
+  fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3, f32) {
     // 拡散反射
     let normal = self.orienting_normal(in_ray.direction, i.normal);
     // 反射点での法線方向を基準にした正規直交基底を生成
@@ -90,9 +90,9 @@ impl Material for LambertianMaterial {
 
 // #[derive(Clone)]
 // pub struct IdealRefractionMaterial {
-//   pub emission: Vector,
+//   pub emission: Vector3,
 //   // スペキュラー反射率
-//   pub albedo: Vector,
+//   pub albedo: Vector3,
 //   // 屈折率
 //   pub ior: f32,
 // }
@@ -101,7 +101,7 @@ impl Material for LambertianMaterial {
 // const DELTA_FUNC: f32 = 1.0;
 
 // impl Material for IdealRefractionMaterial {
-//   fn emission(&self) -> Vector {
+//   fn emission(&self) -> Vector3 {
 //     self.emission
 //   }
 
@@ -110,11 +110,11 @@ impl Material for LambertianMaterial {
 //     self.albedo.x.max(self.albedo.y).max(self.albedo.z)
 //   }
 
-//   fn brdf(&self, _: Vector, out_: Vector, normal: Vector) -> Vector {
+//   fn brdf(&self, _: Vector3, out_: Vector3, normal: Vector3) -> Vector3 {
 //     self.albedo * DELTA_FUNC / out_.dot(normal)
 //   }
 
-//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f32) {
+//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3, f32) {
 //     // cosθ
 //     let mut dn = in_ray.direction.dot(i.normal);
 //     let mut n = i.normal;
@@ -218,9 +218,9 @@ impl Material for LambertianMaterial {
 // #[derive(Clone)]
 // pub struct CookTorranceMaterial {
 //   // 鏡面反射率
-//   pub reflectance: Vector,
+//   pub reflectance: Vector3,
 //   // 吸収係数
-//   pub absorptance: Vector,
+//   pub absorptance: Vector3,
 //   // 屈折率
 //   pub ior: f32,
 //   // ラフネス
@@ -228,7 +228,7 @@ impl Material for LambertianMaterial {
 // }
 
 // impl CookTorranceMaterial {
-//   pub fn orienting_normal(&self, in_: Vector, normal: Vector) -> Vector {
+//   pub fn orienting_normal(&self, in_: Vector3, normal: Vector3) -> Vector3 {
 //     // 物体の内外を考慮した法線方向から拡散反射面としての法線方向を求める
 //     if normal.dot(in_) > 0.0 {
 //       normal * -1.0
@@ -242,7 +242,7 @@ impl Material for LambertianMaterial {
 //   }
 
 //   // マイクロファセット分布関数 (Microfacet Distribution Functions)
-//   fn ndf(&self, h: Vector, n: Vector) -> f32 {
+//   fn ndf(&self, h: Vector3, n: Vector3) -> f32 {
 //     // GGX
 //     let n_dot_h = n.dot(h);
 //     let a = self.alpha();
@@ -252,13 +252,13 @@ impl Material for LambertianMaterial {
 //   }
 
 //   // 幾何減衰項 (Masking-Shadowing Fucntion)
-//   fn geometry(&self, i: Vector, o: Vector, h: Vector, n: Vector) -> f32 {
+//   fn geometry(&self, i: Vector3, o: Vector3, h: Vector3, n: Vector3) -> f32 {
 //     // Height-Correlated Masking and Shadowing (Smith Joint Masking-Shadowing Function)
 //     self.g1(i, h, n) * self.g1(o, h, n)
 //   }
 
 //   #[allow(unused_variables)]
-//   fn g1(&self, x: Vector, h: Vector, n: Vector) -> f32 {
+//   fn g1(&self, x: Vector3, h: Vector3, n: Vector3) -> f32 {
 //     let a = self.alpha();
 //     let a2 = a * a;
 //     let x_dot_n = x.dot(n);
@@ -266,7 +266,7 @@ impl Material for LambertianMaterial {
 //   }
 
 //   // フレネル項
-//   fn fresnel(&self, i: Vector, h: Vector) -> f32 {
+//   fn fresnel(&self, i: Vector3, h: Vector3) -> f32 {
 //     // 垂直入射での反射量
 //     // 真空屈折率
 //     let eta_v = 1.0;
@@ -284,8 +284,8 @@ impl Material for LambertianMaterial {
 // }
 
 // impl Material for CookTorranceMaterial {
-//   fn emission(&self) -> Vector {
-//     Vector::zero()
+//   fn emission(&self) -> Vector3 {
+//     Vector3::zero()
 //   }
 
 //   fn rr_weight(&self) -> f32 {
@@ -295,7 +295,7 @@ impl Material for LambertianMaterial {
 //     )
 //   }
 
-//   fn brdf(&self, i: Vector, o: Vector, n: Vector) -> Vector {
+//   fn brdf(&self, i: Vector3, o: Vector3, n: Vector3) -> Vector3 {
 //     let h = (o + i).normalize();
 //     // Torrance-Sparrow model (PBRT p.546)
 //     // fr = FGD / 4(i.n)(o.n)
@@ -304,7 +304,7 @@ impl Material for LambertianMaterial {
 //     self.reflectance * fr
 //   }
 
-//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f32) {
+//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3, f32) {
 //     let normal = self.orienting_normal(in_ray.direction, i.normal);
 //     // 反射点での法線方向を基準にした正規直交基底を生成
 //     let w = normal;
@@ -343,13 +343,13 @@ impl Material for LambertianMaterial {
 // #[derive(Clone)]
 // pub struct PhongMaterial {
 //   // 反射率
-//   pub reflectance: Vector,
+//   pub reflectance: Vector3,
 //   // ラフネス
 //   pub roughness: f32,
 // }
 
 // impl PhongMaterial {
-//   pub fn orienting_normal(&self, in_: Vector, normal: Vector) -> Vector {
+//   pub fn orienting_normal(&self, in_: Vector3, normal: Vector3) -> Vector3 {
 //     // 物体の内外を考慮した法線方向から拡散反射面としての法線方向を求める
 //     if normal.dot(in_) > 0.0 {
 //       normal * -1.0
@@ -364,8 +364,8 @@ impl Material for LambertianMaterial {
 // }
 
 // impl Material for PhongMaterial {
-//   fn emission(&self) -> Vector {
-//     Vector::zero()
+//   fn emission(&self) -> Vector3 {
+//     Vector3::zero()
 //   }
 
 //   fn rr_weight(&self) -> f32 {
@@ -375,7 +375,7 @@ impl Material for LambertianMaterial {
 //     )
 //   }
 
-//   fn brdf(&self, v_i: Vector, l: Vector, n: Vector) -> Vector {
+//   fn brdf(&self, v_i: Vector3, l: Vector3, n: Vector3) -> Vector3 {
 //     let v = -v_i;
 //     let r = v.reflect(n);
 //     let cos = r.dot(l);
@@ -384,7 +384,7 @@ impl Material for LambertianMaterial {
 //     self.reflectance * ((a + 2.0) / (2.0 * PI) * cos.powf(a))
 //   }
 
-//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f32) {
+//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3, f32) {
 //     let normal = self.orienting_normal(in_ray.direction, i.normal);
 //     let a = self.alpha();
 //     // 反射点での法線方向を基準にした正規直交基底を生成
