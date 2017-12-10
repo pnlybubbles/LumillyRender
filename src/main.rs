@@ -69,7 +69,7 @@ fn main() {
         let delta_e_into_sensor = e_into_sensor * (cam.sensor_sensitivity() / ray.pdf);
         sum + delta_e_into_sensor
       });
-      tx.send((x, y, estimated_sum / SPP as f64)).unwrap()
+      tx.send((x, y, estimated_sum / SPP as f32)).unwrap()
     });
   });
 
@@ -80,7 +80,7 @@ fn main() {
       "\rprocessing... ({}/{} : {:.0}%) ",
       i,
       all,
-      i as f64 / all as f64 * 100.0
+      i as f32 / all as f32 * 100.0
     );
     io::stdout().flush().ok();
     let (x, y, pixel) = rx.recv().unwrap();
@@ -95,7 +95,7 @@ fn main() {
   println!("end: {}", end_time.strftime("%+").unwrap());
   println!(
     "elapse: {}s",
-    (end_time - start_time).num_milliseconds() as f64 / 1000.0
+    (end_time - start_time).num_milliseconds() as f32 / 1000.0
   );
 }
 
@@ -110,6 +110,6 @@ fn save(output: &Img<Vector>, spp: usize) {
   });
 }
 
-fn to_color(x: f64) -> u8 {
+fn to_color(x: f32) -> u8 {
   (x.max(0.0).min(1.0).powf(1.0 / 2.2) * 255.0) as u8
 }

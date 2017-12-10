@@ -8,7 +8,7 @@ use sample::Sample;
 
 pub trait SurfaceShape: Shape {
   fn material(&self) -> Arc<Material>;
-  fn area(&self) -> f64;
+  fn area(&self) -> f32;
   fn sample(&self) -> Sample<Vector>;
 }
 

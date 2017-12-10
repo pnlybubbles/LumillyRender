@@ -3,13 +3,13 @@ use std::ops::{Neg, Add, Sub, Mul, Div, Index};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vector {
-  pub x: f64,
-  pub y: f64,
-  pub z: f64,
+  pub x: f32,
+  pub y: f32,
+  pub z: f32,
 }
 
 impl Vector {
-  pub fn new(x: f64, y: f64, z: f64) -> Vector {
+  pub fn new(x: f32, y: f32, z: f32) -> Vector {
     Vector { x: x, y: y, z: z }
   }
 
@@ -17,11 +17,11 @@ impl Vector {
     Vector::new(0.0, 0.0, 0.0)
   }
 
-  pub fn to_array(&self) -> [f64; 3] {
+  pub fn to_array(&self) -> [f32; 3] {
     [self.x, self.y, self.z]
   }
 
-  pub fn from_index<F>(mut f: F) -> Vector where F: FnMut(usize) -> f64 {
+  pub fn from_index<F>(mut f: F) -> Vector where F: FnMut(usize) -> f32 {
     Vector::new(f(0), f(1), f(2))
   }
 }
@@ -33,9 +33,9 @@ impl fmt::Display for Vector {
 }
 
 impl Index<usize> for Vector {
-  type Output = f64;
+  type Output = f32;
 
-  fn index(&self, i: usize) -> &f64 {
+  fn index(&self, i: usize) -> &f32 {
     match i {
       0 => &self.x,
       1 => &self.y,
@@ -45,14 +45,14 @@ impl Index<usize> for Vector {
   }
 }
 
-pub trait Dot: Sized + Copy + Div<f64, Output = Self> {
-  fn dot(self, Self) -> f64;
+pub trait Dot: Sized + Copy + Div<f32, Output = Self> {
+  fn dot(self, Self) -> f32;
 
-  fn sqr_norm(self) -> f64 {
+  fn sqr_norm(self) -> f32 {
     self.dot(self)
   }
 
-  fn norm(self) -> f64 {
+  fn norm(self) -> f32 {
     self.dot(self).sqrt()
   }
 
@@ -66,7 +66,7 @@ pub trait Cross {
 }
 
 impl Dot for Vector {
-  fn dot(self, rhs: Vector) -> f64 {
+  fn dot(self, rhs: Vector) -> f32 {
     self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
   }
 }
@@ -105,15 +105,15 @@ impl Sub for Vector {
   }
 }
 
-impl Mul<f64> for Vector {
+impl Mul<f32> for Vector {
   type Output = Vector;
 
-  fn mul(self, rhs: f64) -> Vector {
+  fn mul(self, rhs: f32) -> Vector {
     Vector::new(self.x * rhs, self.y * rhs, self.z * rhs)
   }
 }
 
-impl Mul<Vector> for f64 {
+impl Mul<Vector> for f32 {
   type Output = Vector;
 
   fn mul(self, rhs: Vector) -> Vector {
@@ -129,15 +129,15 @@ impl Mul for Vector {
   }
 }
 
-impl Div<f64> for Vector {
+impl Div<f32> for Vector {
   type Output = Vector;
 
-  fn div(self, rhs: f64) -> Vector {
+  fn div(self, rhs: f32) -> Vector {
     Vector::new(self.x / rhs, self.y / rhs, self.z / rhs)
   }
 }
 
-impl Div<Vector> for f64 {
+impl Div<Vector> for f32 {
   type Output = Vector;
 
   fn div(self, rhs: Vector) -> Vector {

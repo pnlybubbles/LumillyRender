@@ -64,8 +64,8 @@ impl Sky for IBLSky {
     } else {
       phi_pr
     } + PI / 2.0;
-    let x = (self.height as f64 * phi / PI).round() as usize + self.longitude_offset;
-    let y = (self.height as f64 * theta / PI).round() as usize;
+    let x = (self.height as f32 * phi / PI).round() as usize + self.longitude_offset;
+    let y = (self.height as f32 * theta / PI).round() as usize;
     let index = y * self.height * 2 +
       if x > self.height * 2 {
         x % (self.height * 2)
@@ -74,9 +74,9 @@ impl Sky for IBLSky {
       };
     let color = self.hdr_image[index];
     return Vector::new(
-      color.data[0] as f64,
-      color.data[1] as f64,
-      color.data[2] as f64,
+      color.data[0] as f32,
+      color.data[1] as f32,
+      color.data[2] as f32,
     );
   }
 }

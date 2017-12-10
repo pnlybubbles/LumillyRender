@@ -38,8 +38,8 @@ impl Sampler {
   pub fn hemisphere_cos_importance() -> Vector {
     // 乱数を生成
     // (cosにしたがって重点的にサンプル)
-    let r1 = 2.0 * PI * rand::random::<f64>();
-    let r2 = rand::random::<f64>();
+    let r1 = 2.0 * PI * rand::random::<f32>();
+    let r2 = rand::random::<f32>();
     let r2s = r2.sqrt();
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     // (cosにしたがって重点的にサンプル)
@@ -48,8 +48,8 @@ impl Sampler {
 
   pub fn hemisphere_uniform() -> Vector {
     // 乱数を生成
-    let r1 = 2.0 * PI * rand::random::<f64>();
-    let r2 = rand::random::<f64>();
+    let r1 = 2.0 * PI * rand::random::<f32>();
+    let r2 = rand::random::<f32>();
     let r2s = (1.0 - r2 * r2).sqrt();
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     // (一様サンプル)
@@ -58,8 +58,8 @@ impl Sampler {
 
   pub fn sphere_uniform() -> Vector {
     // 乱数を生成
-    let r1 = 2.0 * PI * rand::random::<f64>();
-    let r2 = rand::random::<f64>() * 2.0 - 1.0;
+    let r1 = 2.0 * PI * rand::random::<f32>();
+    let r2 = rand::random::<f32>() * 2.0 - 1.0;
     let r2s = (1.0 - r2 * r2).sqrt();
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     // (一様サンプル)

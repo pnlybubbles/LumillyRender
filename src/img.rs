@@ -5,7 +5,7 @@ use std::path::Path;
 // use std::io::prelude::*;
 // use std::io;
 
-pub type Color = [f64; 3];
+pub type Color = [f32; 3];
 
 pub struct Img<T> {
   data: Vec<Vec<T>>,

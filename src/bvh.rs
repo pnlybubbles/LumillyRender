@@ -81,7 +81,7 @@ impl BVH {
     // セットアップ
     let len = list.len();
     let partition_count = 2usize;
-    let size = (len as f64 / partition_count as f64).ceil() as usize;
+    let size = (len as f32 / partition_count as f32).ceil() as usize;
     // 要素が1つのときは葉
     if len == 1 {
       return list[0].clone();

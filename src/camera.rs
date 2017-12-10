@@ -6,8 +6,8 @@ use ray::Ray;
 use sample::Sample;
 
 pub trait Camera {
-  fn sample(&self, x: usize, y: usize) -> (Sample<Ray>, f64);
-  fn sensor_sensitivity(&self) -> f64;
+  fn sample(&self, x: usize, y: usize) -> (Sample<Ray>, f32);
+  fn sensor_sensitivity(&self) -> f32;
   fn info(&self) -> CameraInfo;
 }
 
@@ -22,18 +22,18 @@ pub struct IdealPinholeCamera {
   // センサーの解像度
   pub resolution: [usize; 2],
   // センサーの物理的な大きさ(m)
-  pub sensor_size: [f64; 2],
+  pub sensor_size: [f32; 2],
   // 入射口の中心座標(m)
   pub aperture_position: Vector,
   // 入射口とセンサー間の距離(m)
-  pub aperture_sensor_distance: f64,
+  pub aperture_sensor_distance: f32,
 }
 
 impl IdealPinholeCamera {
   pub fn new(
     position: Vector,
     aperture_position: Vector,
-    sensor_size: [f64; 2],
+    sensor_size: [f32; 2],
     resolution: [usize; 2],
   ) -> IdealPinholeCamera {
     // レンズの方向(m)
@@ -66,11 +66,11 @@ impl IdealPinholeCamera {
     // イメージセンサー1画素内の点の座標を取得(一様分布)
     // 原点はセンサーの中心
     // 画素内の1点を一様分布でサンプリング(0~1の乱数)
-    let u = rand::random::<f64>();
-    let v = rand::random::<f64>();
+    let u = rand::random::<f32>();
+    let v = rand::random::<f32>();
     // センサー中心を基準とした平面座標でのサンプリング点の座標(m)
-    let px = (((left as f64 + u) / self.resolution[0] as f64) - 0.5) * self.sensor_size[0];
-    let py = (((top as f64 + v) / self.resolution[1] as f64) - 0.5) * self.sensor_size[1];
+    let px = (((left as f32 + u) / self.resolution[0] as f32) - 0.5) * self.sensor_size[0];
+    let py = (((top as f32 + v) / self.resolution[1] as f32) - 0.5) * self.sensor_size[1];
     // 空間でのサンプリング点の座標(m)
     let point = self.position - self.right * px + self.up * py;
     // 画素内の1点を一様分布でサンプリングした時の確率密度(m^-2)
@@ -92,13 +92,13 @@ impl IdealPinholeCamera {
     }
   }
 
-  fn geometry_term(&self, _direction: Vector) -> f64 {
+  fn geometry_term(&self, _direction: Vector) -> f32 {
     1.0
   }
 }
 
 impl Camera for IdealPinholeCamera {
-  fn sample(&self, x: usize, y: usize) -> (Sample<Ray>, f64) {
+  fn sample(&self, x: usize, y: usize) -> (Sample<Ray>, f32) {
     let sensor_sample = self.sample_sensor(x, y);
     let aperture_sample = self.sample_aperture();
     let ray = Ray {
@@ -115,7 +115,7 @@ impl Camera for IdealPinholeCamera {
     )
   }
 
-  fn sensor_sensitivity(&self) -> f64 {
+  fn sensor_sensitivity(&self) -> f32 {
     1.0
   }
 
@@ -145,26 +145,26 @@ pub struct PinholeCamera {
   // センサーの解像度
   pub resolution: [usize; 2],
   // センサーの物理的な大きさ(m)
-  pub sensor_size: [f64; 2],
+  pub sensor_size: [f32; 2],
   // 入射口の中心座標(m)
   pub aperture_position: Vector,
   // 入射口の半径(m)
-  pub aperture_radius: f64,
+  pub aperture_radius: f32,
   // 入射口とセンサー間の距離(m)
-  pub aperture_sensor_distance: f64,
+  pub aperture_sensor_distance: f32,
   // センサー1画素の面積(m^2)
-  pub sensor_pixel_area: f64,
+  pub sensor_pixel_area: f32,
   // センサー感度(m^2)
-  pub sensor_sensitivity: f64,
+  pub sensor_sensitivity: f32,
 }
 
 impl PinholeCamera {
   pub fn new(
     position: Vector,
     aperture_position: Vector,
-    sensor_size: [f64; 2],
+    sensor_size: [f32; 2],
     resolution: [usize; 2],
-    aperture_radius: f64,
+    aperture_radius: f32,
   ) -> PinholeCamera {
     // レンズの方向(m)
     let direction = aperture_position - position;
@@ -181,8 +181,8 @@ impl PinholeCamera {
       .normalize();
     let up = right.cross(forward);
     // 1画素の面積 = センサーの面積 / センサーの画素数
-    let sensor_pixel_area = (sensor_size[0] * sensor_size[1]) as f64 /
-      (resolution[0] * resolution[1]) as f64;
+    let sensor_pixel_area = (sensor_size[0] * sensor_size[1]) as f32 /
+      (resolution[0] * resolution[1]) as f32;
     // センサー感度はpdfを打ち消すように設定(m^2 m^-2 m^-2)
     let sensor_sensitivity = aperture_sensor_distance * aperture_sensor_distance /
       (sensor_pixel_area * PI * aperture_radius * aperture_radius);
@@ -205,11 +205,11 @@ impl PinholeCamera {
     // イメージセンサー1画素内の点の座標を取得(一様分布)
     // 原点はセンサーの中心
     // 画素内の1点を一様分布でサンプリング(0~1の乱数)
-    let u = rand::random::<f64>();
-    let v = rand::random::<f64>();
+    let u = rand::random::<f32>();
+    let v = rand::random::<f32>();
     // センサー中心を基準とした平面座標でのサンプリング点の座標(m)
-    let px = (((left as f64 + u) / self.resolution[0] as f64) - 0.5) * self.sensor_size[0];
-    let py = (((top as f64 + v) / self.resolution[1] as f64) - 0.5) * self.sensor_size[1];
+    let px = (((left as f32 + u) / self.resolution[0] as f32) - 0.5) * self.sensor_size[0];
+    let py = (((top as f32 + v) / self.resolution[1] as f32) - 0.5) * self.sensor_size[1];
     // 空間でのサンプリング点の座標(m)
     let point = self.position - self.right * px + self.up * py;
     // 画素内の1点を一様分布でサンプリングした時の確率密度(m^-2)
@@ -222,8 +222,8 @@ impl PinholeCamera {
 
   fn sample_aperture(&self) -> Sample<Vector> {
     // 光が入射してくる入射口内の点の座標を取得(一様分布)
-    let u = 2.0 * PI * rand::random::<f64>();
-    let v = rand::random::<f64>().sqrt() * self.aperture_radius;
+    let u = 2.0 * PI * rand::random::<f32>();
+    let v = rand::random::<f32>().sqrt() * self.aperture_radius;
     // 入射口の中心を基準とした平面極座標でのサンプリング点の座標(m)
     let px = u.cos() * v;
     let py = u.sin() * v;
@@ -237,7 +237,7 @@ impl PinholeCamera {
     }
   }
 
-  fn geometry_term(&self, direction: Vector) -> f64 {
+  fn geometry_term(&self, direction: Vector) -> f32 {
     // cos項
     let cos_term = direction.dot(self.forward);
     // センサー面と開口部それぞれのサンプリング点同士の距離
@@ -248,7 +248,7 @@ impl PinholeCamera {
 }
 
 impl Camera for PinholeCamera {
-  fn sample(&self, x: usize, y: usize) -> (Sample<Ray>, f64) {
+  fn sample(&self, x: usize, y: usize) -> (Sample<Ray>, f32) {
     let sensor_sample = self.sample_sensor(x, y);
     let aperture_sample = self.sample_aperture();
     let ray = Ray {
@@ -265,7 +265,7 @@ impl Camera for PinholeCamera {
     )
   }
 
-  fn sensor_sensitivity(&self) -> f64 {
+  fn sensor_sensitivity(&self) -> f32 {
     self.sensor_sensitivity
   }
 
@@ -285,29 +285,29 @@ pub struct LensCamera {
   // センサーの解像度
   pub resolution: [usize; 2],
   // センサーの物理的な大きさ(m)
-  pub sensor_size: [f64; 2],
+  pub sensor_size: [f32; 2],
   // 入射口の中心座標(m)
   pub aperture_position: Vector,
   // 入射口の半径(m)
-  pub aperture_radius: f64,
+  pub aperture_radius: f32,
   // 入射口とセンサー間の距離(m)
-  pub aperture_sensor_distance: f64,
+  pub aperture_sensor_distance: f32,
   // センサー1画素の面積(m^2)
-  pub sensor_pixel_area: f64,
+  pub sensor_pixel_area: f32,
   // センサー感度(m^2)
-  pub sensor_sensitivity: f64,
+  pub sensor_sensitivity: f32,
   // 焦点の合う場所の入射口からの距離
-  pub focus_distance: f64,
+  pub focus_distance: f32,
 }
 
 impl LensCamera {
   pub fn new(
     position: Vector,
     aperture_position: Vector,
-    sensor_size: [f64; 2],
+    sensor_size: [f32; 2],
     resolution: [usize; 2],
-    aperture_radius: f64,
-    focus_distance: f64,
+    aperture_radius: f32,
+    focus_distance: f32,
   ) -> LensCamera {
     // レンズの方向(m)
     let direction = aperture_position - position;
@@ -324,8 +324,8 @@ impl LensCamera {
       .normalize();
     let up = right.cross(forward);
     // 1画素の面積 = センサーの面積 / センサーの画素数
-    let sensor_pixel_area = (sensor_size[0] * sensor_size[1]) as f64 /
-      (resolution[0] * resolution[1]) as f64;
+    let sensor_pixel_area = (sensor_size[0] * sensor_size[1]) as f32 /
+      (resolution[0] * resolution[1]) as f32;
     // センサー感度はpdfを打ち消すように設定(m^2 m^-2 m^-[1]
     let sensor_sensitivity = aperture_sensor_distance * aperture_sensor_distance /
       (sensor_pixel_area * PI * aperture_radius * aperture_radius);
@@ -349,11 +349,11 @@ impl LensCamera {
     // イメージセンサー1画素内の点の座標を取得(一様分布)
     // 原点はセンサーの中心
     // 画素内の1点を一様分布でサンプリング(0~1の乱数)
-    let u = rand::random::<f64>();
-    let v = rand::random::<f64>();
+    let u = rand::random::<f32>();
+    let v = rand::random::<f32>();
     // センサー中心を基準とした平面座標でのサンプリング点の座標(m)
-    let px = (((left as f64 + u) / self.resolution[0] as f64) - 0.5) * self.sensor_size[0];
-    let py = (((top as f64 + v) / self.resolution[1] as f64) - 0.5) * self.sensor_size[1];
+    let px = (((left as f32 + u) / self.resolution[0] as f32) - 0.5) * self.sensor_size[0];
+    let py = (((top as f32 + v) / self.resolution[1] as f32) - 0.5) * self.sensor_size[1];
     // 空間でのサンプリング点の座標(m)
     let point = self.position - self.right * px + self.up * py;
     // 画素内の1点を一様分布でサンプリングした時の確率密度(m^-2)
@@ -366,8 +366,8 @@ impl LensCamera {
 
   fn sample_aperture(&self) -> Sample<Vector> {
     // 光が入射してくる入射口内の点の座標を取得(一様分布)
-    let u = 2.0 * PI * rand::random::<f64>();
-    let v = rand::random::<f64>().sqrt() * self.aperture_radius;
+    let u = 2.0 * PI * rand::random::<f32>();
+    let v = rand::random::<f32>().sqrt() * self.aperture_radius;
     // 入射口の中心を基準とした平面極座標でのサンプリング点の座標(m)
     let px = u.cos() * v;
     let py = u.sin() * v;
@@ -381,7 +381,7 @@ impl LensCamera {
     }
   }
 
-  fn geometry_term(&self, direction: Vector) -> f64 {
+  fn geometry_term(&self, direction: Vector) -> f32 {
     // cos項
     let cos_term = direction.dot(self.forward);
     // センサー面と開口部それぞれのサンプリング点同士の距離
@@ -392,7 +392,7 @@ impl LensCamera {
 }
 
 impl Camera for LensCamera {
-  fn sample(&self, x: usize, y: usize) -> (Sample<Ray>, f64) {
+  fn sample(&self, x: usize, y: usize) -> (Sample<Ray>, f32) {
     let sensor_sample = self.sample_sensor(x, y);
     let aperture_sample = self.sample_aperture();
     // センサー上の点から開口部中心
@@ -412,7 +412,7 @@ impl Camera for LensCamera {
     )
   }
 
-  fn sensor_sensitivity(&self) -> f64 {
+  fn sensor_sensitivity(&self) -> f32 {
     self.sensor_sensitivity
   }
 
@@ -437,9 +437,9 @@ impl Camera for LensCamera {
 
 #[derive(Debug)]
 pub struct CameraInfo {
-  pub focal_length: f64,
-  pub sensor_diagonal: f64,
-  pub fov: f64,
-  pub xfov: f64,
-  pub f_number: f64,
+  pub focal_length: f32,
+  pub sensor_diagonal: f32,
+  pub fov: f32,
+  pub xfov: f32,
+  pub f_number: f32,
 }

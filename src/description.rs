@@ -15,8 +15,8 @@ use std::path::Path;
 use sky::*;
 
 pub fn camera(width: usize, height: usize) -> Box<Camera + Send + Sync> {
-  let w = width as f64;
-  let h = height as f64;
+  let w = width as f32;
+  let h = height as f32;
   let pos = Vector::new(0.0, 75.0, -500.0);
   let dir = Vector::new(0.0, 0.0, 0.035);
   box IdealPinholeCamera::new(
@@ -61,8 +61,8 @@ pub fn scene() -> Scene {
     let (models, materials) = obj.unwrap();
     let material = materials.iter().map( |v|
       Arc::new(LambertianMaterial {
-        emission: Vector::from_index( |i| v.ambient[i] as f64 ),
-        albedo: Vector::from_index( |i| v.diffuse[i] as f64 ),
+        emission: Vector::from_index( |i| v.ambient[i] as f32 ),
+        albedo: Vector::from_index( |i| v.diffuse[i] as f32 ),
       })
     ).collect::<Vec<_>>();
     for m in models {
@@ -76,9 +76,9 @@ pub fn scene() -> Scene {
         for i in 0..3 {
           let index: usize = f * 3 + i;
           polygon[i] = Vector::new(
-            mesh.positions[mesh.indices[index] as usize * 3] as f64,
-            mesh.positions[mesh.indices[index] as usize * 3 + 1] as f64,
-            mesh.positions[mesh.indices[index] as usize * 3 + 2] as f64,
+            mesh.positions[mesh.indices[index] as usize * 3] as f32,
+            mesh.positions[mesh.indices[index] as usize * 3 + 1] as f32,
+            mesh.positions[mesh.indices[index] as usize * 3 + 2] as f32,
           );
         }
         instances.push(Arc::new(Triangle::new(polygon[0], polygon[1], polygon[2], mat.clone())));
@@ -92,7 +92,7 @@ pub fn scene() -> Scene {
   let end_time = time::now();
   println!(
     "bvh construction: {}s",
-    (end_time - start_time).num_milliseconds() as f64 / 1000.0
+    (end_time - start_time).num_milliseconds() as f32 / 1000.0
   );
   Scene {
     depth: 5,

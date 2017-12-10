@@ -13,7 +13,7 @@ pub struct Objects {
   bvh: BVH,
   // objects: Vec<Box<Shape + Send + Sync>>,
   emission: Vec<Arc<SurfaceShape + Send + Sync>>,
-  emission_area: f64,
+  emission_area: f32,
 }
 
 impl Objects {
@@ -38,7 +38,7 @@ impl Objects {
   // }
 
   pub fn sample_emission(&self) -> Sample<Vector> {
-    let roulette = self.emission_area * rand::random::<f64>();
+    let roulette = self.emission_area * rand::random::<f32>();
     let mut area = 0.0;
     for obj in &self.emission {
       area += obj.area();

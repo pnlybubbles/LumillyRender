@@ -17,7 +17,7 @@ pub struct Triangle {
   pub p1: Vector,
   pub p2: Vector,
   pub normal: Vector,
-  pub area: f64,
+  pub area: f32,
   pub material: Arc<Material + Send + Sync>,
 }
 
@@ -128,13 +128,13 @@ impl SurfaceShape for Triangle {
     self.material.clone()
   }
 
-  fn area(&self) -> f64 {
+  fn area(&self) -> f32 {
     self.area
   }
 
   fn sample(&self) -> Sample<Vector> {
-    let u = rand::random::<f64>();
-    let v = rand::random::<f64>();
+    let u = rand::random::<f32>();
+    let v = rand::random::<f32>();
     let min = u.min(v);
     let max = u.max(v);
     Sample {

@@ -10,14 +10,14 @@ use sample::Sample;
 use util::*;
 
 pub struct Sphere {
-  pub radius: f64,
+  pub radius: f32,
   pub position: Vector,
   pub material: Arc<Material + Send + Sync>,
-  area: f64,
+  area: f32,
 }
 
 impl Sphere {
-  pub fn new(position: Vector, radius: f64, material: Arc<Material + Send + Sync>) -> Sphere {
+  pub fn new(position: Vector, radius: f32, material: Arc<Material + Send + Sync>) -> Sphere {
     Sphere {
       position: position,
       radius: radius,
@@ -66,7 +66,7 @@ impl SurfaceShape for Sphere {
     self.material.clone()
   }
 
-  fn area(&self) -> f64 {
+  fn area(&self) -> f32 {
     self.area
   }
 

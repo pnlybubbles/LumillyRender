@@ -52,7 +52,7 @@ impl Scene {
     }
   }
 
-  pub fn depth(&self, ray: &Ray) -> f64 {
+  pub fn depth(&self, ray: &Ray) -> f32 {
     let maybe_intersect = self.objects.intersect(&ray);
     match maybe_intersect {
       None => 0.0,
@@ -71,14 +71,14 @@ impl Scene {
     let mut continue_rr_prob = i.material.rr_weight();
     // スタックオーバーフロー対策のために反射回数の限界値を超えたら極端に確率を下げる
     if depth > self.depth_limit {
-      continue_rr_prob *= (0.5f64).powi((depth - self.depth_limit) as i32);
+      continue_rr_prob *= (0.5f32).powi((depth - self.depth_limit) as i32);
     }
     // 最初の数回の反射では必ず次のパスをトレースするようにする
     if depth <= self.depth && continue_rr_prob > 0.0 {
       continue_rr_prob = 1.0;
     }
     // ロシアンルーレットで再帰を抑制
-    if continue_rr_prob != 1.0 && rand::random::<f64>() >= continue_rr_prob {
+    if continue_rr_prob != 1.0 && rand::random::<f32>() >= continue_rr_prob {
       return l_e;
     }
     // レンダリング方程式にしたがって放射輝度を計算する
@@ -104,14 +104,14 @@ impl Scene {
     let mut continue_rr_prob = i.material.rr_weight();
     // スタックオーバーフロー対策のために反射回数の限界値を超えたら極端に確率を下げる
     if depth > self.depth_limit {
-      continue_rr_prob *= (0.5f64).powi((depth - self.depth_limit) as i32);
+      continue_rr_prob *= (0.5f32).powi((depth - self.depth_limit) as i32);
     }
     // 最初の数回の反射では必ず次のパスをトレースするようにする
     if depth <= self.depth && continue_rr_prob > 0.0 {
       continue_rr_prob = 1.0;
     }
     // ロシアンルーレットで再帰を抑制
-    if continue_rr_prob != 1.0 && rand::random::<f64>() >= continue_rr_prob {
+    if continue_rr_prob != 1.0 && rand::random::<f32>() >= continue_rr_prob {
       return l_e;
     }
     // 直接光をサンプリング

@@ -14,9 +14,9 @@ pub trait Material {
   // 入射ベクトル, 出射ベクトル, 法線ベクトル
   fn brdf(&self, Vector, Vector, Vector) -> Vector;
   // -> サンプルしたレイ, brdfの値, cos項
-  fn sample(&self, &Ray, &Intersection) -> (Sample<Ray>, Vector, f64);
+  fn sample(&self, &Ray, &Intersection) -> (Sample<Ray>, Vector, f32);
   // 再帰継続用ロシアンルーレットの重み
-  fn rr_weight(&self) -> f64;
+  fn rr_weight(&self) -> f32;
 }
 
 #[derive(Clone)]
@@ -46,7 +46,7 @@ impl Material for LambertianMaterial {
     self.emission
   }
 
-  fn rr_weight(&self) -> f64 {
+  fn rr_weight(&self) -> f32 {
     // 拡散反射の時は各色の反射率のうち最大のものを使う
     self.albedo.x.max(self.albedo.y).max(self.albedo.z)
   }
@@ -56,7 +56,7 @@ impl Material for LambertianMaterial {
     self.albedo / PI
   }
 
-  fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f64) {
+  fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f32) {
     // 拡散反射
     let normal = self.orienting_normal(in_ray.direction, i.normal);
     // 反射点での法線方向を基準にした正規直交基底を生成
@@ -94,18 +94,18 @@ impl Material for LambertianMaterial {
 //   // スペキュラー反射率
 //   pub albedo: Vector,
 //   // 屈折率
-//   pub ior: f64,
+//   pub ior: f32,
 // }
 
 // // ディラックのデルタ関数
-// const DELTA_FUNC: f64 = 1.0;
+// const DELTA_FUNC: f32 = 1.0;
 
 // impl Material for IdealRefractionMaterial {
 //   fn emission(&self) -> Vector {
 //     self.emission
 //   }
 
-//   fn rr_weight(&self) -> f64 {
+//   fn rr_weight(&self) -> f32 {
 //     // 滑らかな界面の時は各色のスペキュラー反射率のうち最大のものを使う
 //     self.albedo.x.max(self.albedo.y).max(self.albedo.z)
 //   }
@@ -114,7 +114,7 @@ impl Material for LambertianMaterial {
 //     self.albedo * DELTA_FUNC / out_.dot(normal)
 //   }
 
-//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f64) {
+//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f32) {
 //     // cosθ
 //     let mut dn = in_ray.direction.dot(i.normal);
 //     let mut n = i.normal;
@@ -187,7 +187,7 @@ impl Material for LambertianMaterial {
 //     let ft = (1.0 - fr) * nni * nni;
 //     // ロシアンルーレットで反射と屈折のどちらかの寄与を取る
 //     let rr_prob = fr;
-//     if rand::random::<f64>() < rr_prob {
+//     if rand::random::<f32>() < rr_prob {
 //       // 反射
 //       let brdf = self.brdf(in_ray.direction, reflection_ray.direction, n) * fr;
 //       let cos_term = reflection_ray.direction.dot(n);
@@ -222,9 +222,9 @@ impl Material for LambertianMaterial {
 //   // 吸収係数
 //   pub absorptance: Vector,
 //   // 屈折率
-//   pub ior: f64,
+//   pub ior: f32,
 //   // ラフネス
-//   pub roughness: f64,
+//   pub roughness: f32,
 // }
 
 // impl CookTorranceMaterial {
@@ -237,12 +237,12 @@ impl Material for LambertianMaterial {
 //     }
 //   }
 
-//   fn alpha(&self) -> f64 {
+//   fn alpha(&self) -> f32 {
 //     self.roughness * self.roughness
 //   }
 
 //   // マイクロファセット分布関数 (Microfacet Distribution Functions)
-//   fn ndf(&self, h: Vector, n: Vector) -> f64 {
+//   fn ndf(&self, h: Vector, n: Vector) -> f32 {
 //     // GGX
 //     let n_dot_h = n.dot(h);
 //     let a = self.alpha();
@@ -252,13 +252,13 @@ impl Material for LambertianMaterial {
 //   }
 
 //   // 幾何減衰項 (Masking-Shadowing Fucntion)
-//   fn geometry(&self, i: Vector, o: Vector, h: Vector, n: Vector) -> f64 {
+//   fn geometry(&self, i: Vector, o: Vector, h: Vector, n: Vector) -> f32 {
 //     // Height-Correlated Masking and Shadowing (Smith Joint Masking-Shadowing Function)
 //     self.g1(i, h, n) * self.g1(o, h, n)
 //   }
 
 //   #[allow(unused_variables)]
-//   fn g1(&self, x: Vector, h: Vector, n: Vector) -> f64 {
+//   fn g1(&self, x: Vector, h: Vector, n: Vector) -> f32 {
 //     let a = self.alpha();
 //     let a2 = a * a;
 //     let x_dot_n = x.dot(n);
@@ -266,7 +266,7 @@ impl Material for LambertianMaterial {
 //   }
 
 //   // フレネル項
-//   fn fresnel(&self, i: Vector, h: Vector) -> f64 {
+//   fn fresnel(&self, i: Vector, h: Vector) -> f32 {
 //     // 垂直入射での反射量
 //     // 真空屈折率
 //     let eta_v = 1.0;
@@ -288,7 +288,7 @@ impl Material for LambertianMaterial {
 //     Vector::zero()
 //   }
 
-//   fn rr_weight(&self) -> f64 {
+//   fn rr_weight(&self) -> f32 {
 //     // 反射率のうち最大のものをつかう
 //     self.reflectance.x.max(self.reflectance.y).max(
 //       self.reflectance.z,
@@ -304,7 +304,7 @@ impl Material for LambertianMaterial {
 //     self.reflectance * fr
 //   }
 
-//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f64) {
+//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f32) {
 //     let normal = self.orienting_normal(in_ray.direction, i.normal);
 //     // 反射点での法線方向を基準にした正規直交基底を生成
 //     let w = normal;
@@ -345,7 +345,7 @@ impl Material for LambertianMaterial {
 //   // 反射率
 //   pub reflectance: Vector,
 //   // ラフネス
-//   pub roughness: f64,
+//   pub roughness: f32,
 // }
 
 // impl PhongMaterial {
@@ -358,7 +358,7 @@ impl Material for LambertianMaterial {
 //     }
 //   }
 
-//   pub fn alpha(&self) -> f64 {
+//   pub fn alpha(&self) -> f32 {
 //     self.roughness
 //   }
 // }
@@ -368,7 +368,7 @@ impl Material for LambertianMaterial {
 //     Vector::zero()
 //   }
 
-//   fn rr_weight(&self) -> f64 {
+//   fn rr_weight(&self) -> f32 {
 //     // 反射率のうち最大のものをつかう
 //     self.reflectance.x.max(self.reflectance.y).max(
 //       self.reflectance.z,
@@ -384,7 +384,7 @@ impl Material for LambertianMaterial {
 //     self.reflectance * ((a + 2.0) / (2.0 * PI) * cos.powf(a))
 //   }
 
-//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f64) {
+//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector, f32) {
 //     let normal = self.orienting_normal(in_ray.direction, i.normal);
 //     let a = self.alpha();
 //     // 反射点での法線方向を基準にした正規直交基底を生成
@@ -392,8 +392,8 @@ impl Material for LambertianMaterial {
 //     let (u, v) = normal.orthonormal_basis();
 //     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
 //     // (brdfの分布にしたがって重点的にサンプル)
-//     let r1 = 2.0 * PI * rand::random::<f64>();
-//     let r2 = rand::random::<f64>();
+//     let r1 = 2.0 * PI * rand::random::<f32>();
+//     let r2 = rand::random::<f32>();
 //     let t = r2.powf(2.0 / (a + 1.0));
 //     let ts = (1.0 - t).sqrt();
 
