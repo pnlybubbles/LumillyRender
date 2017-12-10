@@ -21,14 +21,14 @@ impl AABB {
 
   pub fn merge(list: &Vec<&AABB>) -> AABB {
     let min = Vector::new(
-      *list.iter().map(|v| OrderedFloat(v.max.x)).max().unwrap(),
-      *list.iter().map(|v| OrderedFloat(v.max.y)).max().unwrap(),
-      *list.iter().map(|v| OrderedFloat(v.max.z)).max().unwrap(),
-    );
-    let max = Vector::new(
       *list.iter().map(|v| OrderedFloat(v.min.x)).min().unwrap(),
       *list.iter().map(|v| OrderedFloat(v.min.y)).min().unwrap(),
       *list.iter().map(|v| OrderedFloat(v.min.z)).min().unwrap(),
+    );
+    let max = Vector::new(
+      *list.iter().map(|v| OrderedFloat(v.max.x)).max().unwrap(),
+      *list.iter().map(|v| OrderedFloat(v.max.y)).max().unwrap(),
+      *list.iter().map(|v| OrderedFloat(v.max.z)).max().unwrap(),
     );
     AABB {
       min: min,
