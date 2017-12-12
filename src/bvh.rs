@@ -80,7 +80,7 @@ impl BVH {
   fn construct(list: &mut [Arc<Leaf>], depth: usize) -> Arc<Shape + Sync + Send> {
     // セットアップ
     let len = list.len();
-    let partition_count = 2usize;
+    let partition_count = 4usize;
     let size = (len as f32 / partition_count as f32).ceil() as usize;
     // 要素が1つのときは葉
     if len == 1 {
@@ -99,7 +99,7 @@ impl BVH {
     // 再帰的に子要素を生成
     let children = (0..partition_count).flat_map( |p| {
       let start = size * p;
-      let end = if p == partition_count - 1 { len } else { size * (p + 1) };
+      let end = if size * (p + 1) > len { len } else { size * (p + 1) };
       if start >= len {
         None
       } else {
