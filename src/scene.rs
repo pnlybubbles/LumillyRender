@@ -13,26 +13,27 @@ pub struct Scene {
   pub depth: usize,
   pub depth_limit: usize,
   pub sky: Box<Sky + Send + Sync>,
+  pub no_direct_emitter: bool,
 }
 
 impl Scene {
-  pub fn radiance(&self, ray: &Ray, depth: usize, no_direct_emitter: bool) -> Vector3 {
+  pub fn radiance(&self, ray: &Ray, depth: usize) -> Vector3 {
     // すべてのオブジェクトと当たり判定を行う
     let maybe_intersect = self.objects.intersect(&ray);
     // 当たらなかった場合は背景色を返す
     match maybe_intersect {
       None => self.sky.radiance(&ray),
-      Some(i) => self.intersect_radiance(i, &ray, depth, no_direct_emitter),
+      Some(i) => self.intersect_radiance(&i, &ray, depth),
     }
   }
   
-  pub fn radiance_nee(&self, ray: &Ray, depth: usize, no_emission: bool, no_direct_emitter: bool) -> Vector3 {
+  pub fn radiance_nee(&self, ray: &Ray, depth: usize, no_emission: bool) -> Vector3 {
     // すべてのオブジェクトと当たり判定を行う
     let maybe_intersect = self.objects.intersect(&ray);
     // 当たらなかった場合は背景色を返す
     match maybe_intersect {
       None => self.sky.radiance(&ray),
-      Some(i) => self.intersect_radiance_nee(i, &ray, depth, no_emission, no_direct_emitter),
+      Some(i) => self.intersect_radiance_nee(&i, &ray, depth, no_emission),
     }
   }
 
@@ -44,14 +45,6 @@ impl Scene {
     }
   }
 
-  pub fn shade(&self, ray: &Ray, light: Vector3) -> Vector3 {
-    let maybe_intersect = self.objects.intersect(&ray);
-    match maybe_intersect {
-      None => Vector3::zero(),
-      Some(i) => (i.normal.dot(light) / 2.0 + 0.5) * i.material.color() + i.material.emission(),
-    }
-  }
-
   pub fn depth(&self, ray: &Ray) -> f32 {
     let maybe_intersect = self.objects.intersect(&ray);
     match maybe_intersect {
@@ -60,15 +53,9 @@ impl Scene {
     }
   }
 
-  fn intersect_radiance(&self, i: Intersection, ray: &Ray, depth: usize, no_direct_emitter: bool) -> Vector3 {
-    // 放射
-    let l_e = if !no_direct_emitter && (-ray.direction).dot(i.normal) > 0.0 {
-      i.material.emission()
-    } else {
-      Vector3::zero()
-    };
+  fn russian_roulette(&self, init: f32, depth: usize) -> f32 {
     // 再帰抑制用のロシアンルーレットの確率を決定する
-    let mut continue_rr_prob = i.material.rr_weight();
+    let mut continue_rr_prob = init;
     // スタックオーバーフロー対策のために反射回数の限界値を超えたら極端に確率を下げる
     if depth > self.depth_limit {
       continue_rr_prob *= (0.5f32).powi((depth - self.depth_limit) as i32);
@@ -77,45 +64,34 @@ impl Scene {
     if depth <= self.depth && continue_rr_prob > 0.0 {
       continue_rr_prob = 1.0;
     }
-    // ロシアンルーレットで再帰を抑制
-    if continue_rr_prob != 1.0 && rand::random::<f32>() >= continue_rr_prob {
-      return l_e;
-    }
-    // レンダリング方程式にしたがって放射輝度を計算する
-    // マテリアル
-    // 新しいRayのサンプリング
-    let (sample_ray, brdf, cos_term) = i.material.sample(&ray, &i);
-    // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (再帰抑制用)
-    // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
-    let l_i = self.radiance(&sample_ray.value, depth + 1, false);
-    let pdf = sample_ray.pdf;
-    return l_e + (brdf * l_i * cos_term / pdf) / continue_rr_prob;
-    // return i.normal / 2.0 + Vector3::new(0.5, 0.5, 0.5);
+    continue_rr_prob
   }
 
-  fn intersect_radiance_nee(&self, i: Intersection, ray: &Ray, depth: usize, no_emission: bool, no_direct_emitter: bool) -> Vector3 {
-    // 放射
-    let l_e = if !no_direct_emitter && !no_emission && (-ray.direction).dot(i.normal) > 0.0 {
-      i.material.emission()
-    } else {
-      Vector3::zero()
+  fn material_interaction_radiance<F>(&self, i: &Intersection, ray: &Ray, f: F) -> Vector3
+    where F: Fn(Ray) -> Vector3
+  {
+    let in_ = ray.direction;
+    let normal = i.material.orienting_normal(in_, i.normal);
+    // BRDFに応じたサンプリング
+    let sample = i.material.sample(in_, normal);
+    let out_ = sample.value;
+    let pdf = sample.pdf;
+    // BRDF
+    let brdf = i.material.brdf(in_, out_, normal);
+    // コサイン項
+    let cos = out_.dot(normal);
+    let new_ray = Ray {
+      direction: out_,
+      origin: i.position,
     };
-    // 再帰抑制用のロシアンルーレットの確率を決定する
-    let mut continue_rr_prob = i.material.rr_weight();
-    // スタックオーバーフロー対策のために反射回数の限界値を超えたら極端に確率を下げる
-    if depth > self.depth_limit {
-      continue_rr_prob *= (0.5f32).powi((depth - self.depth_limit) as i32);
-    }
-    // 最初の数回の反射では必ず次のパスをトレースするようにする
-    if depth <= self.depth && continue_rr_prob > 0.0 {
-      continue_rr_prob = 1.0;
-    }
-    // ロシアンルーレットで再帰を抑制
-    if continue_rr_prob != 1.0 && rand::random::<f32>() >= continue_rr_prob {
-      return l_e;
-    }
-    // 直接光をサンプリング
-    let direct_radiance = if i.material.emission().sqr_norm() == 0.0 && self.objects.has_emission() {
+    // 再帰的にレイを追跡
+    let l_i = f(new_ray);
+    // レンダリング方程式にしたがって放射輝度を計算する
+    brdf * l_i * cos / pdf
+  }
+
+  fn direct_light_radiance(&self, i: &Intersection, ray: &Ray) -> Vector3 {
+    if i.material.emission().sqr_norm() == 0.0 && self.objects.has_emission() {
       // 光源上から1点をサンプリング (確率密度は面積測度)
       let direct_sample = self.objects.sample_emission();
       // 交差した座標と光源上の1点のパスを接続
@@ -151,16 +127,48 @@ impl Scene {
       }
     } else {
       Vector3::zero()
+    }
+  }
+
+  fn intersect_radiance(&self, i: &Intersection, ray: &Ray, depth: usize) -> Vector3 {
+    // 放射
+    let l_e = if !(self.no_direct_emitter && depth == 0) && (-ray.direction).dot(i.normal) > 0.0 {
+      i.material.emission()
+    } else {
+      Vector3::zero()
     };
-    // レンダリング方程式にしたがって放射輝度を計算する
-    // マテリアル
-    // 新しいRayのサンプリング
-    let (sample_ray, brdf, cos_term) = i.material.sample(&ray, &i);
+    // ロシアンルーレットで再帰を抑制
+    let continue_rr_prob = self.russian_roulette(i.material.weight(), depth);
+    if continue_rr_prob != 1.0 && rand::random::<f32>() >= continue_rr_prob {
+      return l_e;
+    }
+    // マテリアルに応じたサンプリングによる寄与
+    let material_radiance = self.material_interaction_radiance(&i, &ray, |new_ray| {
+      self.radiance(&new_ray, depth + 1)
+    });
     // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (再帰抑制用)
-    // L_e + BRDF * L_i * cosθ / (PDF * RR_prob)
-    let l_i = self.radiance_nee(&sample_ray.value, depth + 1, true, false);
-    let pdf = sample_ray.pdf;
-    return l_e + (direct_radiance + brdf * l_i * cos_term / pdf) / continue_rr_prob;
-    // return i.normal / 2.0 + Vector3::new(0.5, 0.5, 0.5);
+    return l_e + material_radiance / continue_rr_prob;
+  }
+
+  fn intersect_radiance_nee(&self, i: &Intersection, ray: &Ray, depth: usize, no_emission: bool) -> Vector3 {
+    // 放射
+    let l_e = if !(self.no_direct_emitter && depth == 0) && !no_emission && (-ray.direction).dot(i.normal) > 0.0 {
+      i.material.emission()
+    } else {
+      Vector3::zero()
+    };
+    // ロシアンルーレットで再帰を抑制
+    let continue_rr_prob = self.russian_roulette(i.material.weight(), depth);
+    if continue_rr_prob != 1.0 && rand::random::<f32>() >= continue_rr_prob {
+      return l_e;
+    }
+    // 直接光のサンプリングによる寄与
+    let direct_light_radiance = self.direct_light_radiance(&i, &ray);
+    // マテリアルに応じたサンプリングによる寄与
+    let material_radiance = self.material_interaction_radiance(&i, &ray, |new_ray| {
+      self.radiance_nee(&new_ray, depth + 1, true)
+    });
+    // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (再帰抑制用)
+    return l_e + (direct_light_radiance + material_radiance) / continue_rr_prob;
   }
 }

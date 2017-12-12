@@ -1,22 +1,21 @@
 extern crate rand;
 
 use math::vector::*;
-use ray::Ray;
 use sample::Sample;
 use constant::*;
-use intersection::Intersection;
 use util::*;
 
 pub trait Material {
-  fn color(&self) -> Vector3;
   // 物体自体の放射成分
   fn emission(&self) -> Vector3;
-  // 入射ベクトル, 出射ベクトル, 法線ベクトル
+  // 入射ベクトル, 物体法線ベクトル -> 法線ベクトル
+  fn orienting_normal(&self, Vector3, Vector3) -> Vector3;
+  // 入射ベクトル, 出射ベクトル, 法線ベクトル -> BRDF
   fn brdf(&self, Vector3, Vector3, Vector3) -> Vector3;
-  // -> サンプルしたレイ, brdfの値, cos項
-  fn sample(&self, &Ray, &Intersection) -> (Sample<Ray>, Vector3, f32);
+  // 入射ベクトル, 法線ベクトル -> 出射ベクトル, 確率密度
+  fn sample(&self, Vector3, Vector3) -> Sample<Vector3>;
   // 再帰継続用ロシアンルーレットの重み
-  fn rr_weight(&self) -> f32;
+  fn weight(&self) -> f32;
 }
 
 #[derive(Clone)]
@@ -26,27 +25,21 @@ pub struct LambertianMaterial {
   pub albedo: Vector3,
 }
 
-impl LambertianMaterial {
-  pub fn orienting_normal(&self, in_: Vector3, normal: Vector3) -> Vector3 {
-    // 物体の内外を考慮した法線方向から拡散反射面としての法線方向を求める
-    if normal.dot(in_) > 0.0 {
-      normal * -1.0
-    } else {
-      normal
-    }
-  }
-}
-
 impl Material for LambertianMaterial {
-  fn color(&self) -> Vector3 {
-    self.albedo
+  fn orienting_normal(&self, in_: Vector3, surface_normal: Vector3) -> Vector3 {
+    // 物体の内外を考慮した法線方向から拡散反射面としての法線方向を求める
+    if surface_normal.dot(in_) > 0.0 {
+      surface_normal * -1.0
+    } else {
+      surface_normal
+    }
   }
 
   fn emission(&self) -> Vector3 {
     self.emission
   }
 
-  fn rr_weight(&self) -> f32 {
+  fn weight(&self) -> f32 {
     // 拡散反射の時は各色の反射率のうち最大のものを使う
     self.albedo.x.max(self.albedo.y).max(self.albedo.z)
   }
@@ -56,35 +49,23 @@ impl Material for LambertianMaterial {
     self.albedo / PI
   }
 
-  fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3, f32) {
-    // 拡散反射
-    let normal = self.orienting_normal(in_ray.direction, i.normal);
+  fn sample(&self, _: Vector3, normal: Vector3) -> Sample<Vector3> {
     // 反射点での法線方向を基準にした正規直交基底を生成
     let w = normal;
     let (u, v) = normal.orthonormal_basis();
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     // (cosにしたがって重点的にサンプル)
     let sample = Sampler::hemisphere_cos_importance();
-    let d = u * sample.x + v * sample.y + w * sample.z;
-    // 新しいレイを作る
-    let new_ray = Ray {
-      direction: d,
-      origin: i.position,
-    };
+    let out_ = u * sample.x + v * sample.y + w * sample.z;
     // cos項
-    let cos_term = d.dot(normal);
+    let cos_term = out_.dot(normal);
     // 確率密度関数
     // (cosにしたがって重点的にサンプル) cosθ / π
     let pdf = cos_term / PI;
-    let brdf = i.material.brdf(in_ray.direction, new_ray.direction, normal);
-    (
-      Sample {
-        value: new_ray,
-        pdf: pdf,
-      },
-      brdf,
-      cos_term,
-    )
+    Sample {
+      value: out_,
+      pdf: pdf,
+    }
   }
 }
 

@@ -48,7 +48,8 @@ pub fn scene() -> Scene {
   let models = vec![
     Path::new("models/simple/cbox.obj"),
     Path::new("models/simple/cbox_luminaire.obj"),
-    Path::new("models/happy_vrip/cbox_happy_vrip.obj"),
+    Path::new("models/simple/cbox_largebox.obj"),
+    Path::new("models/simple/cbox_smallbox.obj"),
   ];
   let instances = models.iter().flat_map( |path| obj(path, white_mat.clone()) ).collect::<Vec<_>>();
   let sky = box UniformSky { emission: Vector3::zero() };
@@ -64,6 +65,7 @@ pub fn scene() -> Scene {
     depth_limit: 64,
     sky: sky,
     objects: objects,
+    no_direct_emitter: false,
   }
 }
 
