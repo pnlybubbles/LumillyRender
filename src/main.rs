@@ -29,7 +29,7 @@ mod bvh;
 use threadpool::ThreadPool;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use constant::*;
-use img::Img;
+use img::*;
 use math::vector::*;
 use std::path::Path;
 use std::sync::Arc;
@@ -98,12 +98,12 @@ fn main() {
 
 fn save(output: &Img<Vector3>, spp: usize) {
   let file_path = &format!(
-    "images/image_{}_{}.png",
+    "images/image_{}_{}.hdr",
     time::now().strftime("%Y%m%d%H%M%S").unwrap(),
     spp
   );
-  output.save(&Path::new(file_path), |pixel| {
-    [to_color(pixel.x), to_color(pixel.y), to_color(pixel.z)]
+  output.save_hdr(&Path::new(file_path), |pixel| {
+    [pixel.x, pixel.y, pixel.z]
   });
 }
 

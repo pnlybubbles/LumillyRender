@@ -2,10 +2,6 @@ extern crate image;
 
 use std::fs::File;
 use std::path::Path;
-// use std::io::prelude::*;
-// use std::io;
-
-pub type Color = [f32; 3];
 
 pub struct Img<T> {
   data: Vec<Vec<T>>,
@@ -41,7 +37,19 @@ impl<T: Copy> Img<T> {
     }
   }
 
-  pub fn save<F>(&self, path: &Path, f: F)
+  pub fn save_hdr<F>(&self, path: &Path, f: F)
+  where
+    F: Fn(T) -> [f32; 3],
+  {
+    let buf = self.data.iter().flat_map( |row|
+      row.iter().map( |cell| image::Rgb(f(*cell)) )
+    ).collect::<Vec<_>>();
+    let ref mut file = File::create(path).unwrap();
+    let encoder = image::hdr::HDREncoder::new(file);
+    encoder.encode(&buf, self.width, self.height).unwrap();
+  }
+
+  pub fn save_png<F>(&self, path: &Path, f: F)
   where
     F: Fn(T) -> [u8; 3],
   {
@@ -50,7 +58,7 @@ impl<T: Copy> Img<T> {
       let output_pixel = self.get(x as usize, y as usize);
       *pixel = image::Rgb(f(output_pixel));
     }
-    let ref mut f = File::create(path).unwrap();
-    image::ImageRgb8(buf).save(f, image::PNG).unwrap();
+    let ref mut file = File::create(path).unwrap();
+    image::ImageRgb8(buf).save(file, image::PNG).unwrap();
   }
 }

@@ -6,7 +6,6 @@ use camera::*;
 use math::vector::*;
 use material::*;
 use scene::Scene;
-use sphere::Sphere;
 use shape::SurfaceShape;
 use triangle::Triangle;
 use objects::Objects;
@@ -18,6 +17,8 @@ pub fn camera(width: usize, height: usize) -> Box<Camera + Send + Sync> {
   let h = height as f32;
   let pos = Vector3::new(278.0, 273.0, -800.0);
   let dir = Vector3::new(0.0, 0.0, 0.035);
+  // let pos = Vector3::new(0.0, 75.0, -500.0);
+  // let dir = Vector3::new(0.0, 0.0, 0.035);
   box IdealPinholeCamera::new(
     // sensor position
     pos - dir,
@@ -35,21 +36,9 @@ pub fn scene() -> Scene {
     albedo: Vector3::new(1.0, 1.0, 1.0),
     emission: Vector3::zero(),
   });
-  let light_mat = Arc::new(LambertianMaterial {
-    albedo: Vector3::zero(),
-    emission: Vector3::new(20.0, 20.0, 20.0),
-  });
-  let mut instances: Vec<Arc<SurfaceShape + Send + Sync>> = Vec::new();
-  instances.push(Arc::new(Sphere::new(
-    Vector3::new(0.0, 100.0, 0.0),
-    20.0,
-    light_mat.clone(),
-  )));
   let models = vec![
     Path::new("models/simple/cbox.obj"),
     Path::new("models/simple/cbox_luminaire.obj"),
-    Path::new("models/simple/cbox_largebox.obj"),
-    Path::new("models/simple/cbox_smallbox.obj"),
   ];
   let instances = models.iter().flat_map( |path| obj(path, white_mat.clone()) ).collect::<Vec<_>>();
   let sky = box UniformSky { emission: Vector3::zero() };
@@ -65,7 +54,7 @@ pub fn scene() -> Scene {
     depth_limit: 64,
     sky: sky,
     objects: objects,
-    no_direct_emitter: false,
+    no_direct_emitter: true,
   }
 }
 

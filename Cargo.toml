@@ -4,13 +4,10 @@ name = "lumilly_render"
 version = "0.1.0"
 
 [dependencies]
+image = "0.18.0"
 num_cpus = "1.6.2"
 ordered-float = "0.5.0"
 rand = "0.3.15"
 threadpool = "1.7.1"
-time = "0.1"
+time = "0.1.38"
 tobj = "0.1.6"
-
-[dependencies.image]
-git = "https://github.com/PistonDevelopers/image.git"
-rev = "0e133ed6b6c10bd40c5309cc81db363c905bf702"
