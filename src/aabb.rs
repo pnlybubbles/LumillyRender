@@ -45,8 +45,13 @@ impl AABB {
     for i in 0..3 {
       let t1 = (self.min[i] - ray.origin[i]) / ray.direction[i];
       let t2 = (self.max[i] - ray.origin[i]) / ray.direction[i];
-      min = min.max(t1.min(t2));
-      max = max.min(t1.max(t2));
+      let (t_min, t_max) = if t1 > t2 { (t2, t1) } else { (t1, t2) };
+      if min < t_min {
+        min = t_min
+      }
+      if max > t_max {
+        max = t_max
+      }
       if min > max { return false }
     }
     true
