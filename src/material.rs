@@ -5,20 +5,22 @@ use sample::Sample;
 use constant::*;
 use util::*;
 
+// (ω_o) 出射ベクトル(視線ベクトル)
+// (ω_i) 入射ベクトル(光源ベクトル)
+
 pub trait Material {
   // 物体自体の放射成分
   fn emission(&self) -> Vector3;
-  // 入射ベクトル, 物体法線ベクトル -> 法線ベクトル
+  // 出射ベクトル, 物体法線ベクトル -> 法線ベクトル
   fn orienting_normal(&self, Vector3, Vector3) -> Vector3;
-  // 入射ベクトル, 出射ベクトル, 法線ベクトル -> BRDF
+  // 出射ベクトル, 入射ベクトル, 法線ベクトル -> BRDF
   fn brdf(&self, Vector3, Vector3, Vector3) -> Vector3;
-  // 入射ベクトル, 法線ベクトル -> 出射ベクトル, 確率密度
+  // 出射ベクトル, 法線ベクトル -> 入射ベクトル, 確率密度
   fn sample(&self, Vector3, Vector3) -> Sample<Vector3>;
   // 再帰継続用ロシアンルーレットの重み
   fn weight(&self) -> f32;
 }
 
-#[derive(Clone)]
 pub struct LambertianMaterial {
   pub emission: Vector3,
   // 拡散反射率
@@ -26,12 +28,12 @@ pub struct LambertianMaterial {
 }
 
 impl Material for LambertianMaterial {
-  fn orienting_normal(&self, in_: Vector3, surface_normal: Vector3) -> Vector3 {
+  fn orienting_normal(&self, out_: Vector3, normal: Vector3) -> Vector3 {
     // 物体の内外を考慮した法線方向から拡散反射面としての法線方向を求める
-    if surface_normal.dot(in_) > 0.0 {
-      surface_normal * -1.0
+    if normal.dot(out_) < 0.0 {
+      normal * -1.0
     } else {
-      surface_normal
+     normal 
     }
   }
 
@@ -44,32 +46,31 @@ impl Material for LambertianMaterial {
     self.albedo.x.max(self.albedo.y).max(self.albedo.z)
   }
 
-  fn brdf(&self, _: Vector3, _: Vector3, _: Vector3) -> Vector3 {
+  fn brdf(&self, _out_: Vector3, _in_: Vector3, _n_: Vector3) -> Vector3 {
     // BRDFは半球全体に一様に散乱するDiffuse面を考えると ρ / π
     self.albedo / PI
   }
 
-  fn sample(&self, _: Vector3, normal: Vector3) -> Sample<Vector3> {
+  fn sample(&self, _out_: Vector3, n: Vector3) -> Sample<Vector3> {
     // 反射点での法線方向を基準にした正規直交基底を生成
-    let w = normal;
-    let (u, v) = normal.orthonormal_basis();
+    let w = n;
+    let (u, v) = w.orthonormal_basis();
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     // (cosにしたがって重点的にサンプル)
     let sample = Sampler::hemisphere_cos_importance();
-    let out_ = u * sample.x + v * sample.y + w * sample.z;
+    let in_ = u * sample.x + v * sample.y + w * sample.z;
     // cos項
-    let cos_term = out_.dot(normal);
+    let cos_term = in_.dot(n);
     // 確率密度関数
     // (cosにしたがって重点的にサンプル) cosθ / π
     let pdf = cos_term / PI;
     Sample {
-      value: out_,
+      value: in_,
       pdf: pdf,
     }
   }
 }
 
-// #[derive(Clone)]
 // pub struct IdealRefractionMaterial {
 //   pub emission: Vector3,
 //   // スペキュラー反射率
@@ -321,85 +322,62 @@ impl Material for LambertianMaterial {
 //   }
 // }
 
-// #[derive(Clone)]
-// pub struct PhongMaterial {
-//   // 反射率
-//   pub reflectance: Vector3,
-//   // ラフネス
-//   pub roughness: f32,
-// }
+pub struct PhongMaterial {
+  // 反射率
+  pub reflectance: Vector3,
+  // ラフネス
+  pub roughness: f32,
+}
 
-// impl PhongMaterial {
-//   pub fn orienting_normal(&self, in_: Vector3, normal: Vector3) -> Vector3 {
-//     // 物体の内外を考慮した法線方向から拡散反射面としての法線方向を求める
-//     if normal.dot(in_) > 0.0 {
-//       normal * -1.0
-//     } else {
-//       normal
-//     }
-//   }
+impl Material for PhongMaterial {
+  fn orienting_normal(&self, out_: Vector3, normal: Vector3) -> Vector3 {
+    // 物体の内外を考慮した法線方向から拡散反射面としての法線方向を求める
+    if normal.dot(out_) < 0.0 {
+      normal * -1.0
+    } else {
+      normal
+    }
+  }
 
-//   pub fn alpha(&self) -> f32 {
-//     self.roughness
-//   }
-// }
+  fn emission(&self) -> Vector3 {
+    Vector3::zero()
+  }
 
-// impl Material for PhongMaterial {
-//   fn emission(&self) -> Vector3 {
-//     Vector3::zero()
-//   }
+  fn weight(&self) -> f32 {
+    // 反射率のうち最大のものをつかう
+    self.reflectance.x.max(self.reflectance.y).max(
+      self.reflectance.z,
+    )
+  }
 
-//   fn rr_weight(&self) -> f32 {
-//     // 反射率のうち最大のものをつかう
-//     self.reflectance.x.max(self.reflectance.y).max(
-//       self.reflectance.z,
-//     )
-//   }
+  fn brdf(&self, out_: Vector3, in_: Vector3, n: Vector3) -> Vector3 {
+    if in_.dot(n) < 0.0 { return Vector3::zero() }
+    let r = in_.reflect(n);
+    let cos = r.dot(out_);
+    let a = self.roughness;
+    // modified phong
+    self.reflectance * ((a + 2.0) / (2.0 * PI) * cos.powf(a))
+  }
 
-//   fn brdf(&self, v_i: Vector3, l: Vector3, n: Vector3) -> Vector3 {
-//     let v = -v_i;
-//     let r = v.reflect(n);
-//     let cos = r.dot(l);
-//     let a = self.alpha();
-//     // modified phong
-//     self.reflectance * ((a + 2.0) / (2.0 * PI) * cos.powf(a))
-//   }
-
-//   fn sample(&self, in_ray: &Ray, i: &Intersection) -> (Sample<Ray>, Vector3, f32) {
-//     let normal = self.orienting_normal(in_ray.direction, i.normal);
-//     let a = self.alpha();
-//     // 反射点での法線方向を基準にした正規直交基底を生成
-//     let w = normal;
-//     let (u, v) = normal.orthonormal_basis();
-//     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
-//     // (brdfの分布にしたがって重点的にサンプル)
-//     let r1 = 2.0 * PI * rand::random::<f32>();
-//     let r2 = rand::random::<f32>();
-//     let t = r2.powf(2.0 / (a + 1.0));
-//     let ts = (1.0 - t).sqrt();
-
-//     let d = u * r1.cos() * ts + v * r1.sin() * ts + w * t.sqrt();
-//     // 新しいレイを作る
-//     let new_ray = Ray {
-//       direction: d,
-//       origin: i.position,
-//     };
-//     // cos項
-//     let cos_term = d.dot(normal);
-//     // 確率密度関数
-//     // (brdfの分布にしたがって重点的にサンプル)
-//     let v = -in_ray.direction;
-//     let r = v.reflect(normal);
-//     let cos = r.dot(new_ray.direction);
-//     let pdf = (a + 2.0) / (2.0 * PI) * cos.powf(a);
-//     let brdf = i.material.brdf(in_ray.direction, new_ray.direction, normal);
-//     (
-//       Sample {
-//         value: new_ray,
-//         pdf: pdf,
-//       },
-//       brdf,
-//       cos_term,
-//     )
-//   }
-// }
+  fn sample(&self, out_: Vector3, n: Vector3) -> Sample<Vector3> {
+    let a = self.roughness;
+    let reflect = out_.reflect(n);
+    // 鏡面反射方向を基準にした正規直交基底を生成
+    let w = reflect;
+    let (u, v) = w.orthonormal_basis();
+    // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
+    // (brdfの分布にしたがって重点的にサンプル)
+    let r1 = 2.0 * PI * rand::random::<f32>();
+    let r2 = rand::random::<f32>();
+    let t = r2.powf(1.0 / (a + 2.0));
+    let ts = (1.0 - t * t).sqrt();
+    let in_ = u * r1.cos() * ts + v * r1.sin() * ts + w * t;
+    let cos = in_.dot(reflect);
+    // 確率密度関数
+    let pdf = (a + 2.0) / (2.0 * PI) * cos.powf(a);
+    Sample {
+      value: in_,
+      pdf: pdf,
+    }
+  }
+}

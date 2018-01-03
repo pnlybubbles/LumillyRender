@@ -70,18 +70,18 @@ impl Scene {
   fn material_interaction_radiance<F>(&self, i: &Intersection, ray: &Ray, f: F) -> Vector3
     where F: Fn(Ray) -> Vector3
   {
-    let in_ = ray.direction;
-    let normal = i.material.orienting_normal(in_, i.normal);
+    let out_ = -ray.direction;
+    let normal = i.material.orienting_normal(out_, i.normal);
     // BRDFに応じたサンプリング
-    let sample = i.material.sample(in_, normal);
-    let out_ = sample.value;
+    let sample = i.material.sample(out_, normal);
+    let in_ = sample.value;
     let pdf = sample.pdf;
     // BRDF
-    let brdf = i.material.brdf(in_, out_, normal);
+    let brdf = i.material.brdf(out_, in_, normal);
     // コサイン項
-    let cos = out_.dot(normal);
+    let cos = in_.dot(normal);
     let new_ray = Ray {
-      direction: out_,
+      direction: in_,
       origin: i.position,
     };
     // 再帰的にレイを追跡
@@ -105,13 +105,18 @@ impl Scene {
       match self.objects.intersect(&direct_ray) {
         Some(direct_i) => {
           if (direct_i.distance - direct_path.norm()).abs() < EPS {
-            let cos_emission = (-direct_ray.direction).dot(direct_i.normal);
-            if cos_emission > 0.0 {
+            let light_out = -direct_ray.direction;
+            let light_normal = direct_i.normal;
+            let light_cos = light_out.dot(light_normal);
+            if light_cos > 0.0 {
+              let point_normal = i.normal;
+              let point_in = direct_ray.direction;
+              let point_out = -ray.direction;
               // 光源は表面のみ寄与あり
-              let cos_surface = direct_ray.direction.dot(i.normal);
+              let point_cos = point_in.dot(point_normal);
               // ジオメトリターム (測度の変換)
-              let g_term = cos_surface * cos_emission / direct_path.sqr_norm();
-              let brdf = i.material.brdf(ray.direction, direct_ray.direction, i.normal);
+              let g_term = point_cos * light_cos / direct_path.sqr_norm();
+              let brdf = i.material.brdf(point_out, point_in, point_normal);
               let l_i = direct_i.material.emission();
               let pdf = direct_sample.pdf;
               brdf * l_i * g_term / pdf

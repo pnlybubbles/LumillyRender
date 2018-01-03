@@ -27,7 +27,7 @@ pub trait BoundaryResponse {
 
 impl BoundaryResponse for Vector3 {
   fn reflect(&self, normal: Vector3) -> Vector3 {
-    *self + normal * ((-*self).dot(normal) * 2.0)
+    -*self + normal * ((*self).dot(normal) * 2.0)
   }
 }
 
