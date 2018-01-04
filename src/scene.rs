@@ -17,7 +17,11 @@ pub struct Scene {
 }
 
 impl Scene {
-  pub fn radiance(&self, ray: &Ray, depth: usize) -> Vector3 {
+  pub fn radiance(&self, ray: &Ray) -> Vector3 {
+    self.radiance_recursive(ray, 0)
+  }
+
+  fn radiance_recursive(&self, ray: &Ray, depth: usize) -> Vector3 {
     // すべてのオブジェクトと当たり判定を行う
     let maybe_intersect = self.objects.intersect(&ray);
     // 当たらなかった場合は背景色を返す
@@ -26,8 +30,12 @@ impl Scene {
       Some(i) => self.intersect_radiance(&i, &ray, depth),
     }
   }
+
+  pub fn radiance_nee(&self, ray: &Ray) -> Vector3 {
+    self.radiance_nee_recursive(ray, 0, false)
+  }
   
-  pub fn radiance_nee(&self, ray: &Ray, depth: usize, no_emission: bool) -> Vector3 {
+  fn radiance_nee_recursive(&self, ray: &Ray, depth: usize, no_emission: bool) -> Vector3 {
     // すべてのオブジェクトと当たり判定を行う
     let maybe_intersect = self.objects.intersect(&ray);
     // 当たらなかった場合は背景色を返す
@@ -149,7 +157,7 @@ impl Scene {
     }
     // マテリアルに応じたサンプリングによる寄与
     let material_radiance = self.material_interaction_radiance(&i, &ray, |new_ray| {
-      self.radiance(&new_ray, depth + 1)
+      self.radiance_recursive(&new_ray, depth + 1)
     });
     // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (再帰抑制用)
     return l_e + material_radiance / continue_rr_prob;
@@ -171,7 +179,7 @@ impl Scene {
     let direct_light_radiance = self.direct_light_radiance(&i, &ray);
     // マテリアルに応じたサンプリングによる寄与
     let material_radiance = self.material_interaction_radiance(&i, &ray, |new_ray| {
-      self.radiance_nee(&new_ray, depth + 1, true)
+      self.radiance_nee_recursive(&new_ray, depth + 1, true)
     });
     // ロシアンルーレットを用いた評価で期待値を満たすために確率で割る (再帰抑制用)
     return l_e + (direct_light_radiance + material_radiance) / continue_rr_prob;

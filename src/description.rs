@@ -8,7 +8,7 @@ use material::*;
 use scene::Scene;
 use shape::SurfaceShape;
 use triangle::Triangle;
-use sphere::Sphere;
+// use sphere::Sphere;
 use objects::Objects;
 use std::path::Path;
 use sky::*;
@@ -38,23 +38,27 @@ pub fn scene() -> Scene {
     emission: Vector3::zero(),
   });
   let models = vec![
-    // Path::new("models/simple/cbox.obj"),
-    // Path::new("models/simple/cbox_luminaire.obj"),
-    Path::new("models/simple/cbox_floor.obj"),
+    Path::new("models/simple/cbox.obj"),
+    Path::new("models/simple/cbox_luminaire.obj"),
+    // Path::new("models/simple/cbox_floor.obj"),
     // Path::new("models/simple/cbox_largebox.obj"),
     // Path::new("models/simple/cbox_smallbox.obj"),
   ];
   let mut instances = models.iter().flat_map( |path|
-    obj(path, white_mat.clone())
+    obj(path, white_mat.clone(), false)
   ).collect::<Vec<_>>();
-  instances.push(Arc::new(Sphere::new(
-    Vector3::new(275.0, 150.0, 275.0),
-    150.0,
-    Arc::new(PhongMaterial {
-      reflectance: Vector3::new(1.0, 1.0, 1.0),
-      roughness: 100.0,
-    }),
-  )));
+  // instances.push(Arc::new(Sphere::new(
+  //   Vector3::new(165.0, 100.0, 275.0),
+  //   100.0,
+  //   Arc::new(PhongMaterial {
+  //     reflectance: Vector3::new(1.0, 1.0, 1.0),
+  //     roughness: 100.0,
+  //   }),
+  // )));
+  instances.append(&mut obj(Path::new("models/lucy/cbox_lucy.obj"), Arc::new(PhongMaterial {
+    reflectance: Vector3::new(1.0, 1.0, 1.0),
+    roughness: 20.0,
+  }), true));
   let sky = box IBLSky::new("ibl.hdr", 1500);
   let start_time = time::now();
   let objects = Objects::new(instances);
@@ -68,23 +72,20 @@ pub fn scene() -> Scene {
     depth_limit: 64,
     sky: sky,
     objects: objects,
-    no_direct_emitter: true,
+    no_direct_emitter: false,
   }
 }
 
-fn obj(path: &Path, default_material: Arc<Material + Sync + Send>) -> Vec<Arc<SurfaceShape + Sync + Send>> {
+fn obj(path: &Path, default_material: Arc<Material + Sync + Send>, force: bool) -> Vec<Arc<SurfaceShape + Sync + Send>> {
   let (models, materials) = tobj::load_obj(&path).unwrap();
   let material = materials.iter().map( |v|
-    if v.ambient.iter().sum::<f32>() > 0.0 {
+    if force {
+      default_material.clone()
+    } else {
       Arc::new(LambertianMaterial {
         emission: v.ambient[..].into(),
         albedo: v.diffuse[..].into(),
       }) as Arc<Material + Sync + Send>
-    } else {
-      Arc::new(PhongMaterial {
-        reflectance: v.diffuse[..].into(),
-        roughness: 100.0,
-      })
     }
   ).collect::<Vec<_>>();
   let mut instances: Vec<Arc<SurfaceShape + Sync + Send>> = Vec::with_capacity(
