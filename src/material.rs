@@ -361,9 +361,9 @@ impl Material for PhongMaterial {
 
   fn sample(&self, out_: Vector3, n: Vector3) -> Sample<Vector3> {
     let a = self.roughness;
-    let reflect = out_.reflect(n);
+    let r = out_.reflect(n);
     // 鏡面反射方向を基準にした正規直交基底を生成
-    let w = reflect;
+    let w = r;
     let (u, v) = w.orthonormal_basis();
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     // (brdfの分布にしたがって重点的にサンプル)
@@ -372,7 +372,7 @@ impl Material for PhongMaterial {
     let t = r2.powf(1.0 / (a + 2.0));
     let ts = (1.0 - t * t).sqrt();
     let in_ = u * r1.cos() * ts + v * r1.sin() * ts + w * t;
-    let cos = in_.dot(reflect);
+    let cos = r.dot(in_);
     // 確率密度関数
     let pdf = (a + 2.0) / (2.0 * PI) * cos.powf(a);
     Sample {
@@ -422,9 +422,8 @@ impl Material for BlinnPhongMaterial {
 
   fn sample(&self, out_: Vector3, n: Vector3) -> Sample<Vector3> {
     let a = self.roughness;
-    let reflect = out_.reflect(n);
-    // 鏡面反射方向を基準にした正規直交基底を生成
-    let w = reflect;
+    // 法線方向を基準にした正規直交基底を生成
+    let w = n;
     let (u, v) = w.orthonormal_basis();
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     // (brdfの分布にしたがって重点的にサンプル)
@@ -432,8 +431,11 @@ impl Material for BlinnPhongMaterial {
     let r2 = rand::random::<f32>();
     let t = r2.powf(1.0 / (a + 2.0));
     let ts = (1.0 - t * t).sqrt();
-    let in_ = u * r1.cos() * ts + v * r1.sin() * ts + w * t;
-    let cos = in_.dot(reflect);
+    // ハーフベクトルをサンプリング
+    let h = u * r1.cos() * ts + v * r1.sin() * ts + w * t;
+    // 入射ベクトル
+    let in_ = h * (2.0 * out_.dot(h)) - out_;
+    let cos = n.dot(h);
     // 確率密度関数
     let pdf = (a + 2.0) / (2.0 * PI) * cos.powf(a);
     Sample {

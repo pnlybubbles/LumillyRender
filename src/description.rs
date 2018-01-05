@@ -8,7 +8,7 @@ use material::*;
 use scene::Scene;
 use shape::SurfaceShape;
 use triangle::Triangle;
-// use sphere::Sphere;
+use sphere::Sphere;
 use objects::Objects;
 use std::path::Path;
 use sky::*;
@@ -47,18 +47,26 @@ pub fn scene() -> Scene {
   let mut instances = models.iter().flat_map( |path|
     obj(path, white_mat.clone(), false)
   ).collect::<Vec<_>>();
-  // instances.push(Arc::new(Sphere::new(
-  //   Vector3::new(165.0, 100.0, 275.0),
-  //   100.0,
-  //   Arc::new(PhongMaterial {
-  //     reflectance: Vector3::new(1.0, 1.0, 1.0),
-  //     roughness: 100.0,
-  //   }),
-  // )));
-  instances.append(&mut obj(Path::new("models/lucy/cbox_lucy.obj"), Arc::new(PhongMaterial {
-    reflectance: Vector3::new(1.0, 1.0, 1.0),
-    roughness: 20.0,
-  }), true));
+  instances.push(Arc::new(Sphere::new(
+    Vector3::new(165.0, 100.0, 275.0),
+    100.0,
+    Arc::new(PhongMaterial {
+      reflectance: Vector3::new(1.0, 1.0, 1.0),
+      roughness: 50.0,
+    }),
+  )));
+  instances.push(Arc::new(Sphere::new(
+    Vector3::new(385.0, 100.0, 275.0),
+    100.0,
+    Arc::new(BlinnPhongMaterial {
+      reflectance: Vector3::new(1.0, 1.0, 1.0),
+      roughness: 50.0,
+    }),
+  )));
+  // instances.append(&mut obj(Path::new("models/lucy/cbox_lucy.obj"), Arc::new(PhongMaterial {
+  //   reflectance: Vector3::new(1.0, 1.0, 1.0),
+  //   roughness: 20.0,
+  // }), true));
   let sky = box IBLSky::new("ibl.hdr", 1500);
   let start_time = time::now();
   let objects = Objects::new(instances);
