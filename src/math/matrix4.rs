@@ -6,6 +6,17 @@ pub struct Matrix4 {
 }
 
 impl Matrix4 {
+  pub fn unit() -> Matrix4 {
+    Matrix4 {
+      v: vec![
+        1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+      ]
+    }
+  }
+
   pub fn translate(v: Vector3) -> Matrix4 {
     Matrix4 {
       v: vec![
@@ -42,6 +53,20 @@ impl Matrix4 {
     }
   }
 
+  pub fn look_at(origin: Vector3, target: Vector3, up: Vector3) -> Matrix4 {
+    let za = (origin - target).normalize();
+    let xa = up.cross(za).normalize();
+    let ya = za.cross(xa);
+    Matrix4 {
+      v: vec![
+        xa.x, xa.y, xa.z, 0.0,
+        ya.x, ya.y, ya.z, 0.0,
+        za.x, za.y, za.z, 0.0,
+        origin.x, origin.y, origin.z, 1.0,
+      ]
+    }
+  }
+
   pub fn col(&self, x: usize) -> Vector4 {
     (0..4).map( |i| self.v[x + i * 4]).collect::<Vec<_>>().into()
   }
@@ -61,12 +86,32 @@ impl Neg for Matrix4 {
   }
 }
 
+impl<'a> Neg for &'a Matrix4 {
+  type Output = Matrix4;
+
+  fn neg(self) -> Matrix4 {
+    Matrix4 {
+      v: self.v.iter().map( |v| -v ).collect()
+    }
+  }
+}
+
 impl Add for Matrix4 {
   type Output = Matrix4;
 
   fn add(self, rhs: Matrix4) -> Matrix4 {
     Matrix4 {
       v: self.v.iter().zip(rhs.v).map( |(v1, v2)| v1 + v2 ).collect()
+    }
+  }
+}
+
+impl<'a> Add for &'a Matrix4 {
+  type Output = Matrix4;
+
+  fn add(self, rhs: &'a Matrix4) -> Matrix4 {
+    Matrix4 {
+      v: self.v.iter().zip(&rhs.v).map( |(v1, v2)| v1 + v2 ).collect()
     }
   }
 }
@@ -81,7 +126,27 @@ impl Sub for Matrix4 {
   }
 }
 
+impl<'a> Sub for &'a Matrix4 {
+  type Output = Matrix4;
+
+  fn sub(self, rhs: &'a Matrix4) -> Matrix4 {
+    Matrix4 {
+      v: self.v.iter().zip(&rhs.v).map( |(v1, v2)| v1 - v2 ).collect()
+    }
+  }
+}
+
 impl Mul<f32> for Matrix4 {
+  type Output = Matrix4;
+
+  fn mul(self, rhs: f32) -> Matrix4 {
+    Matrix4 {
+      v: self.v.iter().map( |v| v * rhs ).collect()
+    }
+  }
+}
+
+impl<'a> Mul<f32> for &'a Matrix4 {
   type Output = Matrix4;
 
   fn mul(self, rhs: f32) -> Matrix4 {
@@ -109,7 +174,23 @@ impl Mul<Vector4> for Matrix4 {
   }
 }
 
+impl<'a> Mul<Vector4> for &'a Matrix4 {
+  type Output = Vector4;
+
+  fn mul(self, rhs: Vector4) -> Vector4 {
+    (0..4).map( |i| self.row(i).dot(rhs) ).collect::<Vec<_>>().into()
+  }
+}
+
 impl Mul<Vector3> for Matrix4 {
+  type Output = Vector3;
+
+  fn mul(self, rhs: Vector3) -> Vector3 {
+    (0..4).map( |i| self.row(i).dot(rhs.into()) ).collect::<Vec<_>>().into()
+  }
+}
+
+impl<'a> Mul<Vector3> for &'a Matrix4 {
   type Output = Vector3;
 
   fn mul(self, rhs: Vector3) -> Vector3 {
@@ -121,6 +202,18 @@ impl Mul for Matrix4 {
   type Output = Matrix4;
 
   fn mul(self, rhs: Matrix4) -> Matrix4 {
+    let r = (0..4).map( |i| self.row(i) ).collect::<Vec<_>>();
+    let c = (0..4).map( |i| rhs.col(i) ).collect::<Vec<_>>();
+    Matrix4 {
+      v: (0..4).flat_map( |y| (0..4).map( |x| r[y].dot(c[x]) ).collect::<Vec<_>>() ).collect()
+    }
+  }
+}
+
+impl<'a> Mul for &'a Matrix4 {
+  type Output = Matrix4;
+
+  fn mul(self, rhs: &'a Matrix4) -> Matrix4 {
     let r = (0..4).map( |i| self.row(i) ).collect::<Vec<_>>();
     let c = (0..4).map( |i| rhs.col(i) ).collect::<Vec<_>>();
     Matrix4 {

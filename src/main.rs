@@ -3,6 +3,10 @@
 #![feature(test)]
 #![allow(dead_code)]
 
+#[macro_use]
+extern crate serde_derive;
+extern crate toml;
+
 extern crate time;
 extern crate threadpool;
 extern crate num_cpus;
@@ -25,6 +29,7 @@ mod util;
 mod shape;
 mod aabb;
 mod bvh;
+mod scene_loader;
 
 use threadpool::ThreadPool;
 use std::sync::mpsc::{channel, Sender, Receiver};
@@ -34,14 +39,16 @@ use math::vector::*;
 use std::path::Path;
 use std::sync::Arc;
 use std::io::{self, Write};
+use description::Description;
 
 fn main() {
   let start_time = time::now();
   println!("start: {}", start_time.strftime("%+").unwrap());
 
+  let description = Description::new("scene.toml");
   let mut output = Img::new(Vector3::zero(), WIDTH, HEIGHT);
-  let cam = Arc::new(description::camera(WIDTH, HEIGHT));
-  let scene = Arc::new(description::scene());
+  let cam = Arc::new(description.camera());
+  let scene = Arc::new(description.scene());
   println!("{:?}", cam.info());
   println!("spp: {}", SPP);
   let (tx, rx): (Sender<(usize, usize, Vector3)>, Receiver<(usize, usize, Vector3)>) = channel();

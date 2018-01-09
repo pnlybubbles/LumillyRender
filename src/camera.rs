@@ -2,6 +2,7 @@ extern crate rand;
 
 use constant::*;
 use math::vector::*;
+use math::matrix::*;
 use ray::Ray;
 use sample::Sample;
 
@@ -31,32 +32,30 @@ pub struct IdealPinholeCamera {
 
 impl IdealPinholeCamera {
   pub fn new(
-    position: Vector3,
-    aperture_position: Vector3,
-    sensor_size: [f32; 2],
+    matrix: Matrix4,
+    xfov: f32,
     resolution: [usize; 2],
   ) -> IdealPinholeCamera {
-    // レンズの方向(m)
-    let direction = aperture_position - position;
+    let aperture_position: Vector3 = matrix.row(3).into();
+    // カメラの入射の方向を基準(forward)に正規直交基底
+    let forward = &matrix * Vector3::new(0.0, 0.0, -1.0);
+    let right = &matrix * Vector3::new(1.0, 0.0, 0.0);
+    let up = &matrix * Vector3::new(0.0, 1.0, 0.0);
+    // 便宜的な開口部までの距離
+    let direction = forward * 50.0;
+    let position = aperture_position - direction;
     // 入射口とセンサー間の距離(m)
     let aperture_sensor_distance = direction.norm();
-    // カメラの入射の方向を基準(forward)に正規直交基底
-    let forward = direction.normalize();
-    let right = forward
-      .cross(if forward.y.abs() < 1.0 - EPS {
-        Vector3::new(0.0, 1.0, 0.0)
-      } else {
-        Vector3::new(1.0, 0.0, 0.0)
-      })
-      .normalize();
-    let up = right.cross(forward);
+    // 便宜的なセンサーサイズ
+    let sensor_size_x = 2.0 * aperture_sensor_distance * (xfov * PI / 180.0 / 2.0).tan();
+    let sensor_size_y = sensor_size_x * resolution[1] as f32 / resolution[0] as f32;
     IdealPinholeCamera {
       forward: forward,
       right: right,
       up: up,
       position: position,
       resolution: resolution,
-      sensor_size: sensor_size,
+      sensor_size: [sensor_size_x, sensor_size_y],
       aperture_position: aperture_position,
       aperture_sensor_distance: aperture_sensor_distance,
     }

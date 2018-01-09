@@ -1,122 +1,157 @@
 extern crate tobj;
 extern crate time;
+extern crate toml;
 
 use std::sync::Arc;
 use camera::*;
 use math::vector::*;
+use math::matrix::*;
 use material::*;
 use scene::Scene;
 use shape::SurfaceShape;
 use triangle::Triangle;
-use sphere::Sphere;
 use objects::Objects;
 use std::path::Path;
 use sky::*;
+use std::fs::File;
+use std::collections::HashMap;
+use std::io::prelude::*;
+use scene_loader::{Config, HasTransform};
+use scene_loader::Mesh as CMesh;
+use scene_loader::Material as CMaterial;
+use scene_loader::Sky as CSky;
+use scene_loader::Camera as CCamera;
 
-pub fn camera(width: usize, height: usize) -> Box<Camera + Send + Sync> {
-  let w = width as f32;
-  let h = height as f32;
-  let pos = Vector3::new(278.0, 273.0, -800.0);
-  let dir = Vector3::new(0.0, 0.0, 0.035);
-  // let pos = Vector3::new(0.0, 75.0, -500.0);
-  // let dir = Vector3::new(0.0, 0.0, 0.035);
-  box IdealPinholeCamera::new(
-    // sensor position
-    pos - dir,
-    // aperture position
-    pos,
-    // sensor size
-    [0.025 * w / h, 0.025],
-    // sensor resolution
-    [width, height],
-  )
+pub struct Description {
+  config: Config,
 }
 
-pub fn scene() -> Scene {
-  let white_mat = Arc::new(LambertianMaterial {
-    albedo: Vector3::new(1.0, 1.0, 1.0),
-    emission: Vector3::zero(),
-  });
-  let models = vec![
-    Path::new("models/simple/cbox.obj"),
-    Path::new("models/simple/cbox_luminaire.obj"),
-    // Path::new("models/simple/cbox_floor.obj"),
-    // Path::new("models/simple/cbox_largebox.obj"),
-    // Path::new("models/simple/cbox_smallbox.obj"),
-  ];
-  let mut instances = models.iter().flat_map( |path|
-    obj(path, white_mat.clone(), false)
-  ).collect::<Vec<_>>();
-  instances.push(Arc::new(Sphere::new(
-    Vector3::new(165.0, 100.0, 275.0),
-    100.0,
-    Arc::new(PhongMaterial {
-      reflectance: Vector3::new(1.0, 1.0, 1.0),
-      roughness: 50.0,
-    }),
-  )));
-  instances.push(Arc::new(Sphere::new(
-    Vector3::new(385.0, 100.0, 275.0),
-    100.0,
-    Arc::new(BlinnPhongMaterial {
-      reflectance: Vector3::new(1.0, 1.0, 1.0),
-      roughness: 50.0,
-    }),
-  )));
-  // instances.append(&mut obj(Path::new("models/lucy/cbox_lucy.obj"), Arc::new(PhongMaterial {
-  //   reflectance: Vector3::new(1.0, 1.0, 1.0),
-  //   roughness: 20.0,
-  // }), true));
-  let sky = box IBLSky::new("ibl.hdr", 1500);
-  let start_time = time::now();
-  let objects = Objects::new(instances);
-  let end_time = time::now();
-  println!(
-    "bvh construction: {}s",
-    (end_time - start_time).num_milliseconds() as f32 / 1000.0
-  );
-  Scene {
-    depth: 5,
-    depth_limit: 64,
-    sky: sky,
-    objects: objects,
-    no_direct_emitter: false,
+impl Description {
+  pub fn new(path: &str) -> Description {
+    let mut file = File::open(Path::new(path)).unwrap();
+    let mut toml_str = String::new();
+    file.read_to_string(&mut toml_str).unwrap();
+    let config: Config = toml::from_str(toml_str.as_str()).unwrap();
+    Description {
+      config: config,
+    }
+  }
+
+  pub fn camera(&self) -> Box<Camera + Send + Sync> {
+    let width = self.config.film.resolution.0;
+    let height = self.config.film.resolution.1;
+    let matrix = self.config.camera.matrix();
+    box match self.config.camera {
+      CCamera::IdealPinhole { fov, .. } => IdealPinholeCamera::new(matrix, fov, [width, height]),
+    }
+  }
+
+  pub fn scene(&self) -> Scene {
+    let loader = Loader::new(&self.config);
+    let sky = self.config.sky.as_ref().map( |v| match *v {
+      CSky::Uniform { color } => box UniformSky {
+        emission: color.into(),
+      },
+    } ).unwrap_or(box UniformSky {
+      emission: Vector3::zero(),
+    });
+    let start_time = time::now();
+    let objects = Objects::new(loader.instances);
+    let end_time = time::now();
+    println!(
+      "bvh construction: {}s",
+      (end_time - start_time).num_milliseconds() as f32 / 1000.0
+    );
+    Scene {
+      depth: self.config.renderer.depth.unwrap_or(5),
+      depth_limit: self.config.renderer.depth_limit.unwrap_or(64),
+      sky: sky,
+      objects: objects,
+      no_direct_emitter: self.config.renderer.no_direct_emitter.unwrap_or(false),
+    }
   }
 }
 
-fn obj(path: &Path, default_material: Arc<Material + Sync + Send>, force: bool) -> Vec<Arc<SurfaceShape + Sync + Send>> {
-  let (models, materials) = tobj::load_obj(&path).unwrap();
-  let material = materials.iter().map( |v|
-    if force {
-      default_material.clone()
-    } else {
+struct Loader {
+  instances: Vec<Arc<SurfaceShape + Send + Sync>>,
+}
+
+impl Loader {
+  fn new(config: &Config) -> Loader {
+    let mut instances = Vec::new();
+    let obj = Self::load_obj(config.object().iter().map( |o| o.mesh ).collect());
+    for o in config.object() {
+      let transform = o.matrix();
+      let material = o.material.map( |m| {
+        match *m  {
+          CMaterial::Lambert { albedo, emission, .. } => {
+            LambertianMaterial {
+              albedo: albedo.into(),
+              emission: emission.map( |v| v.into() ).unwrap_or(Vector3::zero()),
+            }
+          },
+        }
+      }).map( |v| Arc::new(v) as Arc<Material + Send + Sync>);
+      match *o.mesh {
+        CMesh::Obj { ref name, .. } => {
+          let value = obj.get(name).unwrap();
+          let mut m = Self::obj(&value.0, &value.1, &transform, material);
+          instances.append(&mut m);
+        },
+        _ => {},
+      }
+    }
+    Loader {
+      instances: instances,
+    }
+  }
+
+  fn load_obj(mesh: Vec<&CMesh>) -> HashMap<String, (Vec<tobj::Model>, Vec<tobj::Material>)> {
+    let mut obj = HashMap::new();
+    for m in mesh {
+      match *m {
+        CMesh::Obj { ref name, ref path } => {
+          let path = Path::new(&path);
+          obj.insert(name.clone(), tobj::load_obj(&path).unwrap());
+        },
+        _ => {},
+      }
+    }
+    obj
+  }
+
+  fn obj(models: &Vec<tobj::Model>, materials: &Vec<tobj::Material>, transform: &Matrix4, default_material: Option<Arc<Material + Sync + Send>>) -> Vec<Arc<SurfaceShape + Sync + Send>> {
+    let material = materials.iter().map( |v|
       Arc::new(LambertianMaterial {
-        emission: v.ambient[..].into(),
+        emission: Vector3::zero(),
         albedo: v.diffuse[..].into(),
       }) as Arc<Material + Sync + Send>
-    }
-  ).collect::<Vec<_>>();
-  let mut instances: Vec<Arc<SurfaceShape + Sync + Send>> = Vec::with_capacity(
-    models.iter().map( |m| m.mesh.indices.len() / 3).sum()
-  );
-  for m in models {
-    println!("{}: {} ploygon", m.name, m.mesh.indices.len() / 3);
-    let mat = m.mesh.material_id.map( |v|
-      material[v].clone()
-    ).unwrap_or(default_material.clone());
-    for f in 0..m.mesh.indices.len() / 3 {
-      let mut polygon = [Vector3::zero(); 3];
-      for i in 0..3 {
-        let index: usize = f * 3 + i;
-        polygon[i] = Vector3::new(
-          m.mesh.positions[m.mesh.indices[index] as usize * 3],
-          m.mesh.positions[m.mesh.indices[index] as usize * 3 + 1],
-          m.mesh.positions[m.mesh.indices[index] as usize * 3 + 2],
-        );
+    ).collect::<Vec<_>>();
+    let mut instances: Vec<Arc<SurfaceShape + Sync + Send>> = Vec::with_capacity(
+      models.iter().map( |m| m.mesh.indices.len() / 3).sum()
+    );
+    for m in models {
+      let mat = match default_material.clone() {
+        None => m.mesh.material_id
+          .map( |v| material[v].clone() )
+          .ok_or("Specified material is not found in mlt file.")
+          .unwrap(),
+        Some(v) => v,
+      };
+      for f in 0..m.mesh.indices.len() / 3 {
+        let mut polygon = [Vector3::zero(); 3];
+        for i in 0..3 {
+          let index: usize = f * 3 + i;
+          let potition = Vector3::new(
+            m.mesh.positions[m.mesh.indices[index] as usize * 3],
+            m.mesh.positions[m.mesh.indices[index] as usize * 3 + 1],
+            m.mesh.positions[m.mesh.indices[index] as usize * 3 + 2],
+          );
+          polygon[i] = transform * potition;
+        }
+        instances.push(Arc::new(Triangle::new(polygon[0], polygon[1], polygon[2], mat.clone())));
       }
-      instances.push(Arc::new(Triangle::new(polygon[0], polygon[1], polygon[2], mat.clone())));
     }
+    instances
   }
-  instances
 }
-

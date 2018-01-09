@@ -36,6 +36,12 @@ impl From<Vec<f32>> for Vector3 {
   }
 }
 
+impl From<(f32, f32, f32)> for Vector3 {
+  fn from(v: (f32, f32, f32)) -> Vector3 {
+    Vector3 { x: v.0, y: v.1, z: v.2 }
+  }
+}
+
 impl Into<[f32; 3]> for Vector3 {
   fn into(self) -> [f32; 3] {
     [self.x, self.y, self.z]
