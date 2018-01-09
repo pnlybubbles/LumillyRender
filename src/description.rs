@@ -23,7 +23,7 @@ use scene_loader::Sky as CSky;
 use scene_loader::Camera as CCamera;
 
 pub struct Description {
-  config: Config,
+  pub config: Config,
 }
 
 impl Description {

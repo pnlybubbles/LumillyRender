@@ -1,5 +1,5 @@
 [renderer]
-samples = 64
+samples = 4
 depth = 5
 depth-limit = 64
 no-direct-emitter = false

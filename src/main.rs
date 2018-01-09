@@ -33,7 +33,6 @@ mod scene_loader;
 
 use threadpool::ThreadPool;
 use std::sync::mpsc::{channel, Sender, Receiver};
-use constant::*;
 use img::*;
 use math::vector::*;
 use std::path::Path;
@@ -44,24 +43,27 @@ use description::Description;
 fn main() {
   let start_time = time::now();
   println!("start: {}", start_time.strftime("%+").unwrap());
-
   let description = Description::new("scene.toml");
-  let mut output = Img::new(Vector3::zero(), WIDTH, HEIGHT);
+  let width = description.config.film.resolution.0;
+  let height = description.config.film.resolution.1;
+  let mut output = Img::new(Vector3::zero(), width, height);
   let cam = Arc::new(description.camera());
   let scene = Arc::new(description.scene());
   println!("{:?}", cam.info());
-  println!("spp: {}", SPP);
+  let spp = description.config.renderer.samples;
+  println!("spp: {}", spp);
   let (tx, rx): (Sender<(usize, usize, Vector3)>, Receiver<(usize, usize, Vector3)>) = channel();
-  let cpu_count = num_cpus::get();
-  println!("cpu: {}", cpu_count);
-  let pool = ThreadPool::new(cpu_count);
+  let num_cpus = num_cpus::get();
+  println!("cpu: {}", num_cpus);
+  let num_threads = description.config.renderer.threads.unwrap_or(0);
+  let pool = ThreadPool::new(if num_threads <= 0 { num_cpus } else { num_threads });
   // モンテカルロ積分
   output.each_pixel( |x, y, _| {
     let tx = tx.clone();
     let cam = cam.clone();
     let scene = scene.clone();
     pool.execute(move || {
-      let estimated_sum = (0..SPP).fold(Vector3::zero(), |sum, _| {
+      let estimated_sum = (0..spp).fold(Vector3::zero(), |sum, _| {
         // センサーの1画素に入射する放射輝度を立体角測度でモンテカルロ積分し放射照度を得る
         // カメラから出射されるレイをサンプリング
         let (ray, g_term) = cam.sample(x, y);
@@ -73,11 +75,11 @@ fn main() {
         let delta_e_into_sensor = e_into_sensor * (cam.sensor_sensitivity() / ray.pdf);
         sum + delta_e_into_sensor
       });
-      tx.send((x, y, estimated_sum / SPP as f32)).unwrap()
+      tx.send((x, y, estimated_sum / spp as f32)).unwrap()
     });
   });
 
-  let all = HEIGHT * WIDTH;
+  let all = height * width;
 
   for i in 0..all {
     print!(
@@ -93,7 +95,8 @@ fn main() {
 
   println!("");
   println!("saving...");
-  save(&output, SPP);
+  let gamma = description.config.film.gamma.unwrap_or(2.2);
+  save(&output, &description.config.film.output, gamma, spp);
 
   let end_time = time::now();
   println!("end: {}", end_time.strftime("%+").unwrap());
@@ -103,17 +106,30 @@ fn main() {
   );
 }
 
-fn save(output: &Img<Vector3>, spp: usize) {
+fn save(output: &Img<Vector3>, format: &str, gamma: f32, spp: usize) {
   let file_path = &format!(
-    "images/image_{}_{}.hdr",
+    "images/image_{}_{}.{}",
     time::now().strftime("%Y%m%d%H%M%S").unwrap(),
-    spp
+    spp,
+    format,
   );
-  output.save_hdr(&Path::new(file_path), |pixel| {
-    [pixel.x, pixel.y, pixel.z]
-  });
+  match format {
+    "hdr" => {
+      output.save_hdr(&Path::new(file_path), |pixel| {
+        [pixel.x, pixel.y, pixel.z]
+      });
+    },
+    "png" => {
+      output.save_png(&Path::new(file_path), |pixel| {
+        [to_color(pixel.x, gamma), to_color(pixel.y, gamma), to_color(pixel.z, gamma)]
+      });
+    },
+    _ => {
+      panic!(format!("unsupported output type `{}`", format));
+    }
+  }
 }
 
-fn to_color(x: f32) -> u8 {
-  (x.max(0.0).min(1.0).powf(1.0 / 2.2) * 255.0) as u8
+fn to_color(x: f32, gamma: f32) -> u8 {
+  (x.max(0.0).min(1.0).powf(1.0 / gamma) * 255.0) as u8
 }
