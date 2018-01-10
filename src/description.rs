@@ -10,6 +10,7 @@ use material::*;
 use scene::Scene;
 use shape::SurfaceShape;
 use triangle::Triangle;
+use sphere::Sphere;
 use objects::Objects;
 use std::path::Path;
 use sky::*;
@@ -55,6 +56,7 @@ impl Description {
     } ).unwrap_or(box UniformSky {
       emission: Vector3::zero(),
     });
+    println!("polygons: {}", loader.instances.len());
     let start_time = time::now();
     let objects = Objects::new(loader.instances);
     let end_time = time::now();
@@ -82,23 +84,35 @@ impl Loader {
     let obj = Self::load_obj(config.object().iter().map( |o| o.mesh ).collect());
     for o in config.object() {
       let transform = o.matrix();
+      let emission = o.emission.unwrap_or(Vector3::zero());
       let material = o.material.map( |m| {
         match *m  {
-          CMaterial::Lambert { albedo, emission, .. } => {
-            LambertianMaterial {
+          CMaterial::Lambert { albedo, .. } => {
+            Arc::new(LambertianMaterial {
               albedo: albedo.into(),
-              emission: emission.map( |v| v.into() ).unwrap_or(Vector3::zero()),
-            }
+              emission: emission,
+            }) as Arc<Material + Send + Sync>
+          },
+          CMaterial::Phong { reflectance, roughness, .. } => {
+            Arc::new(PhongMaterial {
+              reflectance: reflectance.into(),
+              roughness: roughness,
+            })
           },
         }
-      }).map( |v| Arc::new(v) as Arc<Material + Send + Sync>);
+      });
       match *o.mesh {
         CMesh::Obj { ref name, .. } => {
           let value = obj.get(name).unwrap();
-          let mut m = Self::obj(&value.0, &value.1, &transform, material);
+          let mut m = Self::obj(&value.0, &value.1, &transform, material, emission);
           instances.append(&mut m);
         },
-        _ => {},
+        CMesh::Sphere { ref radius, ref name } => {
+          let position = transform * Vector3::zero();
+          let mat = material.ok_or(format!("Material must be specified for object `{}`", name)).unwrap();
+          let sphere = Sphere::new(position, *radius, mat);
+          instances.push(Arc::new(sphere));
+        },
       }
     }
     Loader {
@@ -120,10 +134,10 @@ impl Loader {
     obj
   }
 
-  fn obj(models: &Vec<tobj::Model>, materials: &Vec<tobj::Material>, transform: &Matrix4, default_material: Option<Arc<Material + Sync + Send>>) -> Vec<Arc<SurfaceShape + Sync + Send>> {
+  fn obj(models: &Vec<tobj::Model>, materials: &Vec<tobj::Material>, transform: &Matrix4, default_material: Option<Arc<Material + Sync + Send>>, emission: Vector3) -> Vec<Arc<SurfaceShape + Sync + Send>> {
     let material = materials.iter().map( |v|
       Arc::new(LambertianMaterial {
-        emission: Vector3::zero(),
+        emission: emission,
         albedo: v.diffuse[..].into(),
       }) as Arc<Material + Sync + Send>
     ).collect::<Vec<_>>();

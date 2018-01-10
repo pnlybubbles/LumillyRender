@@ -49,15 +49,17 @@ fn main() {
   let mut output = Img::new(Vector3::zero(), width, height);
   let cam = Arc::new(description.camera());
   let scene = Arc::new(description.scene());
-  println!("{:?}", cam.info());
   let spp = description.config.renderer.samples;
+  println!("resolution: {}x{}", width, height);
   println!("spp: {}", spp);
   let (tx, rx): (Sender<(usize, usize, Vector3)>, Receiver<(usize, usize, Vector3)>) = channel();
   let num_cpus = num_cpus::get();
-  println!("cpu: {}", num_cpus);
-  let num_threads = description.config.renderer.threads.unwrap_or(0);
-  let pool = ThreadPool::new(if num_threads <= 0 { num_cpus } else { num_threads });
+  let num_threads_config = description.config.renderer.threads.unwrap_or(0);
+  let num_threads = if num_threads_config <= 0 { num_cpus } else { num_threads_config };
+  println!("threads: {}", num_threads);
+  let pool = ThreadPool::new(num_threads);
   let integrator = description.config.renderer.integrator.unwrap_or("pt-direct".to_string());
+  println!("integrator: {}", integrator);
   // モンテカルロ積分
   output.each_pixel( |x, y, _| {
     let tx = tx.clone();
@@ -98,7 +100,7 @@ fn main() {
           tx.send((x, y, estimated_sum / spp as f32)).unwrap()
         });
       },
-      _ => panic!(format!("Unknown integrator {}", integrator)),
+      _ => panic!(format!("Unknown integrator type `{}`", integrator)),
     }
   });
 
@@ -148,7 +150,7 @@ fn save(output: &Img<Vector3>, format: &str, gamma: f32, spp: usize) {
       });
     },
     _ => {
-      panic!(format!("unsupported output type `{}`", format));
+      panic!(format!("Unsupported output type `{}`", format));
     }
   }
 }

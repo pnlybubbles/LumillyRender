@@ -1,4 +1,5 @@
 use math::matrix::*;
+use math::vector::*;
 use constant::PI;
 
 type Name = String;
@@ -123,7 +124,11 @@ pub enum Material {
   Lambert {
     name: Name,
     albedo: Vec3,
-    emission: Option<Vec3>,
+  },
+  Phong {
+    name: Name,
+    reflectance: Vec3,
+    roughness: f32,
   },
 }
 
@@ -131,6 +136,7 @@ impl HasName for Material {
   fn name(&self) -> Name {
     match *self {
       Material::Lambert { ref name, .. } => name.clone(),
+      Material::Phong { ref name, .. } => name.clone(),
     }
   }
 }
@@ -178,6 +184,7 @@ pub struct ObjectDescriptor<'a> {
   pub mesh: &'a Mesh,
   pub material: Option<&'a Material>,
   pub transform: &'a Vec<Transform>,
+  pub emission: Option<Vector3>,
 }
 
 impl<'a> HasTransform for ObjectDescriptor<'a> {
@@ -203,10 +210,18 @@ impl Config {
       let material = v.material.as_ref().map( |name|
         self.find_material_by_name(name).unwrap()
       );
+      let emission = self.light.iter().find( |l| match **l {
+        Light::Area { ref object, .. } => {
+          v.name.as_ref().map( |name| name.as_str() == object ).unwrap_or(false)
+        },
+      } ).map( |l| match *l {
+        Light::Area { ref emission, .. } => (*emission).into(),
+      });
       ObjectDescriptor {
         mesh: &mesh,
         material: material,
         transform: &v.transform,
+        emission: emission,
       }
     }).collect()
   }

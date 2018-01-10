@@ -1,72 +1,142 @@
 [renderer]
-samples = 4
-depth = 5
-depth-limit = 64
+samples = 64
 no-direct-emitter = false
-threads = 0
-integrator = "pt"
+integrator = "pt-direct"
 
 [film]
-resolution = [512, 512]
-output = "png"
-gamma = 2.2
-sensitivity = [1, 1, 1]
+resolution = [960, 540]
+output = "hdr"
 
 [sky]
 type = "uniform"
-color = [1, 1, 1]
+color = [0, 0, 0]
 
 [camera]
 type = "ideal-pinhole"
 fov = 39.3077
 [[camera.transform]]
 type = "look-at"
-origin = [278, 273, -800]
-target = [278, 273, 0]
+origin = [0, 110, -500]
+target = [0, 60, 0]
 up = [0, 1, 0]
 
 [[light]]
 type = "area"
 object = "light"
-emission = [40.0, 30.901960, 22.431360]
+emission = [15, 13, 11]
 
 [[object]]
-mesh = "bunny"
-material = "blue"
+mesh = "sphere"
+material = "lambert"
+[[object.transform]]
+type = "translate"
+vector = [-120, 25, 0]
+
+[[object]]
+mesh = "sphere"
+material = "phong1"
+[[object.transform]]
+type = "translate"
+vector = [-60, 25, 0]
+
+[[object]]
+mesh = "sphere"
+material = "phong5"
+[[object.transform]]
+type = "translate"
+vector = [0, 25, 0]
+
+[[object]]
+mesh = "sphere"
+material = "phong10"
+[[object.transform]]
+type = "translate"
+vector = [60, 25, 0]
+
+[[object]]
+mesh = "sphere"
+material = "phong20"
+[[object.transform]]
+type = "translate"
+vector = [120, 25, 0]
+
+[[object]]
+mesh = "quad"
+[[object.transform]]
+type = "scale"
+vector = [200, 1, 100]
+
+[[object]]
+mesh = "quad"
+material = "floor"
+[[object.transform]]
+type = "scale"
+vector = [200, 1, 100]
+[[object.transform]]
+type = "translate"
+vector = [0, 0, 100]
 [[object.transform]]
 type = "axis-angle"
-axis = [0, 1, 0]
+axis = [1, 0, 0]
+angle = -80
+[[object.transform]]
+type = "translate"
+vector = [0, 0, 100]
+
+[[object]]
+name = "light"
+mesh = "quad"
+[[object.transform]]
+type = "axis-angle"
+axis = [1, 0, 0]
 angle = 180
 [[object.transform]]
 type = "scale"
-vector = [130, 130, 130]
+vector = [100, 1, 7]
 [[object.transform]]
 type = "translate"
-vector = [278, 0, 278]
-
-[[object]]
-mesh = "cbox"
-
-[[object]]
-name = "light"
-mesh = "light"
+vector = [0, 120, 0]
 
 [[material]]
-name = "blue"
+name = "floor"
 type = "lambert"
-albedo = [0.2, 0.2, 0.6]
+albedo = [0.5, 0.5, 0.4]
+
+[[material]]
+name = "lambert"
+type = "lambert"
+albedo = [0.5, 0.5, 0.5]
+
+[[material]]
+name = "phong1"
+type = "phong"
+reflectance = [1.0, 1.0, 1.0]
+roughness = 1
+
+[[material]]
+name = "phong5"
+type = "phong"
+reflectance = [1.0, 1.0, 1.0]
+roughness = 5
+
+[[material]]
+name = "phong10"
+type = "phong"
+reflectance = [1.0, 1.0, 1.0]
+roughness = 10
+
+[[material]]
+name = "phong20"
+type = "phong"
+reflectance = [1.0, 1.0, 1.0]
+roughness = 20
 
 [[mesh]]
-name = "bunny"
+name = "quad"
 type = "obj"
-path = "models/bunny/bunny.obj"
+path = "models/simple/quad.obj"
 
 [[mesh]]
-name = "cbox"
-type = "obj"
-path = "models/simple/cbox.obj"
-
-[[mesh]]
-name = "light"
-type = "obj"
-path = "models/simple/cbox_luminaire.obj"
+name = "sphere"
+type = "sphere"
+radius = 25
