@@ -1,0 +1,75 @@
+[renderer]
+samples = 64
+depth = 5
+depth-limit = 64
+no-direct-emitter = false
+threads = 0
+integrator = "pt"
+
+[film]
+resolution = [512, 512]
+output = "png"
+gamma = 2.2
+sensitivity = [1, 1, 1]
+
+[sky]
+type = "uniform"
+color = [1, 1, 1]
+
+[camera]
+type = "ideal-pinhole"
+fov = 39.3077
+[[camera.transform]]
+type = "look-at"
+origin = [278, 273, -800]
+target = [278, 273, 0]
+up = [0, 1, 0]
+
+[[light]]
+type = "area"
+object = "light"
+emission = [40.0, 30.901960, 22.431360]
+
+[[object]]
+mesh = "bunny"
+material = "blue"
+[[object.transform]]
+type = "axis-angle"
+axis = [0, 1, 0]
+angle = 180
+[[object.transform]]
+type = "scale"
+vector = [130, 130, 130]
+[[object.transform]]
+type = "translate"
+vector = [278, 0, 278]
+
+[[object]]
+mesh = "cbox"
+
+[[object]]
+name = "light"
+mesh = "light"
+
+[[material]]
+name = "blue"
+type = "lambert"
+albedo = [0.2, 0.2, 0.6]
+
+[[mesh]]
+name = "bunny"
+type = "obj"
+# https://g3d.cs.williams.edu/g3d/data10/research/model/bunny/bunny.zip
+path = "models/bunny/bunny.obj"
+
+[[mesh]]
+name = "cbox"
+type = "obj"
+# obj: https://cl.ly/omBj mtl: https://cl.ly/oluU
+path = "models/simple/cbox.obj"
+
+[[mesh]]
+name = "light"
+type = "obj"
+# obj: https://cl.ly/olil
+path = "models/simple/cbox_luminaire.obj"

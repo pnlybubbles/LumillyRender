@@ -45,7 +45,8 @@ fn main() {
   let start_time = time::now();
   println!("start: {}", start_time.strftime("%+").unwrap());
   let args: Vec<String> = env::args().collect();
-  let description = Description::new(&args[0]);
+  println!("loading: {}", args[1]);
+  let description = Description::new(&args[1]);
   let width = description.config.film.resolution.0;
   let height = description.config.film.resolution.1;
   let mut output = Img::new(Vector3::zero(), width, height);

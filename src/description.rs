@@ -29,7 +29,9 @@ pub struct Description {
 
 impl Description {
   pub fn new(path: &str) -> Description {
-    let mut file = File::open(Path::new(path)).unwrap();
+    let p = Path::new(path);
+    if !p.is_file() { panic!(format!("File `{}` is not found.", path)) }
+    let mut file = File::open(p).unwrap();
     let mut toml_str = String::new();
     file.read_to_string(&mut toml_str).unwrap();
     let config: Config = toml::from_str(toml_str.as_str()).unwrap();
