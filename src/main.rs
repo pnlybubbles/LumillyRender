@@ -39,11 +39,13 @@ use std::path::Path;
 use std::sync::Arc;
 use std::io::{self, Write};
 use description::Description;
+use std::env;
 
 fn main() {
   let start_time = time::now();
   println!("start: {}", start_time.strftime("%+").unwrap());
-  let description = Description::new("scene.toml");
+  let args: Vec<String> = env::args().collect();
+  let description = Description::new(&args[0]);
   let width = description.config.film.resolution.0;
   let height = description.config.film.resolution.1;
   let mut output = Img::new(Vector3::zero(), width, height);
