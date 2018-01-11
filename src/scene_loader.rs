@@ -128,7 +128,12 @@ pub enum Material {
   Phong {
     name: Name,
     reflectance: Vec3,
-    roughness: f32,
+    alpha: f32,
+  },
+  BlinnPhong {
+    name: Name,
+    reflectance: Vec3,
+    alpha: f32,
   },
 }
 
@@ -137,6 +142,7 @@ impl HasName for Material {
     match *self {
       Material::Lambert { ref name, .. } => name.clone(),
       Material::Phong { ref name, .. } => name.clone(),
+      Material::BlinnPhong { ref name, ..} => name.clone(),
     }
   }
 }

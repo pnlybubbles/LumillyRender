@@ -109,27 +109,27 @@ albedo = [0.5, 0.5, 0.5]
 
 [[material]]
 name = "phong1"
-type = "phong"
+type = "blinn-phong"
 reflectance = [1.0, 1.0, 1.0]
-roughness = 1
+alpha = 1
 
 [[material]]
 name = "phong5"
-type = "phong"
+type = "blinn-phong"
 reflectance = [1.0, 1.0, 1.0]
-roughness = 5
+alpha = 5
 
 [[material]]
 name = "phong10"
-type = "phong"
+type = "blinn-phong"
 reflectance = [1.0, 1.0, 1.0]
-roughness = 10
+alpha = 10
 
 [[material]]
 name = "phong20"
-type = "phong"
+type = "blinn-phong"
 reflectance = [1.0, 1.0, 1.0]
-roughness = 20
+alpha = 20
 
 [[mesh]]
 name = "quad"

@@ -95,12 +95,18 @@ impl Loader {
               emission: emission,
             }) as Arc<Material + Send + Sync>
           },
-          CMaterial::Phong { reflectance, roughness, .. } => {
+          CMaterial::Phong { reflectance, alpha, .. } => {
             Arc::new(PhongMaterial {
               reflectance: reflectance.into(),
-              roughness: roughness,
+              roughness: alpha,
             })
           },
+          CMaterial::BlinnPhong { reflectance, alpha, .. } => {
+            Arc::new(BlinnPhongMaterial {
+              reflectance: reflectance.into(),
+              roughness: alpha,
+            })
+          }
         }
       });
       match *o.mesh {
