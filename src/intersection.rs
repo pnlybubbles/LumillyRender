@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use math::vector::Vector3;
-use material::Material;
+use material::material::Material;
 
 pub struct Intersection {
   pub position: Vector3,

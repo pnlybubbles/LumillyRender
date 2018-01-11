@@ -2,7 +2,7 @@ use std::sync::Arc;
 use intersection::Intersection;
 use ray::Ray;
 use aabb::AABB;
-use material::Material;
+use material::material::Material;
 use math::vector::Vector3;
 use sample::Sample;
 

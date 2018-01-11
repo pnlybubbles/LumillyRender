@@ -6,7 +6,7 @@ use intersection::Intersection;
 use shape::*;
 use constant::*;
 use ray::Ray;
-use material::Material;
+use material::material::Material;
 use math::vector::*;
 use aabb::AABB;
 use sample::Sample;

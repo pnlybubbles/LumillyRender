@@ -6,7 +6,7 @@ use std::sync::Arc;
 use camera::*;
 use math::vector::*;
 use math::matrix::*;
-use material::*;
+use material::material::*;
 use scene::Scene;
 use shape::SurfaceShape;
 use triangle::Triangle;

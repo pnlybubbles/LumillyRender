@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use math::vector::*;
 use ray::Ray;
-use material::Material;
+use material::material::Material;
 use intersection::Intersection;
 use constant::*;
 use shape::*;
