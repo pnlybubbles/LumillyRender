@@ -95,9 +95,12 @@ impl Material for GGXMaterial {
     // ハーフベクトルをサンプリング
     let h = u * r1.cos() * sin + v * r1.sin() * sin + w * cos;
     // 入射ベクトル
-    let in_ = h * (2.0 * out_.dot(h)) - out_;
+    let o_h = out_.dot(h);
+    let in_ = h * (2.0 * o_h) - out_;
+    // ヤコビアン
+    let jacobian = 1.0 / (4.0 * o_h);
     // 確率密度関数
-    let pdf = self.ndf(h, n) * h.dot(n);
+    let pdf = self.ndf(h, n) * h.dot(n) * jacobian;
     Sample {
       value: in_,
       pdf: pdf,
