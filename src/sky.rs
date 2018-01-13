@@ -39,7 +39,7 @@ pub struct IBLSky {
 }
 
 impl IBLSky {
-  pub fn new(path: &'static str, longitude_offset: usize) -> IBLSky {
+  pub fn new(path: &str, longitude_offset: usize) -> IBLSky {
     println!("loading hdr image...");
     let image_file = File::open(path).unwrap();
     let decoder = image::hdr::HDRDecoder::new(BufReader::new(image_file)).unwrap();

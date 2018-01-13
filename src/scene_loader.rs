@@ -31,6 +31,9 @@ pub enum Sky {
   Uniform {
     color: Vec3,
   },
+  Ibl {
+    path: String,
+  },
 }
 
 #[derive(Debug, Deserialize)]
@@ -135,6 +138,12 @@ pub enum Material {
     reflectance: Vec3,
     alpha: f32,
   },
+  Ggx {
+    name: Name,
+    reflectance: Vec3,
+    roughness: f32,
+    ior: f32,
+  },
 }
 
 impl HasName for Material {
@@ -143,6 +152,7 @@ impl HasName for Material {
       Material::Lambert { ref name, .. } => name.clone(),
       Material::Phong { ref name, .. } => name.clone(),
       Material::BlinnPhong { ref name, ..} => name.clone(),
+      Material::Ggx { ref name, ..} => name.clone(),
     }
   }
 }

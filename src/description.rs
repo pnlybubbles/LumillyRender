@@ -54,7 +54,8 @@ impl Description {
     let sky = self.config.sky.as_ref().map( |v| match *v {
       CSky::Uniform { color } => box UniformSky {
         emission: color.into(),
-      },
+      } as Box<Sky + Send + Sync>,
+      CSky::Ibl { ref path } => box IBLSky::new(path, 0),
     } ).unwrap_or(box UniformSky {
       emission: Vector3::zero(),
     });
@@ -106,7 +107,14 @@ impl Loader {
               reflectance: reflectance.into(),
               roughness: alpha,
             })
-          }
+          },
+          CMaterial::Ggx { reflectance, roughness, ior, .. } => {
+            Arc::new(GGXMaterial {
+              reflectance: reflectance.into(),
+              roughness: roughness,
+              ior: ior,
+            })
+          },
         }
       });
       match *o.mesh {

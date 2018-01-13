@@ -34,28 +34,28 @@ vector = [-120, 25, 0]
 
 [[object]]
 mesh = "sphere"
-material = "phong1"
+material = "glossy1"
 [[object.transform]]
 type = "translate"
 vector = [-60, 25, 0]
 
 [[object]]
 mesh = "sphere"
-material = "phong5"
+material = "glossy5"
 [[object.transform]]
 type = "translate"
 vector = [0, 25, 0]
 
 [[object]]
 mesh = "sphere"
-material = "phong10"
+material = "glossy10"
 [[object.transform]]
 type = "translate"
 vector = [60, 25, 0]
 
 [[object]]
 mesh = "sphere"
-material = "phong20"
+material = "glossy20"
 [[object.transform]]
 type = "translate"
 vector = [120, 25, 0]
@@ -108,28 +108,32 @@ type = "lambert"
 albedo = [0.5, 0.5, 0.5]
 
 [[material]]
-name = "phong1"
-type = "blinn-phong"
+name = "glossy1"
+type = "ggx"
 reflectance = [1.0, 1.0, 1.0]
-alpha = 1
+roughness = 0.8
+ior = 100000
 
 [[material]]
-name = "phong5"
-type = "blinn-phong"
+name = "glossy5"
+type = "ggx"
 reflectance = [1.0, 1.0, 1.0]
-alpha = 5
+roughness = 0.6
+ior = 100000
 
 [[material]]
-name = "phong10"
-type = "blinn-phong"
+name = "glossy10"
+type = "ggx"
 reflectance = [1.0, 1.0, 1.0]
-alpha = 10
+roughness = 0.4
+ior = 100000
 
 [[material]]
-name = "phong20"
-type = "blinn-phong"
+name = "glossy20"
+type = "ggx"
 reflectance = [1.0, 1.0, 1.0]
-alpha = 20
+roughness = 0.2
+ior = 100000
 
 [[mesh]]
 name = "quad"

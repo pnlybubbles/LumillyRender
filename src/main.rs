@@ -45,6 +45,9 @@ fn main() {
   let start_time = time::now();
   println!("start: {}", start_time.strftime("%+").unwrap());
   let args: Vec<String> = env::args().collect();
+  if args.len() <= 1 {
+    panic!("Path for .toml must be specified.")
+  }
   println!("loading: {}", args[1]);
   let description = Description::new(&args[1]);
   let width = description.config.film.resolution.0;
