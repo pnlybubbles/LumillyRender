@@ -20,21 +20,16 @@ impl GGXMaterial {
     self.roughness * self.roughness
   }
 
-  fn g(&self, out_: Vector3, in_: Vector3, n: Vector3) -> f32 {
-    self.g1(in_, n) * self.g1(out_, n)
+  fn gaf_smith(&self, out_: Vector3, in_: Vector3, n: Vector3) -> f32 {
+    self.g_ggx(in_, n) * self.g_ggx(out_, n)
   }
 
-  fn g1(&self, o: Vector3, n: Vector3) -> f32 {
-    let k = self.alpha() / 2.0;
-    let o_n = o.dot(n);
-    o_n / (o_n * (1.0 - k) + k)
+  fn g_ggx(&self, v: Vector3, n: Vector3) -> f32 {
+    let a2 = self.alpha() * self.alpha();
+    let cos = v.dot(n);
+    let tan = 1.0 / (cos * cos) - 1.0;
+    2.0 / (1.0 + (1.0 + a2 * tan * tan).sqrt())
   }
-
-  // fn lambda(&self, o: Vector3, n: Vector3) -> f32 {
-  //   let a2 = self.alpha() * self.alpha();
-  //   let x = 1.0 + a2 * (1.0 / o.dot(n) - 1.0);
-  //   (-1.0 + x.sqrt()) / 2.0
-  // }
 
   fn ndf(&self, m: Vector3, n: Vector3) -> f32 {
     let a2 = self.alpha() * self.alpha();
@@ -43,7 +38,7 @@ impl GGXMaterial {
     a2 / (PI * x * x)
   }
   
-  fn fresnel(&self, in_: Vector3, m: Vector3) -> f32 {
+  fn fresnel_schlick(&self, in_: Vector3, m: Vector3) -> f32 {
     let nnn = 1.0 - self.ior;
     let nnp = 1.0 + self.ior;
     let f_0 = (nnn * nnn) / (nnp * nnp);
@@ -78,8 +73,8 @@ impl Material for GGXMaterial {
     // ハーフベクトル
     let h = (in_ + out_).normalize();
     // Torrance-Sparrow model
-    let f = self.fresnel(in_, h);
-    let g = self.g(out_, in_, n);
+    let f = self.fresnel_schlick(in_, h);
+    let g = self.gaf_smith(out_, in_, n);
     // let g = out_.dot(n) * in_.dot(n);
     let d = self.ndf(h, n);
     self.reflectance * f * g * d / (4.0 * in_.dot(n) * out_.dot(n))
