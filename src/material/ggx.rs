@@ -88,15 +88,16 @@ impl Material for GGXMaterial {
     // (brdfの分布にしたがって重点的にサンプル)
     let r1 = 2.0 * PI * rand::random::<f32>();
     let r2 = rand::random::<f32>();
-    let a2 = self.alpha() * self.alpha();
-    let t_cos = ((1.0 - r2) / ((a2 - 1.0) * r2 + 1.0)).sqrt();
-    let t_sin = (1.0 - t_cos * t_cos).sqrt();
+    let tan = self.alpha() * (r2 / (1.0 - r2)).sqrt();
+    let x = 1.0 + tan * tan;
+    let cos = 1.0 / x.sqrt();
+    let sin = tan / x.sqrt(); 
     // ハーフベクトルをサンプリング
-    let h = u * r1.cos() * t_sin + v * r1.sin() * t_sin + w * t_cos;
+    let h = u * r1.cos() * sin + v * r1.sin() * sin + w * cos;
     // 入射ベクトル
     let in_ = h * (2.0 * out_.dot(h)) - out_;
     // 確率密度関数
-    let pdf = self.ndf(h, n) * h.dot(n) / (4.0 * out_.dot(h));
+    let pdf = self.ndf(h, n) * h.dot(n);
     Sample {
       value: in_,
       pdf: pdf,
