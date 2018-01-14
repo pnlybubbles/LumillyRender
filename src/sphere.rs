@@ -32,7 +32,7 @@ impl Shape for Sphere {
     let co = ray.origin - self.position;
     let cod = co.dot(ray.direction);
     let det = cod * cod - co.sqr_norm() + self.radius * self.radius;
-    if det < 0.0 {
+    if det <= 0.0 {
       return None;
     }
     let t1 = -cod - det.sqrt();

@@ -35,7 +35,7 @@ impl Material for PhongMaterial {
   }
 
   fn brdf(&self, out_: Vector3, in_: Vector3, n: Vector3) -> Vector3 {
-    if in_.dot(n) < 0.0 { return Vector3::zero() }
+    if in_.dot(n) <= 0.0 { return Vector3::zero() }
     let r = out_.reflect(n);
     let cos = r.dot(in_);
     let a = self.roughness;

@@ -69,14 +69,17 @@ impl Material for GGXMaterial {
   }
 
   fn brdf(&self, out_: Vector3, in_: Vector3, n: Vector3) -> Vector3 {
-    if in_.dot(n) < 0.0 { return Vector3::zero() }
+    if in_.dot(n) <= 0.0 { return Vector3::zero() }
+    debug_assert!(out_.dot(n) > 0.0, "o.n  = {}", out_.dot(n));
     // ハーフベクトル
     let h = (in_ + out_).normalize();
     // Torrance-Sparrow model
     let f = self.fresnel_schlick(in_, h);
+    debug_assert!(f >= 0.0 && f <= 1.0 && f.is_finite(), "f: {}", f);
     let g = self.gaf_smith(out_, in_, n);
-    // let g = out_.dot(n) * in_.dot(n);
+    debug_assert!(g >= 0.0 && g <= 1.0 && g.is_finite(), "g: {}", g);
     let d = self.ndf(h, n);
+    debug_assert!(d >= 0.0 && d.is_finite() , "d: {}", d);
     self.reflectance * f * g * d / (4.0 * in_.dot(n) * out_.dot(n))
   }
 

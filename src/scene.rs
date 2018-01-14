@@ -99,47 +99,51 @@ impl Scene {
   }
 
   fn direct_light_radiance(&self, i: &Intersection, ray: &Ray) -> Vector3 {
-    if i.material.emission().sqr_norm() == 0.0 && self.objects.has_emission() {
-      // 光源上から1点をサンプリング (確率密度は面積測度)
-      let direct_sample = self.objects.sample_emission();
-      // 交差した座標と光源上の1点のパスを接続
-      let direct_path = direct_sample.value - i.position;
-      // 可視関数のテストレイを生成
-      let direct_ray = Ray {
-        origin: i.position,
-        direction: direct_path.normalize(),
-      };
-      // 直接光のみのサンプリングなので可視の場合のみ寄与
-      match self.objects.intersect(&direct_ray) {
-        Some(direct_i) => {
-          if (direct_i.distance - direct_path.norm()).abs() < EPS {
-            let light_out = -direct_ray.direction;
-            let light_normal = direct_i.normal;
-            let light_cos = light_out.dot(light_normal);
-            if light_cos > 0.0 {
-              let point_normal = i.normal;
-              let point_in = direct_ray.direction;
-              let point_out = -ray.direction;
-              // 光源は表面のみ寄与あり
-              let point_cos = point_in.dot(point_normal);
-              // ジオメトリターム (測度の変換)
-              let g_term = point_cos * light_cos / direct_path.sqr_norm();
-              let brdf = i.material.brdf(point_out, point_in, point_normal);
-              let l_i = direct_i.material.emission();
-              let pdf = direct_sample.pdf;
-              brdf * l_i * g_term / pdf
-            } else {
-              // 光源の裏面は寄与なし
-              Vector3::zero()
-            }
-          } else {
-            Vector3::zero()
-          }
-        },
-        None => Vector3::zero(),
-      }
-    } else {
-      Vector3::zero()
+    if i.material.emission().sqr_norm() > 0.0 || !self.objects.has_emission() {
+      // 交差したマテリアルが放射を持っているとき、NEE対象の光源が存在しないとき
+      return Vector3::zero()
+    }
+    // 光源上から1点をサンプリング (確率密度は面積測度)
+    let direct_sample = self.objects.sample_emission();
+    // 交差した座標と光源上の1点のパスを接続
+    let direct_path = direct_sample.value - i.position;
+    // 可視関数のテストレイを生成
+    let direct_ray = Ray {
+      origin: i.position,
+      direction: direct_path.normalize(),
+    };
+    // 面に対して可視であるかテスト
+    let point_in = direct_ray.direction;
+    let point_out = -ray.direction;
+    let point_normal = i.material.orienting_normal(point_out, i.normal);
+    if point_in.dot(point_normal) <= 0.0 {
+      // レイの入射方向とは逆の方向にレイを接続した場合は遮蔽
+      return Vector3::zero()
+    }
+    // 直接光のみのサンプリングなので可視の場合のみ寄与
+    match self.objects.intersect(&direct_ray) {
+      Some(direct_i) => {
+        if (direct_i.distance - direct_path.norm()).abs() > EPS {
+          // 接続したパスとテストレイの距離が違う場合は遮蔽
+          return Vector3::zero()
+        }
+        let light_out = -direct_ray.direction;
+        let light_normal = direct_i.normal;
+        let light_cos = light_out.dot(light_normal);
+        if light_cos <= 0.0 {
+          // 光源の裏面は寄与なし
+          return Vector3::zero()
+        }
+        // ジオメトリターム (測度の変換)
+        let point_cos = point_in.dot(point_normal);
+        let g_term = point_cos * light_cos / direct_path.sqr_norm();
+        // BRDF
+        let brdf = i.material.brdf(point_out, point_in, point_normal);
+        let l_i = direct_i.material.emission();
+        let pdf = direct_sample.pdf;
+        brdf * l_i * g_term / pdf
+      },
+      None => Vector3::zero(),
     }
   }
 
