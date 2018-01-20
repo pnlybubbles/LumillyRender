@@ -40,6 +40,7 @@ impl Material for BlinnPhongMaterial {
     let h = (in_ + out_).normalize();
     let cos = h.dot(n);
     let a = self.roughness;
+    debug_assert!(cos >= 0.0 && cos <= 1.0 && cos.is_finite(), "cos: {}", cos);
     // blinn phong
     self.reflectance * ((a + 2.0) * (a + 4.0) / (8.0 * PI * (2.0f32.powf(-a / 2.0) + a)) * cos.powf(a))
   }
