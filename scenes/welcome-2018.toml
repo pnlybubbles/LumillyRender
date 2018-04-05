@@ -17,8 +17,10 @@ type = "ibl"
 path = "models/ibl/14-Hamarikyu_Bridge_B_3k.hdr"
 
 [camera]
-type = "ideal-pinhole"
+type = "thin-lens"
 fov = 39.3077
+focus_distance = 1800
+f_number = 1.8
 [[camera.transform]]
 type = "look-at"
 origin = [278, 273, -1600]
@@ -32,7 +34,7 @@ emission = [2000, 1540, 1120]
 
 [[object]]
 mesh = "bunny"
-material = "white"
+material = "glossy"
 [[object.transform]]
 type = "axis-angle"
 axis = [0, 1, 0]
@@ -90,6 +92,13 @@ vector = [1700, 2500, -1000]
 name = "white"
 type = "lambert"
 albedo = [0.740063, 0.742313, 0.733934]
+
+[[material]]
+name = "glossy"
+type = "ggx"
+reflectance = [1.0, 1.0, 1.0]
+roughness = 0.8
+ior = 100000
 
 [[material]]
 name = "black"

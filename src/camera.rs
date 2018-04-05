@@ -301,30 +301,31 @@ pub struct LensCamera {
 
 impl LensCamera {
   pub fn new(
-    position: Vector3,
-    aperture_position: Vector3,
-    sensor_size: [f32; 2],
-    resolution: [usize; 2],
-    aperture_radius: f32,
+    matrix: Matrix4,
+    xfov: f32,
     focus_distance: f32,
+    f_number: f32,
+    resolution: [usize; 2],
   ) -> LensCamera {
-    // レンズの方向(m)
-    let direction = aperture_position - position;
+    let aperture_position: Vector3 = matrix.row(3).into();
+    // カメラの入射の方向を基準(forward)に正規直交基底
+    let forward = &matrix * Vector3::new(0.0, 0.0, -1.0);
+    let right = &matrix * Vector3::new(1.0, 0.0, 0.0);
+    let up = &matrix * Vector3::new(0.0, 1.0, 0.0);
+    // 便宜的な開口部までの距離
+    let direction = forward * 50.0; // TODO: センサーサイズorセンサーまでの距離を受け取る
+    let position = aperture_position - direction;
     // 入射口とセンサー間の距離(m)
     let aperture_sensor_distance = direction.norm();
-    // カメラの入射の方向を基準(forward)に正規直交基底
-    let forward = direction.normalize();
-    let right = forward
-      .cross(if forward.y.abs() < 1.0 - EPS {
-        Vector3::new(0.0, 1.0, 0.0)
-      } else {
-        Vector3::new(1.0, 0.0, 0.0)
-      })
-      .normalize();
-    let up = right.cross(forward);
+    // 便宜的なセンサーサイズ
+    let sensor_size_x = 2.0 * aperture_sensor_distance * (xfov * PI / 180.0 / 2.0).tan();
+    let sensor_size_y = sensor_size_x * resolution[1] as f32 / resolution[0] as f32;
+    // 焦点距離
+    let focal_length = 1.0 / (1.0 / aperture_sensor_distance + 1.0 / focus_distance);
+    // 開口部半径
+    let aperture_radius = focal_length / f_number / 2.0;
     // 1画素の面積 = センサーの面積 / センサーの画素数
-    let sensor_pixel_area = (sensor_size[0] * sensor_size[1]) as f32 /
-      (resolution[0] * resolution[1]) as f32;
+    let sensor_pixel_area = (sensor_size_x * sensor_size_y) / (resolution[0] * resolution[1]) as f32;
     // センサー感度はpdfを打ち消すように設定(m^2 m^-2 m^-[1]
     let sensor_sensitivity = aperture_sensor_distance * aperture_sensor_distance /
       (sensor_pixel_area * PI * aperture_radius * aperture_radius);
@@ -334,7 +335,7 @@ impl LensCamera {
       up: up,
       position: position,
       resolution: resolution,
-      sensor_size: sensor_size,
+      sensor_size: [sensor_size_x, sensor_size_y],
       aperture_position: aperture_position,
       aperture_radius: aperture_radius,
       aperture_sensor_distance: aperture_sensor_distance,

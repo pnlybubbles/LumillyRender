@@ -107,12 +107,20 @@ pub enum Camera {
     #[serde(default)]
     transform: Vec<Transform>,
   },
+  ThinLens {
+    fov: f32,
+    focus_distance: f32,
+    f_number: f32,
+    #[serde(default)]
+    transform: Vec<Transform>,
+  }
 }
 
 impl HasTransform for Camera {
   fn transform(&self) -> &Vec<Transform> {
     match *self {
       Camera::IdealPinhole { ref transform, .. } => transform,
+      Camera::ThinLens { ref transform, .. } => transform,
     }
   }
 }
