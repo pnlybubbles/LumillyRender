@@ -55,6 +55,7 @@ fn main() {
   let mut output = Img::new(Vector3::zero(), width, height);
   let cam = Arc::new(description.camera());
   let scene = Arc::new(description.scene());
+  println!("{:?}", cam.info());
   let spp = description.config.renderer.samples;
   println!("resolution: {}x{}", width, height);
   println!("spp: {}", spp);

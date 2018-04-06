@@ -1,0 +1,121 @@
+[renderer]
+samples = 64
+depth = 5
+depth-limit = 64
+no-direct-emitter = false
+threads = 0
+integrator = "pt-direct"
+
+[film]
+resolution = [2138, 1536]
+output = "hdr"
+gamma = 2.2
+sensitivity = [1, 1, 1]
+
+[sky]
+type = "uniform"
+color = [0.7, 0.7, 0.7]
+
+[camera]
+type = "ideal-pinhole"
+fov = 39.3077
+[[camera.transform]]
+type = "look-at"
+origin = [278, 273, -1600]
+target = [278, 273, 0]
+up = [0, 1, 0]
+
+[[light]]
+type = "area"
+object = "light"
+emission = [2000, 1540, 1120]
+
+[[object]]
+mesh = "bunny"
+material = "mat"
+[[object.transform]]
+type = "axis-angle"
+axis = [0, 1, 0]
+angle = 180
+[[object.transform]]
+type = "scale"
+vector = [130, 130, 130]
+[[object.transform]]
+type = "translate"
+vector = [255, -6, 278]
+
+[[object]]
+mesh = "cbox"
+material = "mat"
+
+[[object]]
+mesh = "quad"
+material = "mat"
+[[object.transform]]
+type = "scale"
+vector = [550, 1, 550]
+[[object.transform]]
+type = "translate"
+vector = [278, 1, 278]
+
+[[object]]
+mesh = "quad"
+material = "mat"
+[[object.transform]]
+type = "scale"
+vector = [550, 1, 550]
+[[object.transform]]
+type = "axis-angle"
+axis = [1, 0, 0]
+angle = -90
+[[object.transform]]
+type = "translate"
+vector = [278, -550, -272]
+
+[[object]]
+name = "light"
+mesh = "quad"
+material = "mat"
+[[object.transform]]
+type = "axis-angle"
+axis = [1, 0, 0]
+angle = 180
+[[object.transform]]
+type = "scale"
+vector = [100, 1, 100]
+[[object.transform]]
+type = "translate"
+vector = [1700, 2500, -1000]
+
+[[material]]
+name = "mat"
+type = "lambert"
+albedo = [0.5, 0.5, 0.5]
+
+[[material]]
+name = "black"
+type = "lambert"
+albedo = [0, 0, 0]
+
+[[mesh]]
+name = "bunny"
+type = "obj"
+# https://g3d.cs.williams.edu/g3d/data10/research/model/bunny/bunny.zip
+path = "models/bunny/bunny.obj"
+
+[[mesh]]
+name = "cbox"
+type = "obj"
+# obj: https://cl.ly/omBj mtl: https://cl.ly/oluU
+path = "models/simple/cbox.obj"
+
+[[mesh]]
+name = "quad"
+type = "obj"
+path = "models/simple/quad.obj"
+
+[[mesh]]
+name = "light"
+type = "obj"
+# obj: https://cl.ly/olil
+path = "models/simple/cbox_luminaire.obj"
