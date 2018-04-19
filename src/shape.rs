@@ -14,5 +14,5 @@ pub trait SurfaceShape: Shape {
 
 pub trait Shape {
   fn intersect(&self, ray: &Ray) -> Option<Intersection>;
-  fn aabb(&self) -> AABB;
+  fn aabb(&self) -> &AABB;
 }

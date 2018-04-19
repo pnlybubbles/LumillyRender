@@ -8,15 +8,15 @@ use shape::Shape;
 use intersection::Intersection;
 use constant::*;
 
-pub struct Scene {
-  pub objects: Objects,
+pub struct Scene<'a> {
+  pub objects: Objects<'a>,
   pub depth: usize,
   pub depth_limit: usize,
   pub sky: Box<Sky + Send + Sync>,
   pub no_direct_emitter: bool,
 }
 
-impl Scene {
+impl<'a> Scene<'a> {
   pub fn radiance(&self, ray: &Ray) -> Vector3 {
     self.radiance_recursive(ray, 0)
   }

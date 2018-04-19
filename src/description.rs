@@ -25,6 +25,7 @@ use scene_loader::Camera as CCamera;
 
 pub struct Description {
   pub config: Config,
+  loader: Loader,
 }
 
 impl Description {
@@ -35,7 +36,9 @@ impl Description {
     let mut toml_str = String::new();
     file.read_to_string(&mut toml_str).unwrap();
     let config: Config = toml::from_str(toml_str.as_str()).unwrap();
+    let loader = Loader::new(&config);
     Description {
+      loader: loader,
       config: config,
     }
   }
@@ -50,8 +53,7 @@ impl Description {
     }
   }
 
-  pub fn scene(&self) -> Scene {
-    let loader = Loader::new(&self.config);
+  pub fn scene<'a>(&'a self) -> Scene<'a> {
     let sky = self.config.sky.as_ref().map( |v| match *v {
       CSky::Uniform { color } => box UniformSky {
         emission: color.into(),
@@ -60,9 +62,9 @@ impl Description {
     } ).unwrap_or(box UniformSky {
       emission: Vector3::zero(),
     });
-    println!("polygons: {}", loader.instances.len());
+    println!("polygons: {}", self.loader.instances.len());
     let start_time = time::now();
-    let objects = Objects::new(loader.instances);
+    let objects = Objects::new(&self.loader.instances);
     let end_time = time::now();
     println!(
       "bvh construction: {}s",
@@ -79,7 +81,7 @@ impl Description {
 }
 
 struct Loader {
-  instances: Vec<Arc<SurfaceShape + Send + Sync>>,
+  instances: Vec<Box<SurfaceShape + Send + Sync>>,
 }
 
 impl Loader {
@@ -128,7 +130,7 @@ impl Loader {
           let position = transform * Vector3::zero();
           let mat = material.ok_or(format!("Material must be specified for object `{}`", name)).unwrap();
           let sphere = Sphere::new(position, *radius, mat);
-          instances.push(Arc::new(sphere));
+          instances.push(box sphere);
         },
       }
     }
@@ -151,14 +153,14 @@ impl Loader {
     obj
   }
 
-  fn obj(models: &Vec<tobj::Model>, materials: &Vec<tobj::Material>, transform: &Matrix4, default_material: Option<Arc<Material + Sync + Send>>, emission: Vector3) -> Vec<Arc<SurfaceShape + Sync + Send>> {
+  fn obj(models: &Vec<tobj::Model>, materials: &Vec<tobj::Material>, transform: &Matrix4, default_material: Option<Arc<Material + Sync + Send>>, emission: Vector3) -> Vec<Box<SurfaceShape + Sync + Send>> {
     let material = materials.iter().map( |v|
       Arc::new(LambertianMaterial {
         emission: emission,
         albedo: v.diffuse[..].into(),
       }) as Arc<Material + Sync + Send>
     ).collect::<Vec<_>>();
-    let mut instances: Vec<Arc<SurfaceShape + Sync + Send>> = Vec::with_capacity(
+    let mut instances: Vec<Box<SurfaceShape + Sync + Send>> = Vec::with_capacity(
       models.iter().map( |m| m.mesh.indices.len() / 3).sum()
     );
     for m in models {
@@ -180,7 +182,7 @@ impl Loader {
           );
           polygon[i] = transform * potition;
         }
-        instances.push(Arc::new(Triangle::new(polygon[0], polygon[1], polygon[2], mat.clone())));
+        instances.push(box Triangle::new(polygon[0], polygon[1], polygon[2], mat.clone()));
       }
     }
     instances

@@ -18,7 +18,7 @@ RUSTFLAGS='--emit asm -C target-feature=+avx' cargo run --release
   - pt (Pure path-tracing)
   - pt-direct (Next event estimation)
 - Acceleration structure
-  - BVH (Median)
+  - BVH (SAH)
 - BSDF
   - Lambert
   - Phong

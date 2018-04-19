@@ -1,6 +1,5 @@
 extern crate rand;
 
-use std::sync::Arc;
 use ray::Ray;
 use intersection::Intersection;
 use shape::*;
@@ -9,19 +8,17 @@ use math::vector::*;
 use sample::Sample;
 use aabb::AABB;
 
-pub struct Objects {
-  bvh: BVH,
-  // objects: Vec<Box<Shape + Send + Sync>>,
-  emission: Vec<Arc<SurfaceShape + Send + Sync>>,
+pub struct Objects<'a> {
+  bvh: BVH<'a>,
+  emission: Vec<&'a Box<SurfaceShape + Send + Sync>>,
   emission_area: f32,
 }
 
-impl Objects {
-  pub fn new(objects: Vec<Arc<SurfaceShape + Send + Sync>>) -> Objects {
+impl<'a> Objects<'a> {
+  pub fn new(objects: &'a Vec<Box<SurfaceShape + Send + Sync>>) -> Objects<'a> {
     let emission = objects
       .iter()
       .filter( |v| v.material().emission().sqr_norm() > 0.0 )
-      .cloned()
       .collect::<Vec<_>>();
     let emission_area = emission.iter().map( |v| v.area() ).sum();
     Objects {
@@ -58,8 +55,8 @@ impl Objects {
   }
 }
 
-impl Shape for Objects {
-  fn aabb(&self) -> AABB {
+impl<'a> Shape for Objects<'a> {
+  fn aabb(&self) -> &AABB {
     self.bvh.aabb()
   }
 

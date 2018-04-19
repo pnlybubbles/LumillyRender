@@ -13,6 +13,7 @@ pub struct Sphere {
   pub radius: f32,
   pub position: Vector3,
   pub material: Arc<Material + Send + Sync>,
+  aabb: AABB,
   area: f32,
 }
 
@@ -23,6 +24,16 @@ impl Sphere {
       radius: radius,
       area: 4.0 * PI * radius.powi(2),
       material: material,
+      aabb: Self::aabb(position, radius),
+    }
+  }
+
+  fn aabb(position: Vector3, radius: f32) -> AABB {
+    let r = Vector3::new(radius, radius, radius);
+    AABB {
+      min: position - r,
+      max: position + r,
+      center: position,
     }
   }
 }
@@ -51,13 +62,8 @@ impl Shape for Sphere {
     })
   }
 
-  fn aabb(&self) -> AABB {
-    let r = Vector3::new(self.radius, self.radius, self.radius);
-    AABB {
-      min: self.position - r,
-      max: self.position + r,
-      center: self.position,
-    }
+  fn aabb(&self) -> &AABB {
+    &self.aabb
   }
 }
 

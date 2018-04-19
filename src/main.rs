@@ -8,7 +8,7 @@ extern crate serde_derive;
 extern crate toml;
 
 extern crate time;
-extern crate threadpool;
+extern crate scoped_threadpool;
 extern crate num_cpus;
 
 mod constant;
@@ -31,7 +31,7 @@ mod aabb;
 mod bvh;
 mod scene_loader;
 
-use threadpool::ThreadPool;
+use scoped_threadpool::Pool;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use img::*;
 use math::vector::*;
@@ -54,7 +54,6 @@ fn main() {
   let height = description.config.film.resolution.1;
   let mut output = Img::new(Vector3::zero(), width, height);
   let cam = Arc::new(description.camera());
-  let scene = Arc::new(description.scene());
   println!("{:?}", cam.info());
   let spp = description.config.renderer.samples;
   println!("resolution: {}x{}", width, height);
@@ -64,51 +63,54 @@ fn main() {
   let num_threads_config = description.config.renderer.threads.unwrap_or(0);
   let num_threads = if num_threads_config <= 0 { num_cpus } else { num_threads_config };
   println!("threads: {}", num_threads);
-  let pool = ThreadPool::new(num_threads);
-  let integrator = description.config.renderer.integrator.unwrap_or("pt-direct".to_string());
+  let mut pool = Pool::new(num_threads as u32);
+  let integrator = description.config.renderer.integrator.as_ref().map( |v| v.as_str() ).unwrap_or("pt-direct");
   println!("integrator: {}", integrator);
-  // モンテカルロ積分
-  output.each_pixel( |x, y, _| {
-    let tx = tx.clone();
-    let cam = cam.clone();
-    let scene = scene.clone();
-    match integrator.as_str() {
-      "pt" => {
-        pool.execute(move || {
-          let estimated_sum = (0..spp).fold(Vector3::zero(), |sum, _| {
-            // センサーの1画素に入射する放射輝度を立体角測度でモンテカルロ積分し放射照度を得る
-            // カメラから出射されるレイをサンプリング
-            let (ray, g_term) = cam.sample(x, y);
-            // 開口部に入射する放射輝度 (W sr^-1 m^-2)
-            let l_into_sensor = scene.radiance(&ray.value);
-            // センサーに入射する放射照度
-            let e_into_sensor = l_into_sensor * g_term;
-            // 今回のサンプリングでの放射照度の推定値
-            let delta_e_into_sensor = e_into_sensor * (cam.sensor_sensitivity() / ray.pdf);
-            sum + delta_e_into_sensor
+  pool.scoped( |scope| {
+    let scene = Arc::new(description.scene());
+    // モンテカルロ積分
+    output.each_pixel( |x, y, _| {
+      let tx = tx.clone();
+      let cam = cam.clone();
+      let scene = scene.clone();
+      match integrator {
+        "pt" => {
+          scope.execute(move || {
+            let estimated_sum = (0..spp).fold(Vector3::zero(), |sum, _| {
+              // センサーの1画素に入射する放射輝度を立体角測度でモンテカルロ積分し放射照度を得る
+              // カメラから出射されるレイをサンプリング
+              let (ray, g_term) = cam.sample(x, y);
+              // 開口部に入射する放射輝度 (W sr^-1 m^-2)
+              let l_into_sensor = scene.radiance(&ray.value);
+              // センサーに入射する放射照度
+              let e_into_sensor = l_into_sensor * g_term;
+              // 今回のサンプリングでの放射照度の推定値
+              let delta_e_into_sensor = e_into_sensor * (cam.sensor_sensitivity() / ray.pdf);
+              sum + delta_e_into_sensor
+            });
+            tx.send((x, y, estimated_sum / spp as f32)).unwrap()
           });
-          tx.send((x, y, estimated_sum / spp as f32)).unwrap()
-        });
-      },
-      "pt-direct" => {
-        pool.execute(move || {
-          let estimated_sum = (0..spp).fold(Vector3::zero(), |sum, _| {
-            // センサーの1画素に入射する放射輝度を立体角測度でモンテカルロ積分し放射照度を得る
-            // カメラから出射されるレイをサンプリング
-            let (ray, g_term) = cam.sample(x, y);
-            // 開口部に入射する放射輝度 (W sr^-1 m^-2)
-            let l_into_sensor = scene.radiance_nee(&ray.value);
-            // センサーに入射する放射照度
-            let e_into_sensor = l_into_sensor * g_term;
-            // 今回のサンプリングでの放射照度の推定値
-            let delta_e_into_sensor = e_into_sensor * (cam.sensor_sensitivity() / ray.pdf);
-            sum + delta_e_into_sensor
+        },
+        "pt-direct" => {
+          scope.execute(move || {
+            let estimated_sum = (0..spp).fold(Vector3::zero(), |sum, _| {
+              // センサーの1画素に入射する放射輝度を立体角測度でモンテカルロ積分し放射照度を得る
+              // カメラから出射されるレイをサンプリング
+              let (ray, g_term) = cam.sample(x, y);
+              // 開口部に入射する放射輝度 (W sr^-1 m^-2)
+              let l_into_sensor = scene.radiance_nee(&ray.value);
+              // センサーに入射する放射照度
+              let e_into_sensor = l_into_sensor * g_term;
+              // 今回のサンプリングでの放射照度の推定値
+              let delta_e_into_sensor = e_into_sensor * (cam.sensor_sensitivity() / ray.pdf);
+              sum + delta_e_into_sensor
+            });
+            tx.send((x, y, estimated_sum / spp as f32)).unwrap()
           });
-          tx.send((x, y, estimated_sum / spp as f32)).unwrap()
-        });
-      },
-      _ => panic!(format!("Unknown integrator type `{}`", integrator)),
-    }
+        },
+        _ => panic!(format!("Unknown integrator type `{}`", integrator)),
+      }
+    });
   });
 
   let all = height * width;

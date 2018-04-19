@@ -42,7 +42,7 @@ type = "scale"
 vector = [130, 130, 130]
 [[object.transform]]
 type = "translate"
-vector = [278, 0, 278]
+vector = [255, -6, 278]
 
 [[object]]
 mesh = "cbox"
