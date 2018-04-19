@@ -44,8 +44,9 @@ impl Description {
     let width = self.config.film.resolution.0;
     let height = self.config.film.resolution.1;
     let matrix = self.config.camera.matrix();
-    box match self.config.camera {
-      CCamera::IdealPinhole { fov, .. } => IdealPinholeCamera::new(matrix, fov, [width, height]),
+    match self.config.camera {
+      CCamera::IdealPinhole { fov, .. } => box IdealPinholeCamera::new(matrix, fov, [width, height]),
+      CCamera::ThinLens { fov, focus_distance, f_number, .. } => box LensCamera::new(matrix, fov, focus_distance, f_number, [width, height]),
     }
   }
 
