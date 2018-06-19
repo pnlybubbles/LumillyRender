@@ -42,6 +42,7 @@ enum Light {
   Area {
     object: Name,
     emission: Vec3,
+    intensity: Option<f32>,
   },
 }
 
@@ -243,7 +244,9 @@ impl Config {
           v.name.as_ref().map( |name| name.as_str() == object ).unwrap_or(false)
         },
       } ).map( |l| match *l {
-        Light::Area { ref emission, .. } => (*emission).into(),
+        Light::Area { ref emission, ref intensity, .. } => {
+          Vector3::from(*emission) * (*intensity).unwrap_or(1.0)
+        }
       });
       ObjectDescriptor {
         mesh: &mesh,

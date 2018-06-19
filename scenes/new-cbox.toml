@@ -1,0 +1,90 @@
+[renderer]
+samples = 64
+depth = 5
+depth-limit = 64
+no-direct-emitter = true
+threads = 0
+integrator = "pt-direct"
+
+[film]
+resolution = [256, 256]
+output = "png"
+gamma = 2.2
+sensitivity = [1, 1, 1]
+
+[sky]
+type = "uniform"
+color = [0, 0, 0]
+
+[camera]
+type = "ideal-pinhole"
+fov = 39.3077
+[[camera.transform]]
+type = "look-at"
+origin = [278, 273, -800]
+target = [278, 273, 0]
+up = [0, 1, 0]
+
+[[light]]
+type = "area"
+object = "light"
+emission = [40.0, 30.901960, 22.431360]
+intensity = 0.7
+
+[[object]]
+mesh = "cbox"
+
+[[object]]
+name = "light"
+mesh = "light"
+material = "light"
+[[object.transform]]
+type = "axis-angle"
+axis = [0, 0, 1]
+angle = 160
+[[object.transform]]
+type = "scale"
+vector = [100, 100, 100]
+[[object.transform]]
+type = "translate"
+vector = [350, 540, 278]
+
+[[object]]
+material = "white"
+mesh = "sphere"
+[[object.transform]]
+type = "translate"
+vector = [140, 100, 300]
+
+[[object]]
+material = "white"
+mesh = "sphere"
+[[object.transform]]
+type = "translate"
+vector = [380, 100, 200]
+
+[[material]]
+name = "white"
+type = "lambert"
+albedo = [0.740063, 0.742313, 0.733934]
+
+[[material]]
+name = "light"
+type = "lambert"
+albedo = [0, 0, 0]
+
+[[mesh]]
+name = "sphere"
+type = "sphere"
+radius = 100
+
+[[mesh]]
+name = "cbox"
+type = "obj"
+# obj: https://cl.ly/omBj mtl: https://cl.ly/oluU
+path = "models/simple/cbox.obj"
+
+[[mesh]]
+name = "light"
+type = "obj"
+path = "models/simple/quad.obj"
