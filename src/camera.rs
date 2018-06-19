@@ -134,6 +134,69 @@ impl Camera for IdealPinholeCamera {
 }
 
 #[derive(Debug)]
+pub struct OmnidirectionalCamera {
+  // カメラの方向を基準とした正規直交基底
+  pub forward: Vector3,
+  pub right: Vector3,
+  pub up: Vector3,
+  // センサーの解像度
+  pub resolution: [usize; 2],
+  // 入射口の中心座標(m)
+  pub aperture_position: Vector3,
+}
+
+impl OmnidirectionalCamera {
+  pub fn new(
+    matrix: Matrix4,
+    resolution: [usize; 2],
+  ) -> OmnidirectionalCamera {
+    let aperture_position: Vector3 = matrix.row(3).into();
+    // カメラの入射の方向を基準(forward)に正規直交基底
+    let forward = &matrix * Vector3::new(0.0, 0.0, -1.0);
+    let right = &matrix * Vector3::new(1.0, 0.0, 0.0);
+    let up = &matrix * Vector3::new(0.0, 1.0, 0.0);
+    OmnidirectionalCamera {
+      forward: forward,
+      right: right,
+      up: up,
+      resolution: resolution,
+      aperture_position: aperture_position,
+    }
+  }
+}
+
+impl Camera for OmnidirectionalCamera {
+  fn sample(&self, x: usize, y: usize) -> (Sample<Ray>, f32) {
+    // 画素内の1点を一様分布でサンプリング(0~1の乱数)
+    let u = rand::random::<f32>();
+    let v = rand::random::<f32>();
+    // センサー中心を基準とした平面座標でのサンプリング点の座標(m)
+    let p = (x as f32 + u) / self.resolution[0] as f32 * PI * 2.0;
+    let t = (y as f32 + v) / self.resolution[1] as f32 * PI;
+    let direction = Vector3::new(t.sin() * p.cos(), t.sin() * p.sin(), t.cos());
+    let ray = Ray {
+      origin: self.aperture_position,
+      direction: direction,
+    };
+    (
+      Sample {
+        value: ray,
+        pdf: 1.0,
+      },
+      1.0,
+    )
+  }
+
+  fn sensor_sensitivity(&self) -> f32 {
+    1.0
+  }
+
+  fn info(&self) -> CameraInfo {
+    unimplemented!()
+  }
+}
+
+#[derive(Debug)]
 pub struct PinholeCamera {
   // カメラの方向を基準とした正規直交基底
   pub forward: Vector3,

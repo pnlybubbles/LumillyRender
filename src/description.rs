@@ -50,6 +50,7 @@ impl Description {
     match self.config.camera {
       CCamera::IdealPinhole { fov, .. } => box IdealPinholeCamera::new(matrix, fov, [width, height]),
       CCamera::ThinLens { fov, focus_distance, f_number, .. } => box LensCamera::new(matrix, fov, focus_distance, f_number, [width, height]),
+      CCamera::Omnidirectional { .. } => box OmnidirectionalCamera::new(matrix, [width, height]),
     }
   }
 

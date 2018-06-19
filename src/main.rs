@@ -54,7 +54,7 @@ fn main() {
   let height = description.config.film.resolution.1;
   let mut output = Img::new(Vector3::zero(), width, height);
   let cam = Arc::new(description.camera());
-  println!("{:?}", cam.info());
+  // println!("{:?}", cam.info());
   let spp = description.config.renderer.samples;
   println!("resolution: {}x{}", width, height);
   println!("spp: {}", spp);

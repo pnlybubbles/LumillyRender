@@ -113,7 +113,10 @@ pub enum Camera {
     f_number: f32,
     #[serde(default)]
     transform: Vec<Transform>,
-  }
+  },
+  Omnidirectional {
+    transform: Vec<Transform>,
+  },
 }
 
 impl HasTransform for Camera {
@@ -121,6 +124,7 @@ impl HasTransform for Camera {
     match *self {
       Camera::IdealPinhole { ref transform, .. } => transform,
       Camera::ThinLens { ref transform, .. } => transform,
+      Camera::Omnidirectional { ref transform, .. } => transform,
     }
   }
 }

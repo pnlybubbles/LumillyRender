@@ -1,0 +1,70 @@
+[renderer]
+samples = 64
+depth = 5
+depth-limit = 64
+no-direct-emitter = false
+threads = 0
+integrator = "pt-direct"
+
+[film]
+resolution = [512, 512]
+output = "hdr"
+sensitivity = [1, 1, 1]
+
+[sky]
+type = "uniform"
+color = [0, 0, 0]
+
+[camera]
+type = "omnidirectional"
+[[camera.transform]]
+type = "look-at"
+origin = [278, 273, 100]
+target = [278, 273, 0]
+up = [0, 1, 0]
+
+[[light]]
+type = "area"
+object = "light"
+emission = [40.0, 30.901960, 22.431360]
+
+[[object]]
+mesh = "dragon"
+material = "glossy"
+[[object.transform]]
+type = "scale"
+vector = [20, 20, 20]
+[[object.transform]]
+type = "translate"
+vector = [278, 0, 278]
+
+[[object]]
+mesh = "cbox"
+
+[[object]]
+name = "light"
+mesh = "light"
+
+[[material]]
+name = "glossy"
+type = "ggx"
+reflectance = [1.0, 1.0, 1.0]
+roughness = 0.8
+ior = 100000
+
+[[mesh]]
+name = "dragon"
+type = "obj"
+path = "models/stanford_dragon/dragon.obj"
+
+[[mesh]]
+name = "cbox"
+type = "obj"
+# obj: https://cl.ly/omBj mtl: https://cl.ly/oluU
+path = "models/simple/cbox.obj"
+
+[[mesh]]
+name = "light"
+type = "obj"
+# obj: https://cl.ly/olil
+path = "models/simple/cbox_luminaire.obj"
