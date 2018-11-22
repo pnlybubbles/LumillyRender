@@ -119,9 +119,10 @@ impl Loader {
               ior: ior,
             })
           },
-          CMaterial::IdealRefraction { reflectance, ior, .. } => {
+          CMaterial::IdealRefraction { reflectance, absorbtance, ior, .. } => {
             Arc::new(IdealRefractionMaterial {
               reflectance: reflectance.into(),
+              absorbtance: absorbtance,
               ior: ior,
             })
           }

@@ -6,6 +6,7 @@ use util::{BoundaryResponse};
 pub struct IdealRefractionMaterial {
   // スペキュラー反射率
   pub reflectance: Vector3,
+  pub absorbtance: f32,
   // 屈折率
   pub ior: f32,
 }
@@ -101,6 +102,15 @@ impl Material for IdealRefractionMaterial {
       }
     }
   }
+
+  fn coef(&self, out_: Vector3, n: Vector3, fly_distance: f32) -> Vector3 {
+    if out_.dot(n) < 0.0 {
+      let v = -(Vector3::new(1.0, 1.0, 1.0) - self.reflectance) * self.absorbtance * fly_distance;
+      Vector3::new(v.x.exp(), v.y.exp(), v.z.exp())
+    } else {
+      Vector3::new(1.0, 1.0, 1.0)
+    }
+  }
 }
 
 impl IdealRefractionMaterial {
@@ -159,6 +169,7 @@ mod tests {
     let ior = 1.5;
     let mat = IdealRefractionMaterial {
       reflectance: Vector3::new(1.0, 1.0, 1.0),
+      absorbtance: 0.0,
       ior: ior,
     };
     let n = Vector3::new(0.0, 0.0, 1.0);
@@ -173,6 +184,7 @@ mod tests {
     let ior = 1.5;
     let mat = IdealRefractionMaterial {
       reflectance: Vector3::new(1.0, 1.0, 1.0),
+      absorbtance: 0.0,
       ior: ior,
     };
     let n = Vector3::new(0.0, 0.0, -1.0);
@@ -186,6 +198,7 @@ mod tests {
   fn brdf_reflecting_test() {
     let mat = IdealRefractionMaterial {
       reflectance: Vector3::new(1.0, 1.0, 1.0),
+      absorbtance: 0.0,
       ior: INF,
     };
     let n = Vector3::new(0.0, 0.0, -1.0);
@@ -289,6 +302,7 @@ mod tests {
   fn sample_test() {
     let mat = IdealRefractionMaterial {
       reflectance: Vector3::new(1.0, 1.0, 1.0),
+      absorbtance: 0.0,
       ior: 1.5,
     };
     let n = Vector3::new(0.0, 0.0, -1.0);

@@ -39,26 +39,26 @@ type = "area"
 object = "light"
 emission = [2000, 1540, 1120]
 
-# [[object]]
-# mesh = "bunny"
-# material = "translucent"
-# [[object.transform]]
-# type = "axis-angle"
-# axis = [0, 1, 0]
-# angle = 180
-# [[object.transform]]
-# type = "scale"
-# vector = [130, 130, 130]
-# [[object.transform]]
-# type = "translate"
-# vector = [255, -6, 278]
-
 [[object]]
-mesh = "sphere"
+mesh = "bunny"
 material = "translucent"
 [[object.transform]]
+type = "axis-angle"
+axis = [0, 1, 0]
+angle = 180
+[[object.transform]]
+type = "scale"
+vector = [130, 130, 130]
+[[object.transform]]
 type = "translate"
-vector = [255, 100, 278]
+vector = [255, -6, 278]
+
+# [[object]]
+# mesh = "sphere"
+# material = "translucent"
+# [[object.transform]]
+# type = "translate"
+# vector = [255, 100, 278]
 
 [[object]]
 mesh = "quad"
@@ -83,7 +83,8 @@ albedo = [0, 0, 0]
 [[material]]
 name = "translucent"
 type = "ideal-refraction"
-reflectance = [1, 1, 1]
+reflectance = [0.9, 0.9, 1.0]
+absorbtance = 0.1
 ior = 1.5
 
 [[mesh]]

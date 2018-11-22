@@ -164,6 +164,8 @@ pub enum Material {
   IdealRefraction {
     name: Name,
     reflectance: Vec3,
+    #[serde(default)]
+    absorbtance: f32,
     ior: f32,
   }
 }

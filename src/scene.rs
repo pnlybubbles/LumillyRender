@@ -85,6 +85,8 @@ impl<'a> Scene<'a> {
     let pdf = sample.pdf;
     // BRDF
     let brdf = i.material.brdf(out_, in_, i.normal);
+    // 係数
+    let coef = i.material.coef(out_, i.normal, i.distance);
     // コサイン項
     let cos = in_.dot(i.normal);
     // assert!(brdf.x * cos < 1.0 && brdf.x * cos > 0.0, "{} {} {}", brdf.x * cos, brdf.x, cos);
@@ -96,7 +98,7 @@ impl<'a> Scene<'a> {
     // 再帰的にレイを追跡
     let l_i = f(new_ray);
     // レンダリング方程式にしたがって放射輝度を計算する
-    brdf * l_i * cos / pdf
+    brdf * coef * l_i * cos / pdf
   }
 
   fn direct_light_radiance(&self, i: &Intersection, ray: &Ray) -> Vector3 {
