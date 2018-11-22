@@ -84,7 +84,7 @@ impl<'a> Scene<'a> {
     let in_ = sample.value;
     let pdf = sample.pdf;
     // BRDF
-    let brdf = i.material.brdf(out_, in_, i.normal);
+    let brdf = i.material.brdf(out_, in_, i.normal, i.position);
     // 係数
     let coef = i.material.coef(out_, i.normal, i.distance);
     // コサイン項
@@ -141,7 +141,7 @@ impl<'a> Scene<'a> {
         let point_cos = point_in.dot(point_normal);
         let g_term = point_cos * light_cos / direct_path.sqr_norm();
         // BRDF
-        let brdf = i.material.brdf(point_out, point_in, point_normal);
+        let brdf = i.material.brdf(point_out, point_in, point_normal, i.position);
         let l_i = direct_i.material.emission();
         let pdf = direct_sample.pdf;
         brdf * l_i * g_term / pdf

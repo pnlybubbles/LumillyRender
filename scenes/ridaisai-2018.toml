@@ -1,5 +1,5 @@
 [renderer]
-samples = 128
+samples = 8
 depth = 5
 depth-limit = 64
 no-direct-emitter = false
@@ -7,7 +7,7 @@ threads = 0
 integrator = "pt"
 
 [film]
-resolution = [534, 384]
+resolution = [1069, 768]
 # resolution = [2138, 1536]
 output = "hdr"
 gamma = 2.2
@@ -15,14 +15,16 @@ sensitivity = [1, 1, 1]
 
 [sky]
 type = "ibl"
-path = "models/ibl/PaperMill_Ruins_E.hdr"
-longitude-offset = 1.9
+# path = "models/ibl/PaperMill_Ruins_E.hdr"
+path = "models/ibl/hotel_room_4k.hdr"
+# longitude-offset = 1.9
+longitude-offset = 5.0
 
 [camera]
 type = "thin-lens"
 fov = 39.3077
 # fov = 60
-focus-distance = 960
+focus-distance = 870
 f-number = 1.8
 [[camera.transform]]
 type = "look-at"
@@ -34,24 +36,33 @@ type = "axis-angle"
 axis = [1, 0, 0]
 angle = 20
 
-[[light]]
-type = "area"
-object = "light"
-emission = [2000, 1540, 1120]
-
 [[object]]
 mesh = "bunny"
-material = "translucent"
+material = "translucent-orange"
 [[object.transform]]
 type = "axis-angle"
 axis = [0, 1, 0]
-angle = 180
+angle = 185
 [[object.transform]]
 type = "scale"
 vector = [130, 130, 130]
 [[object.transform]]
 type = "translate"
-vector = [255, -6, 278]
+vector = [165, -6, 208]
+
+[[object]]
+mesh = "bunny"
+material = "translucent-black"
+[[object.transform]]
+type = "axis-angle"
+axis = [0, 1, 0]
+angle = 185
+[[object.transform]]
+type = "scale"
+vector = [130, 130, 130]
+[[object.transform]]
+type = "translate"
+vector = [345, -6, 268]
 
 # [[object]]
 # mesh = "sphere"
@@ -65,7 +76,7 @@ mesh = "quad"
 material = "white"
 [[object.transform]]
 type = "scale"
-vector = [1000, 1, 1000]
+vector = [400, 1, 400]
 [[object.transform]]
 type = "translate"
 vector = [278, 1, 278]
@@ -81,11 +92,18 @@ type = "lambert"
 albedo = [0, 0, 0]
 
 [[material]]
-name = "translucent"
+name = "translucent-orange"
 type = "ideal-refraction"
-reflectance = [0.9, 0.9, 1.0]
+reflectance = [0.98, 0.90, 0.60]
 absorbtance = 0.1
-ior = 1.5
+ior = 1.55
+
+[[material]]
+name = "translucent-black"
+type = "ideal-refraction"
+reflectance = [0.96, 0.96, 0.95]
+absorbtance = 0.5
+ior = 1.4
 
 [[mesh]]
 name = "bunny"
@@ -94,17 +112,6 @@ type = "obj"
 path = "models/bunny/bunny.obj"
 
 [[mesh]]
-name = "sphere"
-type = "sphere"
-radius = 100
-
-[[mesh]]
 name = "quad"
 type = "obj"
 path = "models/simple/quad.obj"
-
-[[mesh]]
-name = "light"
-type = "obj"
-# obj: https://cl.ly/olil
-path = "models/simple/cbox_luminaire.obj"

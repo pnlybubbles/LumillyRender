@@ -29,9 +29,9 @@ impl Material for LambertianMaterial {
     self.albedo.x.max(self.albedo.y).max(self.albedo.z)
   }
 
-  fn brdf(&self, _out_: Vector3, _in_: Vector3, _n_: Vector3) -> Vector3 {
+  fn brdf(&self, _out_: Vector3, _in_: Vector3, _n_: Vector3, pos: Vector3) -> Vector3 {
     // BRDFは半球全体に一様に散乱するDiffuse面を考えると ρ / π
-    self.albedo / PI
+    self.albedo * checker((pos.x, pos.z)) / PI
   }
 
   fn sample(&self, out_: Vector3, n: Vector3) -> Sample<Vector3> {
@@ -52,5 +52,39 @@ impl Material for LambertianMaterial {
       value: in_,
       pdf: pdf,
     }
+  }
+}
+
+fn signed_mod(base: f32, module: f32) -> f32 {
+  if base > 0.0 {
+    base % module
+  } else {
+    module - (-base) % module
+  }
+}
+
+fn checker(uv: (f32, f32)) -> Vector3 {
+  let lw = 2.0;
+  let li = 150.0;
+  let sw = 1.0;
+  let si = 30.0;
+  let cw = 150.0;
+  let ci = 300.0;
+  let u = uv.0;
+  let v = uv.1;
+  let lu = signed_mod(u, li);
+  let lv = signed_mod(v, li);
+  let su = signed_mod(u, si);
+  let sv = signed_mod(v, si);
+  let cu = signed_mod(u, ci);
+  let cv = signed_mod(v, ci);
+  if lu < lw || lv < lw {
+    Vector3::new(0.5, 0.5, 0.5)
+  } else if su < sw || sv < sw {
+    Vector3::new(0.6, 0.6, 0.6)
+  } else if (cu < cw || cv < cw) && !(cu < cw && cv < cw) {
+    Vector3::new(0.8, 0.8, 0.8)
+  } else {
+    Vector3::new(1.0, 1.0, 1.0)
   }
 }

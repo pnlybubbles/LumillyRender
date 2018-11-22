@@ -36,7 +36,7 @@ impl Material for IdealRefractionMaterial {
       .max(self.reflectance.z)
   }
 
-  fn brdf(&self, out_: Vector3, in_: Vector3, n: Vector3) -> Vector3 {
+  fn brdf(&self, out_: Vector3, in_: Vector3, n: Vector3, _pos: Vector3) -> Vector3 {
     // out_: 入射
     // in_: 出射(透過/反射)
     // n: surface normal
@@ -207,7 +207,7 @@ mod tests {
     let in_ = mat.sample(out_, n).value;
     let expect = out_.reflect(on);
     assert!((expect - in_).norm() < EPS);
-    let brdf = mat.brdf(out_, in_, n);
+    let brdf = mat.brdf(out_, in_, n, Vector3::zero());
     let expect_brdf = Vector3::new(1.0, 1.0, 1.0) / in_.dot(n);
     assert!((expect_brdf - brdf).norm() < EPS);
   }

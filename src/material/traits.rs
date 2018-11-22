@@ -9,8 +9,8 @@ pub trait Material {
   fn emission(&self) -> Vector3;
   // 出射ベクトル, 物体法線ベクトル -> 法線ベクトル
   fn orienting_normal(&self, Vector3, Vector3) -> Vector3;
-  // 出射ベクトル, 入射ベクトル, 法線ベクトル -> BRDF
-  fn brdf(&self, Vector3, Vector3, Vector3) -> Vector3;
+  // 出射ベクトル, 入射ベクトル, 法線ベクトル, 座標 -> BRDF
+  fn brdf(&self, Vector3, Vector3, Vector3, Vector3) -> Vector3;
   // 出射ベクトル, 法線ベクトル -> 入射ベクトル, 確率密度
   fn sample(&self, Vector3, Vector3) -> Sample<Vector3>;
   // 再帰継続用ロシアンルーレットの重み

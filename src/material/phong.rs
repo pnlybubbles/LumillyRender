@@ -34,7 +34,7 @@ impl Material for PhongMaterial {
     )
   }
 
-  fn brdf(&self, out_: Vector3, in_: Vector3, n: Vector3) -> Vector3 {
+  fn brdf(&self, out_: Vector3, in_: Vector3, n: Vector3, _pos: Vector3) -> Vector3 {
     let on = self.orienting_normal(out_, n);
     if in_.dot(on) <= 0.0 { return Vector3::zero() }
     let r = out_.reflect(on);
