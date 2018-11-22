@@ -7,7 +7,7 @@ use math::vector::Vector3;
 use sample::Sample;
 
 pub trait SurfaceShape: Shape {
-  fn material(&self) -> Arc<Material>;
+  fn material(&self) -> Arc<dyn Material>;
   fn area(&self) -> f32;
   fn sample(&self) -> Sample<Vector3>;
 }

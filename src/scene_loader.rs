@@ -31,8 +31,11 @@ pub enum Sky {
   Uniform {
     color: Vec3,
   },
+  #[serde(rename_all = "kebab-case")]
   Ibl {
     path: String,
+    #[serde(default)]
+    longitude_offset: f32
   },
 }
 
@@ -89,7 +92,7 @@ impl Transform {
       Transform::Scale { vector } => Matrix4::scale(vector.into()),
       Transform::AxisAngle { axis, angle } => Matrix4::axis_angle(axis.into(), angle * PI / 180.0),
       Transform::LookAt { origin, target, up } => Matrix4::look_at(origin.into(), target.into(), up.into()),
-    } 
+    }
   }
 }
 
@@ -108,6 +111,7 @@ pub enum Camera {
     #[serde(default)]
     transform: Vec<Transform>,
   },
+  #[serde(rename_all = "kebab-case")]
   ThinLens {
     fov: f32,
     focus_distance: f32,
@@ -157,6 +161,11 @@ pub enum Material {
     roughness: f32,
     ior: f32,
   },
+  IdealRefraction {
+    name: Name,
+    reflectance: Vec3,
+    ior: f32,
+  }
 }
 
 impl HasName for Material {
@@ -166,6 +175,7 @@ impl HasName for Material {
       Material::Phong { ref name, .. } => name.clone(),
       Material::BlinnPhong { ref name, ..} => name.clone(),
       Material::Ggx { ref name, ..} => name.clone(),
+      Material::IdealRefraction { ref name, ..} => name.clone(),
     }
   }
 }

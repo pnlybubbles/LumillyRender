@@ -6,5 +6,5 @@ pub struct Intersection {
   pub position: Vector3,
   pub distance: f32,
   pub normal: Vector3,
-  pub material: Arc<Material + Send + Sync>,
+  pub material: Arc<dyn Material + Send + Sync>,
 }

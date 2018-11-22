@@ -1,0 +1,79 @@
+[renderer]
+samples = 256
+depth = 5
+depth-limit = 64
+no-direct-emitter = true
+threads = 0
+integrator = "pt-direct"
+
+[film]
+resolution = [512, 512]
+output = "png"
+gamma = 2.2
+sensitivity = [1, 1, 1]
+
+[sky]
+type = "uniform"
+color = [0, 0, 0]
+
+[camera]
+type = "ideal-pinhole"
+fov = 39.3077
+[[camera.transform]]
+type = "look-at"
+origin = [278, 273, -800]
+target = [278, 273, 0]
+up = [0, 1, 0]
+
+[[light]]
+type = "area"
+object = "light"
+emission = [10, 10, 10]
+
+[[object]]
+name = "light"
+mesh = "light"
+material = "light"
+[[object.transform]]
+type = "translate"
+vector = [278, 590, 278]
+
+[[object]]
+mesh = "quad"
+material = "white"
+[[object.transform]]
+type = "scale"
+vector = [250, 250, 250]
+[[object.transform]]
+type = "translate"
+vector = [278, 0, 278]
+
+[[object]]
+mesh = "quad"
+material = "white"
+[[object.transform]]
+type = "scale"
+vector = [250, 250, 250]
+[[object.transform]]
+type = "translate"
+vector = [278, 549, 278]
+
+[[material]]
+name = "light"
+type = "lambert"
+albedo = [0, 0, 0]
+
+[[material]]
+name = "white"
+type = "lambert"
+albedo = [1, 1, 1]
+
+[[mesh]]
+name = "quad"
+type = "obj"
+path = "models/simple/quad.obj"
+
+[[mesh]]
+name = "light"
+type = "sphere"
+radius = 130

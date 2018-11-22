@@ -1,5 +1,4 @@
 #![feature(box_syntax)]
-#![feature(sort_unstable)]
 #![feature(test)]
 #![allow(dead_code)]
 

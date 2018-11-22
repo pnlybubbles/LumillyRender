@@ -1,0 +1,109 @@
+[renderer]
+samples = 128
+depth = 5
+depth-limit = 64
+no-direct-emitter = false
+threads = 0
+integrator = "pt"
+
+[film]
+resolution = [534, 384]
+# resolution = [2138, 1536]
+output = "hdr"
+gamma = 2.2
+sensitivity = [1, 1, 1]
+
+[sky]
+type = "ibl"
+path = "models/ibl/PaperMill_Ruins_E.hdr"
+longitude-offset = 1.9
+
+[camera]
+type = "thin-lens"
+fov = 39.3077
+# fov = 60
+focus-distance = 960
+f-number = 1.8
+[[camera.transform]]
+type = "look-at"
+origin = [278, 400, -600]
+target = [278, 400, 0]
+up = [0, 1, 0]
+[[camera.transform]]
+type = "axis-angle"
+axis = [1, 0, 0]
+angle = 20
+
+[[light]]
+type = "area"
+object = "light"
+emission = [2000, 1540, 1120]
+
+# [[object]]
+# mesh = "bunny"
+# material = "translucent"
+# [[object.transform]]
+# type = "axis-angle"
+# axis = [0, 1, 0]
+# angle = 180
+# [[object.transform]]
+# type = "scale"
+# vector = [130, 130, 130]
+# [[object.transform]]
+# type = "translate"
+# vector = [255, -6, 278]
+
+[[object]]
+mesh = "sphere"
+material = "translucent"
+[[object.transform]]
+type = "translate"
+vector = [255, 100, 278]
+
+[[object]]
+mesh = "quad"
+material = "white"
+[[object.transform]]
+type = "scale"
+vector = [1000, 1, 1000]
+[[object.transform]]
+type = "translate"
+vector = [278, 1, 278]
+
+[[material]]
+name = "white"
+type = "lambert"
+albedo = [0.740063, 0.742313, 0.733934]
+
+[[material]]
+name = "black"
+type = "lambert"
+albedo = [0, 0, 0]
+
+[[material]]
+name = "translucent"
+type = "ideal-refraction"
+reflectance = [1, 1, 1]
+ior = 1.5
+
+[[mesh]]
+name = "bunny"
+type = "obj"
+# https://g3d.cs.williams.edu/g3d/data10/research/model/bunny/bunny.zip
+path = "models/bunny/bunny.obj"
+
+[[mesh]]
+name = "sphere"
+type = "sphere"
+radius = 100
+
+[[mesh]]
+name = "quad"
+type = "obj"
+path = "models/simple/quad.obj"
+
+[[mesh]]
+name = "light"
+type = "obj"
+# obj: https://cl.ly/olil
+path = "models/simple/cbox_luminaire.obj"

@@ -1,0 +1,57 @@
+[renderer]
+samples = 64
+depth = 5
+depth-limit = 64
+no-direct-emitter = true
+threads = 0
+integrator = "pt"
+
+[film]
+resolution = [2048, 2048]
+output = "png"
+gamma = 1.0
+sensitivity = [1, 1, 1]
+
+[sky]
+type = "uniform"
+color = [1, 1, 1]
+
+[camera]
+type = "ideal-pinhole"
+fov = 53.13
+[[camera.transform]]
+type = "look-at"
+origin = [0, 0, 10]
+target = [0, 0, 0]
+up = [0, 1, 0]
+
+[[object]]
+material = "red"
+mesh = "sphere"
+
+[[object]]
+material = "white"
+mesh = "ground"
+[[object.transform]]
+type = "translate"
+vector = [0, -100001, 0]
+
+[[material]]
+name = "white"
+type = "lambert"
+albedo = [1, 1, 1]
+
+[[material]]
+name = "red"
+type = "lambert"
+albedo = [0.4, 0.4, 0.4]
+
+[[mesh]]
+name = "sphere"
+type = "sphere"
+radius = 1
+
+[[mesh]]
+name = "ground"
+type = "sphere"
+radius = 100000

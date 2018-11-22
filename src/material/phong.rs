@@ -35,8 +35,9 @@ impl Material for PhongMaterial {
   }
 
   fn brdf(&self, out_: Vector3, in_: Vector3, n: Vector3) -> Vector3 {
-    if in_.dot(n) <= 0.0 { return Vector3::zero() }
-    let r = out_.reflect(n);
+    let on = self.orienting_normal(out_, n);
+    if in_.dot(on) <= 0.0 { return Vector3::zero() }
+    let r = out_.reflect(on);
     let cos = r.dot(in_);
     let a = self.roughness;
     // modified phong
@@ -44,8 +45,9 @@ impl Material for PhongMaterial {
   }
 
   fn sample(&self, out_: Vector3, n: Vector3) -> Sample<Vector3> {
+    let on = self.orienting_normal(out_, n);
     let a = self.roughness;
-    let r = out_.reflect(n);
+    let r = out_.reflect(on);
     // 鏡面反射方向を基準にした正規直交基底を生成
     let w = r;
     let (u, v) = w.orthonormal_basis();

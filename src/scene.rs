@@ -12,7 +12,7 @@ pub struct Scene<'a> {
   pub objects: Objects<'a>,
   pub depth: usize,
   pub depth_limit: usize,
-  pub sky: Box<Sky + Send + Sync>,
+  pub sky: Box<dyn Sky + Send + Sync>,
   pub no_direct_emitter: bool,
 }
 
@@ -34,7 +34,7 @@ impl<'a> Scene<'a> {
   pub fn radiance_nee(&self, ray: &Ray) -> Vector3 {
     self.radiance_nee_recursive(ray, 0, false)
   }
-  
+
   fn radiance_nee_recursive(&self, ray: &Ray, depth: usize, no_emission: bool) -> Vector3 {
     // すべてのオブジェクトと当たり判定を行う
     let maybe_intersect = self.objects.intersect(&ray);
@@ -79,15 +79,16 @@ impl<'a> Scene<'a> {
     where F: Fn(Ray) -> Vector3
   {
     let out_ = -ray.direction;
-    let normal = i.material.orienting_normal(out_, i.normal);
     // BRDFに応じたサンプリング
-    let sample = i.material.sample(out_, normal);
+    let sample = i.material.sample(out_, i.normal);
     let in_ = sample.value;
     let pdf = sample.pdf;
     // BRDF
-    let brdf = i.material.brdf(out_, in_, normal);
+    let brdf = i.material.brdf(out_, in_, i.normal);
     // コサイン項
-    let cos = in_.dot(normal);
+    let cos = in_.dot(i.normal);
+    // assert!(brdf.x * cos < 1.0 && brdf.x * cos > 0.0, "{} {} {}", brdf.x * cos, brdf.x, cos);
+    // 放射輝度の圧縮で透過の場合は1を超えてもおかしくない
     let new_ray = Ray {
       direction: in_,
       origin: i.position,

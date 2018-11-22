@@ -18,7 +18,7 @@ pub struct Triangle {
   aabb: AABB,
   pub normal: Vector3,
   pub area: f32,
-  pub material: Arc<Material + Send + Sync>,
+  pub material: Arc<dyn Material + Send + Sync>,
 }
 
 impl Triangle {
@@ -152,7 +152,7 @@ impl SurfaceShape for Triangle {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use material::*;
+  use material::material::*;
 
   #[test]
   fn intersect_mt_front() {

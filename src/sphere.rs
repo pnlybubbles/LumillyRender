@@ -12,7 +12,7 @@ use util::*;
 pub struct Sphere {
   pub radius: f32,
   pub position: Vector3,
-  pub material: Arc<Material + Send + Sync>,
+  pub material: Arc<dyn Material + Send + Sync>,
   aabb: AABB,
   area: f32,
 }

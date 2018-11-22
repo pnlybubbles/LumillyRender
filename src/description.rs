@@ -59,7 +59,7 @@ impl Description {
       CSky::Uniform { color } => box UniformSky {
         emission: color.into(),
       } as Box<Sky + Send + Sync>,
-      CSky::Ibl { ref path } => box IBLSky::new(path, 0),
+      CSky::Ibl { ref path, longitude_offset } => box IBLSky::new(path, longitude_offset),
     } ).unwrap_or(box UniformSky {
       emission: Vector3::zero(),
     });
@@ -119,6 +119,12 @@ impl Loader {
               ior: ior,
             })
           },
+          CMaterial::IdealRefraction { reflectance, ior, .. } => {
+            Arc::new(IdealRefractionMaterial {
+              reflectance: reflectance.into(),
+              ior: ior,
+            })
+          }
         }
       });
       match *o.mesh {

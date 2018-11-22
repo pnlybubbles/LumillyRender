@@ -35,10 +35,11 @@ impl Material for BlinnPhongMaterial {
   }
 
   fn brdf(&self, out_: Vector3, in_: Vector3, n: Vector3) -> Vector3 {
-    if in_.dot(n) <= 0.0 { return Vector3::zero() }
+    let on = self.orienting_normal(out_, n);
+    if in_.dot(on) <= 0.0 { return Vector3::zero() }
     // ハーフベクトル
     let h = (in_ + out_).normalize();
-    let cos = h.dot(n);
+    let cos = h.dot(on);
     let a = self.roughness;
     debug_assert!(cos >= 0.0 && cos <= 1.0 && cos.is_finite(), "cos: {}", cos);
     // blinn phong
@@ -46,9 +47,10 @@ impl Material for BlinnPhongMaterial {
   }
 
   fn sample(&self, out_: Vector3, n: Vector3) -> Sample<Vector3> {
+    let on = self.orienting_normal(out_, n);
     let a = self.roughness;
     // 法線方向を基準にした正規直交基底を生成
-    let w = n;
+    let w = on;
     let (u, v) = w.orthonormal_basis();
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     // (brdfの分布にしたがって重点的にサンプル)
@@ -60,7 +62,7 @@ impl Material for BlinnPhongMaterial {
     let h = u * r1.cos() * ts + v * r1.sin() * ts + w * t;
     // 入射ベクトル
     let in_ = h * (2.0 * out_.dot(h)) - out_;
-    let cos = n.dot(h);
+    let cos = on.dot(h);
     // 確率密度関数
     let pdf = (a + 2.0) / (2.0 * PI) * cos.powf(a);
     Sample {

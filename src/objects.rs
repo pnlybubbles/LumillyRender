@@ -10,7 +10,7 @@ use aabb::AABB;
 
 pub struct Objects<'a> {
   bvh: BVH<'a>,
-  emission: Vec<&'a Box<SurfaceShape + Send + Sync>>,
+  emission: Vec<&'a Box<dyn SurfaceShape + Send + Sync>>,
   emission_area: f32,
 }
 

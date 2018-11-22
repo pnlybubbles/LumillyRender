@@ -16,7 +16,7 @@ impl Material for LambertianMaterial {
     if normal.dot(out_) < 0.0 {
       normal * -1.0
     } else {
-     normal 
+     normal
     }
   }
 
@@ -34,9 +34,10 @@ impl Material for LambertianMaterial {
     self.albedo / PI
   }
 
-  fn sample(&self, _out_: Vector3, n: Vector3) -> Sample<Vector3> {
+  fn sample(&self, out_: Vector3, n: Vector3) -> Sample<Vector3> {
     // 反射点での法線方向を基準にした正規直交基底を生成
-    let w = n;
+    let on = self.orienting_normal(out_, n);
+    let w = on;
     let (u, v) = w.orthonormal_basis();
     // 球面極座標を用いて反射点から単位半球面上のある一点へのベクトルを生成
     // (cosにしたがって重点的にサンプル)

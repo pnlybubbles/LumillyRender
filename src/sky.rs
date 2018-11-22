@@ -35,11 +35,11 @@ impl Sky for SimpleSky {
 pub struct IBLSky {
   hdr_image: Vec<image::Rgb<f32>>,
   height: usize,
-  longitude_offset: usize,
+  longitude_offset: f32,
 }
 
 impl IBLSky {
-  pub fn new(path: &str, longitude_offset: usize) -> IBLSky {
+  pub fn new(path: &str, longitude_offset: f32) -> IBLSky {
     println!("loading hdr image...");
     let image_file = File::open(path).unwrap();
     let decoder = image::hdr::HDRDecoder::new(BufReader::new(image_file)).unwrap();
@@ -63,7 +63,7 @@ impl Sky for IBLSky {
     } else {
       phi_pr
     } + PI / 2.0;
-    let x = (self.height as f32 * phi / PI).round() as usize + self.longitude_offset;
+    let x = (self.height as f32 * (phi + self.longitude_offset) / PI).round() as usize;
     let y = (self.height as f32 * theta / PI).round() as usize;
     let index = y * self.height * 2 +
       if x > self.height * 2 {
