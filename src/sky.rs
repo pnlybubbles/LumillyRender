@@ -65,10 +65,11 @@ impl Sky for IBLSky {
     let v = (theta / PI) % 1.0;
     let height = self.height;
     let width = self.height * 2;
+    let all = width * height;
     let x = (width as f32 * u).floor() as usize;
     let y = (height as f32 * v).floor() as usize;
     let index = y * width + x;
-    let color = self.hdr_image[index];
+    let color = self.hdr_image[index % all];
     return Vector3::new(
       color.data[0] as f32,
       color.data[1] as f32,
