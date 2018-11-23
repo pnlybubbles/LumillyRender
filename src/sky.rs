@@ -61,8 +61,8 @@ impl Sky for IBLSky {
     // -pi < phi <= pi
     let phi = ray.direction.z.atan2(ray.direction.x);
     // 0 <= (u, v) < 1
-    let u = (theta / PI) % 1.0;
-    let v = ((phi + PI + self.longitude_offset) / (2.0 * PI)) % 1.0;
+    let u = ((phi + PI + self.longitude_offset) / (2.0 * PI)) % 1.0;
+    let v = (theta / PI) % 1.0;
     let height = self.height;
     let width = self.height * 2;
     let x = (width as f32 * u).floor() as usize;

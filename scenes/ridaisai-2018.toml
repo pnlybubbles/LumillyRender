@@ -9,6 +9,7 @@ integrator = "pt"
 [film]
 # resolution = [40, 20]
 resolution = [2138, 1536]
+# resolution = [512, 512]
 output = "hdr"
 gamma = 2.2
 sensitivity = [1, 1, 1]
@@ -23,9 +24,10 @@ longitude-offset = 1.9
 [camera]
 type = "thin-lens"
 fov = 39.3077
-# fov = 60
+# fov = 80
 focus-distance = 870
 f-number = 1.8
+# f-number = 1000
 [[camera.transform]]
 type = "look-at"
 origin = [278, 400, -600]
@@ -66,7 +68,7 @@ vector = [345, -6, 268]
 
 # [[object]]
 # mesh = "sphere"
-# material = "translucent"
+# material = "translucent-black"
 # [[object.transform]]
 # type = "translate"
 # vector = [255, 100, 278]
@@ -110,6 +112,11 @@ name = "bunny"
 type = "obj"
 # https://g3d.cs.williams.edu/g3d/data10/research/model/bunny/bunny.zip
 path = "models/bunny/bunny.obj"
+
+# [[mesh]]
+# name = "sphere"
+# type = "sphere"
+# radius = 100
 
 [[mesh]]
 name = "quad"
