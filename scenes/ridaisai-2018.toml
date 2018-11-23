@@ -1,5 +1,5 @@
 [renderer]
-samples = 8
+samples = 4
 depth = 5
 depth-limit = 64
 no-direct-emitter = false
@@ -7,18 +7,18 @@ threads = 0
 integrator = "pt"
 
 [film]
-resolution = [1069, 768]
-# resolution = [2138, 1536]
+# resolution = [40, 20]
+resolution = [2138, 1536]
 output = "hdr"
 gamma = 2.2
 sensitivity = [1, 1, 1]
 
 [sky]
 type = "ibl"
-# path = "models/ibl/PaperMill_Ruins_E.hdr"
-path = "models/ibl/hotel_room_4k.hdr"
-# longitude-offset = 1.9
-longitude-offset = 5.0
+path = "models/ibl/PaperMill_Ruins_E.hdr"
+# path = "models/ibl/hotel_room_4k.hdr"
+longitude-offset = 1.9
+# longitude-offset = 6.0
 
 [camera]
 type = "thin-lens"

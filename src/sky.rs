@@ -56,21 +56,18 @@ impl IBLSky {
 
 impl Sky for IBLSky {
   fn radiance(&self, ray: &Ray) -> Vector3 {
+    // 0 <= theta <= pi
     let theta = (ray.direction.y).acos();
-    let phi_pr = (ray.direction.z / ray.direction.x).atan();
-    let phi = if ray.direction.x < 0.0 {
-      phi_pr + PI
-    } else {
-      phi_pr
-    } + PI / 2.0;
-    let x = (self.height as f32 * (phi + self.longitude_offset) / PI).round() as usize;
-    let y = (self.height as f32 * theta / PI).round() as usize;
-    let index = y * self.height * 2 +
-      if x > self.height * 2 {
-        x % (self.height * 2)
-      } else {
-        x
-      };
+    // -pi < phi <= pi
+    let phi = ray.direction.z.atan2(ray.direction.x);
+    // 0 <= (u, v) < 1
+    let u = (theta / PI) % 1.0;
+    let v = ((phi + PI + self.longitude_offset) / (2.0 * PI)) % 1.0;
+    let height = self.height;
+    let width = self.height * 2;
+    let x = (width as f32 * u).floor() as usize;
+    let y = (height as f32 * v).floor() as usize;
+    let index = y * width + x;
     let color = self.hdr_image[index];
     return Vector3::new(
       color.data[0] as f32,

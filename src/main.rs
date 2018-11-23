@@ -35,7 +35,7 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use img::*;
 use math::vector::*;
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::io::{self, Write};
 use description::Description;
 use std::env;
@@ -65,16 +65,30 @@ fn main() {
   let mut pool = Pool::new(num_threads as u32);
   let integrator = description.config.renderer.integrator.as_ref().map( |v| v.as_str() ).unwrap_or("pt-direct");
   println!("integrator: {}", integrator);
+  let all = height * width;
+  // let progress = Arc::new(Mutex::new(0));
   pool.scoped( |scope| {
     let scene = Arc::new(description.scene());
     // モンテカルロ積分
     output.each_pixel( |x, y, _| {
       let tx = tx.clone();
+      // let progress = progress.clone();
       let cam = cam.clone();
       let scene = scene.clone();
       match integrator {
         "pt" => {
           scope.execute(move || {
+            // let mut stdout = io::stdout();
+            // let mut progress = progress.lock().unwrap();
+            // *progress += 1;
+            // let _ = write!(
+            //   &mut stdout.lock(),
+            //   "\rprocessing... ({}/{} : {:.0}%) ",
+            //   *progress,
+            //   all,
+            //   *progress as f32 / all as f32 * 100.0
+            // );
+            // stdout.flush().ok();
             let estimated_sum = (0..spp).fold(Vector3::zero(), |sum, _| {
               // センサーの1画素に入射する放射輝度を立体角測度でモンテカルロ積分し放射照度を得る
               // カメラから出射されるレイをサンプリング
@@ -112,16 +126,7 @@ fn main() {
     });
   });
 
-  let all = height * width;
-
-  for i in 0..all {
-    print!(
-      "\rprocessing... ({}/{} : {:.0}%) ",
-      i,
-      all,
-      i as f32 / all as f32 * 100.0
-    );
-    io::stdout().flush().ok();
+  for _i in 0..all {
     let (x, y, pixel) = rx.recv().unwrap();
     output.set(x, y, pixel);
   }
