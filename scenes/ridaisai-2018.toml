@@ -25,7 +25,7 @@ longitude-offset = 6.0
 type = "thin-lens"
 fov = 39.3077
 # fov = 80
-focus-distance = 870
+focus-distance = 850
 f-number = 1.8
 # f-number = 1000
 [[camera.transform]]
@@ -50,7 +50,7 @@ type = "scale"
 vector = [130, 130, 130]
 [[object.transform]]
 type = "translate"
-vector = [165, -6, 208]
+vector = [155, -6, 218]
 
 [[object]]
 mesh = "bunny"
@@ -64,7 +64,7 @@ type = "scale"
 vector = [130, 130, 130]
 [[object.transform]]
 type = "translate"
-vector = [345, -6, 268]
+vector = [355, -6, 218]
 
 # [[object]]
 # mesh = "sphere"
